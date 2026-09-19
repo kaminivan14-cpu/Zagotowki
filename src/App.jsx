@@ -12,44 +12,61 @@ const produktyStartowe = [
 const jednostki = ['g', 'kg', 'ml', 'l', 'szt.']
 
 function App() {
-  useEffect(() => {
-  const testSupabase = async () => {
-    const { data, error } = await supabase
-      .from('Plans')
-      .select('*')
-
-    console.log('SUPABASE DATA:', data)
-    console.log('SUPABASE ERROR:', error)
-  }
-
-  testSupabase()
-}, [])
-  const [plan, setPlan] = useState(() => {
-    const zapisanyPlan = localStorage.getItem('zagotowki-plan')
-
-    if (zapisanyPlan) {
-      try {
-        return JSON.parse(zapisanyPlan)
-      } catch {
-        return []
-      }
-    }
-
-    return []
-  })
-
-  const [ekran, setEkran] = useState(() => {
-    const zapisanyPlan = localStorage.getItem('zagotowki-plan')
-    return zapisanyPlan ? 'produkcja' : 'planowanie'
-  })
-
+  const [ekran, setEkran] = useState('planowanie')
   const [wybrane, setWybrane] = useState({})
+  const [plan, setPlan] = useState([])
+  const [planId, setPlanId] = useState(null)
+  const [ladowanie, setLadowanie] = useState(true)
+  const [zapisywanie, setZapisywanie] = useState(false)
 
+  // Przy uruchomieniu aplikacji pobieramy aktywny plan z Supabase
   useEffect(() => {
-    if (plan.length > 0) {
-      localStorage.setItem('zagotowki-plan', JSON.stringify(plan))
+    pobierzPlan()
+  }, [])
+
+  const pobierzPlan = async () => {
+    setLadowanie(true)
+
+    try {
+      // Pobieramy najnowszy aktywny plan
+      const { data: plans, error: planError } = await supabase
+        .from('Plans')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+      if (planError) throw planError
+
+      // Nie ma aktywnego planu
+      if (!plans || plans.length === 0) {
+        setPlan([])
+        setPlanId(null)
+        setEkran('planowanie')
+        return
+      }
+
+      const aktywnyPlan = plans[0]
+
+      // Pobieramy pozycje należące do planu
+      const { data: items, error: itemsError } = await supabase
+        .from('Plan_items')
+        .select('*')
+        .eq('plan_id', aktywnyPlan.id)
+        .order('id', { ascending: true })
+
+      if (itemsError) throw itemsError
+
+      setPlanId(aktywnyPlan.id)
+      setPlan(items || [])
+      setEkran('produkcja')
+    } catch (error) {
+      console.error('Błąd pobierania planu:', error)
+      alert(`Nie udało się pobrać planu: ${error.message}`)
+    } finally {
+      setLadowanie(false)
     }
-  }, [plan])
+  }
 
   const zmienProdukt = (id, pole, wartosc) => {
     setWybrane((poprzednie) => ({
@@ -61,24 +78,18 @@ function App() {
     }))
   }
 
-  const zatwierdzPlan = () => {
+  const zatwierdzPlan = async () => {
     const nowyPlan = produktyStartowe
       .filter((produkt) => wybrane[produkt.id]?.aktywny)
       .map((produkt) => ({
-        id: produkt.id,
         nazwa: produkt.nazwa,
-
-        ilosc:
-          wybrane[produkt.id]?.ilosc || '',
-
+        ilosc: Number(wybrane[produkt.id]?.ilosc),
         jednostka:
           wybrane[produkt.id]?.jednostka ||
           produkt.domyslnaJednostka,
-
         priorytet:
           wybrane[produkt.id]?.priorytet ||
           'normalny',
-
         gotowe: false,
       }))
 
@@ -90,7 +101,7 @@ function App() {
     const brakIlosci = nowyPlan.some(
       (produkt) =>
         !produkt.ilosc ||
-        Number(produkt.ilosc) <= 0
+        produkt.ilosc <= 0
     )
 
     if (brakIlosci) {
@@ -98,34 +109,123 @@ function App() {
       return
     }
 
-    setPlan(nowyPlan)
+    setZapisywanie(true)
 
-    localStorage.setItem(
-      'zagotowki-plan',
-      JSON.stringify(nowyPlan)
-    )
+    try {
+      let aktualnyPlanId = planId
 
-    setEkran('produkcja')
+      // Jeżeli tworzymy nowy plan
+      if (!aktualnyPlanId) {
+        const jutro = new Date()
+        jutro.setDate(jutro.getDate() + 1)
+
+        const planDate = [
+          jutro.getFullYear(),
+          String(jutro.getMonth() + 1).padStart(2, '0'),
+          String(jutro.getDate()).padStart(2, '0'),
+        ].join('-')
+
+        const { data: utworzonyPlan, error: planError } =
+          await supabase
+            .from('Plans')
+            .insert({
+              plan_date: planDate,
+              status: 'active',
+            })
+            .select()
+            .single()
+
+        if (planError) throw planError
+
+        aktualnyPlanId = utworzonyPlan.id
+      } else {
+        // Edytujemy istniejący plan:
+        // usuwamy stare pozycje i zapisujemy aktualny zestaw.
+        const { error: deleteError } = await supabase
+          .from('Plan_items')
+          .delete()
+          .eq('plan_id', aktualnyPlanId)
+
+        if (deleteError) throw deleteError
+      }
+
+      const pozycjeDoZapisu = nowyPlan.map((produkt) => ({
+        plan_id: aktualnyPlanId,
+        nazwa: produkt.nazwa,
+        ilosc: produkt.ilosc,
+        jednostka: produkt.jednostka,
+        priorytet: produkt.priorytet,
+        gotowe: false,
+      }))
+
+      const { data: zapisanePozycje, error: itemsError } =
+        await supabase
+          .from('Plan_items')
+          .insert(pozycjeDoZapisu)
+          .select()
+
+      if (itemsError) throw itemsError
+
+      setPlanId(aktualnyPlanId)
+      setPlan(zapisanePozycje)
+      setEkran('produkcja')
+    } catch (error) {
+      console.error('Błąd zapisu planu:', error)
+      alert(`Nie udało się zapisać planu: ${error.message}`)
+    } finally {
+      setZapisywanie(false)
+    }
   }
 
-  const oznaczGotowe = (id) => {
+  const oznaczGotowe = async (id) => {
+    const produkt = plan.find(
+      (element) => element.id === id
+    )
+
+    if (!produkt) return
+
+    const nowyStatus = !produkt.gotowe
+
+    // Aktualizujemy ekran od razu
     setPlan((poprzedniPlan) =>
-      poprzedniPlan.map((produkt) =>
-        produkt.id === id
-          ? {
-              ...produkt,
-              gotowe: !produkt.gotowe,
-            }
-          : produkt
+      poprzedniPlan.map((element) =>
+        element.id === id
+          ? { ...element, gotowe: nowyStatus }
+          : element
       )
     )
+
+    const { error } = await supabase
+      .from('Plan_items')
+      .update({ gotowe: nowyStatus })
+      .eq('id', id)
+
+    if (error) {
+      // Jeśli zapis się nie udał, cofamy zmianę na ekranie
+      setPlan((poprzedniPlan) =>
+        poprzedniPlan.map((element) =>
+          element.id === id
+            ? { ...element, gotowe: produkt.gotowe }
+            : element
+        )
+      )
+
+      console.error('Błąd aktualizacji:', error)
+      alert(`Nie udało się zapisać zmiany: ${error.message}`)
+    }
   }
 
   const edytujPlan = () => {
     const daneDoEdycji = {}
 
     plan.forEach((produkt) => {
-      daneDoEdycji[produkt.id] = {
+      const produktStartowy = produktyStartowe.find(
+        (element) => element.nazwa === produkt.nazwa
+      )
+
+      if (!produktStartowy) return
+
+      daneDoEdycji[produktStartowy.id] = {
         aktywny: true,
         ilosc: produkt.ilosc,
         jednostka: produkt.jednostka,
@@ -137,18 +237,39 @@ function App() {
     setEkran('planowanie')
   }
 
-  const zakonczPlan = () => {
+  const zakonczPlan = async () => {
     const potwierdzenie = window.confirm(
       'Czy na pewno zakończyć dzisiejszy plan produkcji?'
     )
 
-    if (!potwierdzenie) return
+    if (!potwierdzenie || !planId) return
 
-    localStorage.removeItem('zagotowki-plan')
+    const { error } = await supabase
+      .from('Plans')
+      .update({ status: 'completed' })
+      .eq('id', planId)
+
+    if (error) {
+      console.error('Błąd zakończenia planu:', error)
+      alert(`Nie udało się zakończyć planu: ${error.message}`)
+      return
+    }
 
     setPlan([])
+    setPlanId(null)
     setWybrane({})
     setEkran('planowanie')
+  }
+
+  if (ladowanie) {
+    return (
+      <div className="app">
+        <header>
+          <h1>ZAGOTÓWKI</h1>
+          <p>Ładowanie planu...</p>
+        </header>
+      </div>
+    )
   }
 
   if (ekran === 'produkcja') {
@@ -169,8 +290,7 @@ function App() {
               <h2>Do zrobienia</h2>
 
               <p className="licznik">
-                Pozostało:{' '}
-                <strong>{pozostalo}</strong>
+                Pozostało: <strong>{pozostalo}</strong>
               </p>
             </div>
 
@@ -194,8 +314,7 @@ function App() {
                   <strong>{produkt.nazwa}</strong>
 
                   <span className="ilosc-produkcja">
-                    {produkt.ilosc}{' '}
-                    {produkt.jednostka}
+                    {produkt.ilosc} {produkt.jednostka}
                   </span>
 
                   <span
@@ -203,8 +322,7 @@ function App() {
                   >
                     {produkt.priorytet === 'pilny'
                       ? 'Pilny'
-                      : produkt.priorytet ===
-                          'wysoki'
+                      : produkt.priorytet === 'wysoki'
                         ? 'Wysoki'
                         : 'Normalny'}
                   </span>
@@ -278,9 +396,6 @@ function App() {
 
               {wybrane[produkt.id]?.aktywny && (
                 <div className="ustawienia">
-
-                  {/* ILOŚĆ */}
-
                   <input
                     type="number"
                     min="0"
@@ -299,12 +414,9 @@ function App() {
                     }
                   />
 
-                  {/* JEDNOSTKA */}
-
                   <select
                     value={
-                      wybrane[produkt.id]
-                        ?.jednostka ||
+                      wybrane[produkt.id]?.jednostka ||
                       produkt.domyslnaJednostka
                     }
                     onChange={(e) =>
@@ -325,12 +437,9 @@ function App() {
                     ))}
                   </select>
 
-                  {/* PRIORYTET */}
-
                   <select
                     value={
-                      wybrane[produkt.id]
-                        ?.priorytet ||
+                      wybrane[produkt.id]?.priorytet ||
                       'normalny'
                     }
                     onChange={(e) =>
@@ -362,8 +471,11 @@ function App() {
         <button
           className="zatwierdz"
           onClick={zatwierdzPlan}
+          disabled={zapisywanie}
         >
-          Zatwierdź plan
+          {zapisywanie
+            ? 'Zapisywanie...'
+            : 'Zatwierdź plan'}
         </button>
       </main>
     </div>
