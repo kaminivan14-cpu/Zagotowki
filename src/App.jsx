@@ -139,7 +139,7 @@ if (
   )
 
   if (lokalPracownika) {
-    await wybierzLokal(lokalPracownika)
+    await wybierzLokal(lokalPracownika, zalogowany)
   }
 }
 
@@ -329,9 +329,6 @@ const zapiszEdycjePracownika = async (osoba) => {
   }
 }
   useEffect(() => {
-    pobierzLokale()
-  }, [])
-  useEffect(() => {
   const timer = setInterval(() => {
     setTykanie((wartosc) => wartosc + 1)
   }, 60000)
@@ -340,6 +337,8 @@ const zapiszEdycjePracownika = async (osoba) => {
 }, [])
 useEffect(() => {
   if (!planId) return
+
+  let aktywny = true
 
   const channel = supabase
     .channel(`plan-items-${planId}`)
@@ -358,6 +357,8 @@ useEffect(() => {
           .eq('plan_id', planId)
           .order('id', { ascending: true })
 
+        if (!aktywny) return
+
         if (error) {
           console.error('Błąd Realtime:', error)
           return
@@ -369,11 +370,13 @@ useEffect(() => {
     .subscribe()
 
   return () => {
+    aktywny = false
     supabase.removeChannel(channel)
   }
 }, [planId])
 
-  const pobierzLokale = async () => {
+  useEffect(() => {
+    const pobierzLokale = async () => {
     setLadowanie(true)
 
     try {
@@ -397,11 +400,14 @@ useEffect(() => {
     }
   }
 
+    pobierzLokale()
+  }, [])
+
   // -----------------------------------------
   // WYBÓR LOKALU
   // -----------------------------------------
 
- const wybierzLokal = async (lokal) => {
+ const wybierzLokal = async (lokal, aktualnyPracownik = pracownik) => {
   setWybranyLokal(lokal)
 
   setPlan([])
@@ -409,8 +415,8 @@ useEffect(() => {
   setWybrane({})
 
   // Pracownik trafia bezpośrednio do planu na dziś
-  if (pracownik?.role === 'employee') {
-    await pobierzPlan(lokal.id)
+  if (aktualnyPracownik?.role === 'employee') {
+    await pobierzPlan(lokal.id, aktualnyPracownik)
     return
   }
 
@@ -442,6 +448,8 @@ useEffect(() => {
       .eq('status', 'active')
       .gte('plan_date', dzisiejszaData)
       .order('plan_date', { ascending: true })
+      .order('created_at', { ascending: false, nullsFirst: false })
+      .order('id', { ascending: false })
 
     if (error) throw error
 
@@ -465,7 +473,7 @@ useEffect(() => {
   // POBIERANIE PLANU DLA KONKRETNEGO LOKALU
   // -----------------------------------------
 
- const pobierzPlan = async (locationId) => {
+ const pobierzPlan = async (locationId, aktualnyPracownik = pracownik) => {
   setLadowanie(true)
 
   try {
@@ -473,7 +481,7 @@ useEffect(() => {
     // Manager / su-chef / administrator pracują na wybranej dacie.
     let szukanaData
 
-    if (pracownik?.role === 'employee') {
+    if (aktualnyPracownik?.role === 'employee') {
       const dzisiaj = new Date()
 
       szukanaData = [
@@ -492,7 +500,8 @@ useEffect(() => {
         .eq('status', 'active')
         .eq('location_id', locationId)
         .eq('plan_date', szukanaData)
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: false, nullsFirst: false })
+        .order('id', { ascending: false })
         .limit(1)
 
     if (planError) throw planError
@@ -505,7 +514,7 @@ useEffect(() => {
 
       if (
         ['administrator', 'manager', 'su-chef'].includes(
-          pracownik?.role
+          aktualnyPracownik?.role
         )
       ) {
         setEkran('planowanie')
@@ -527,6 +536,7 @@ useEffect(() => {
 
     if (itemsError) throw itemsError
 
+    setDataPlanu(aktywnyPlan.plan_date)
     setPlanId(aktywnyPlan.id)
     setPlan(items || [])
     setEkran('produkcja')
@@ -636,13 +646,40 @@ const planDate = dataPlanu
 
   if (planError) throw planError
 
-// Plan został utworzony.
-// Czyścimy formularz i wracamy do centrum planów.
-setPlanId(null)
-setPlan([])
-setWybrane({})
+// Nie wybieramy planu ponownie po dacie: może istnieć kilka planów.
+// RPC powinno zwrócić skalarne ID utworzonego rekordu.
+if (
+  !['number', 'string'].includes(typeof nowyPlanId) ||
+  !String(nowyPlanId).trim()
+) {
+  setPlanId(null)
+  setPlan([])
+  setWybrane({})
+  await pobierzZaplanowanePlany()
+  alert('Plan został utworzony, ale serwer nie zwrócił jego ID. Otwórz go z listy planów; nie zapisuj go ponownie.')
+  return
+}
 
-await pobierzZaplanowanePlany()
+// Zachowujemy ID także wtedy, gdy odczyt pozycji się nie powiedzie.
+setPlanId(nowyPlanId)
+setPlan([])
+
+const { data: pozycjeNowegoPlanu, error: itemsError } = await supabase
+  .from('Plan_items')
+  .select('*')
+  .eq('plan_id', nowyPlanId)
+  .order('id', { ascending: true })
+
+if (itemsError) {
+  alert(`Plan został utworzony, ale nie udało się pobrać jego pozycji: ${itemsError.message}. Otwórz go ponownie z listy planów.`)
+  await pobierzZaplanowanePlany()
+  return
+}
+
+setPlan(pozycjeNowegoPlanu || [])
+setDataPlanu(planDate)
+setWybrane({})
+setEkran('produkcja')
 
 return
 } else {
@@ -1091,6 +1128,8 @@ const pobierzZaplanowanePlany = async () => {
       .eq('status', 'active')
       .gte('plan_date', dzisiejszaData)
       .order('plan_date', { ascending: true })
+      .order('created_at', { ascending: false, nullsFirst: false })
+      .order('id', { ascending: false })
 
     if (error) throw error
 
@@ -1222,7 +1261,8 @@ console.log('GOTOWA HISTORIA:', historiaZPracownikami)
               .eq('status', 'active')
               .eq('location_id', wybranyLokal.id)
               .eq('plan_date', nowaData)
-              .order('created_at', { ascending: false })
+              .order('created_at', { ascending: false, nullsFirst: false })
+              .order('id', { ascending: false })
               .limit(1)
 
           if (planError) throw planError
@@ -1387,12 +1427,12 @@ if (ekran === 'zaplanowane') {
       wybranyLokal={wybranyLokal}
       zaplanowanePlany={zaplanowanePlany}
       dataPlanu={dataPlanu}
-      setDataPlanu={setDataPlanu}
       otworzZaplanowanyPlan={otworzZaplanowanyPlan}
       onPowrot={() =>
         setEkran(planId ? 'produkcja' : 'planowanie')
       }
-      onUtworzPlan={() => {
+      onUtworzPlan={(nowaData) => {
+        setDataPlanu(nowaData)
         setPlanId(null)
         setPlan([])
         setWybrane({})
@@ -1428,7 +1468,9 @@ if (ekran === 'historia') {
       setOtwartyDzien={setOtwartyDzien}
       formatujGodzine={formatujGodzine}
       obliczCzas={obliczCzas}
-      onPowrot={() => setEkran(planId ? 'produkcja' : 'planowanie')}
+      onPowrot={() => setEkran(
+        planId ? 'produkcja' : pracownik.role === 'employee' ? 'brak-planu' : 'planowanie'
+      )}
     />
   )
 }

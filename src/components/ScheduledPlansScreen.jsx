@@ -1,12 +1,16 @@
+import { useState } from 'react'
+
 export default function ScheduledPlansScreen({
   wybranyLokal,
   zaplanowanePlany,
   dataPlanu,
-  setDataPlanu,
   otworzZaplanowanyPlan,
   onPowrot,
   onUtworzPlan,
 }) {
+  // Data nowego planu nie zmienia daty aktualnie otwartego planu.
+  const [dataNowegoPlanu, setDataNowegoPlanu] = useState(dataPlanu)
+
   return (
     <div className="app">
       <header>
@@ -61,13 +65,13 @@ export default function ScheduledPlansScreen({
 
   <input
     type="date"
-    value={dataPlanu}
-    onChange={(e) => setDataPlanu(e.target.value)}
+    value={dataNowegoPlanu}
+    onChange={(e) => setDataNowegoPlanu(e.target.value)}
   />
 
   <button
     className="powrot"
-    onClick={onUtworzPlan}
+    onClick={() => onUtworzPlan(dataNowegoPlanu)}
   >
     ➕ Utwórz plan
   </button>
