@@ -109,3 +109,18 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+.produkty button.produkt {
+  color: #111827;
+}
+
+.produkty button.produkt strong,
+.produkty button.produkt span {
+  color: #111827;
+}.powrot {
+  color: #111827;
+}
+
+.powrot:hover {
+  background: #f3f4f6;
+  color: #111827;
+}

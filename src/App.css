@@ -294,4 +294,48 @@ main h2 {
   color: #6b7280;
   font-size: 16px;
   cursor: pointer;
+}/* WYBÓR LOKALU */
+
+.lokal,
+.location,
+.location-card,
+.lokal-button {
+  color: #111827;
+}
+
+.lokal *,
+.location *,
+.location-card *,
+.lokal-button * {
+  color: #111827;
+}.czas-produkcji {
+  font-size: 15px;
+  font-weight: 700;
+  color: #6b7280;
+  white-space: nowrap;
+}.historia-pozycja {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 14px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.historia-pozycja:last-child {
+  border-bottom: 0;
+}
+
+.historia-czas {
+  font-weight: 700;
+  color: #374151;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .historia-pozycja {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
 }

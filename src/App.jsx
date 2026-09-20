@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react'
 import './App.css'
+import LoginScreen from './components/LoginScreen'
+import LocationSelectScreen from './components/LocationSelectScreen'
+import NoPlanScreen from './components/NoPlanScreen'
+import ScheduledPlansScreen from './components/ScheduledPlansScreen'
+import EmployeesScreen from './components/EmployeesScreen'
+import ProductionScreen from './components/ProductionScreen'
+import HistoryScreen from './components/HistoryScreen'
+import PlanningScreen from './components/PlanningScreen'
 import { supabase } from './supabase'
 
 const produktyStartowe = [
@@ -12,6 +20,18 @@ const produktyStartowe = [
 const jednostki = ['g', 'kg', 'ml', 'l', 'szt.']
 
 function App() {
+const [pracownik, setPracownik] = useState(() => {
+  const zapisanyPracownik =
+    sessionStorage.getItem('pracownik')
+
+  return zapisanyPracownik
+    ? JSON.parse(zapisanyPracownik)
+    : null
+})
+const [pin, setPin] = useState('')
+const [bladLogowania, setBladLogowania] = useState('')
+const [logowanie, setLogowanie] = useState(false)
+
   const [ekran, setEkran] = useState('wybor-lokalu')
 
   const [lokale, setLokale] = useState([])
@@ -20,17 +40,304 @@ function App() {
   const [wybrane, setWybrane] = useState({})
   const [plan, setPlan] = useState([])
   const [planId, setPlanId] = useState(null)
+  const [dataPlanu, setDataPlanu] = useState(() => {
+  const jutro = new Date()
+  jutro.setDate(jutro.getDate() + 1)
+
+  return [
+    jutro.getFullYear(),
+    String(jutro.getMonth() + 1).padStart(2, '0'),
+    String(jutro.getDate()).padStart(2, '0'),
+  ].join('-')
+})
 
   const [ladowanie, setLadowanie] = useState(true)
   const [zapisywanie, setZapisywanie] = useState(false)
+const [, setTykanie] = useState(0)
+const [historia, setHistoria] = useState([])
+const [zaplanowanePlany, setZaplanowanePlany] = useState([])
+const [ladowaniePlanow, setLadowaniePlanow] = useState(false)
+const [ladowanieHistorii, setLadowanieHistorii] = useState(false)
+const [otwartyDzien, setOtwartyDzien] = useState(null)
+const [pracownicy, setPracownicy] = useState([])
+const [ladowaniePracownikow, setLadowaniePracownikow] = useState(false)
+const [pokazFormularzPracownika, setPokazFormularzPracownika] = useState(false)
+const [nowyPracownik, setNowyPracownik] = useState({
+  name: '',
+  role: 'employee',
+  location_id: '',
+  pin: '',
+})
+const [zmianaPinId, setZmianaPinId] = useState(null)
+const [nowyPin, setNowyPin] = useState('')
+const [edycjaPracownikaId, setEdycjaPracownikaId] = useState(null)
 
+const [edytowanyPracownik, setEdytowanyPracownik] = useState({
+  name: '',
+  role: 'employee',
+  location_id: '',
+})
+const [pokazDodawaniePozycji, setPokazDodawaniePozycji] = useState(false)
+
+const [nowaPozycja, setNowaPozycja] = useState({
+  nazwa: '',
+  ilosc: '',
+  jednostka: 'kg',
+  priorytet: 'normalny',
+})
+const [edycjaPozycjiId, setEdycjaPozycjiId] = useState(null)
+
+const [edytowanaPozycja, setEdytowanaPozycja] = useState({
+  nazwa: '',
+  ilosc: '',
+  jednostka: 'kg',
+  priorytet: 'normalny',
+})
   // -----------------------------------------
   // START APLIKACJI - POBIERAMY LOKALE
   // -----------------------------------------
+const zalogujPracownika = async () => {
+  if (!pin.trim()) {
+    setBladLogowania('Wpisz PIN')
+    return
+  }
 
+  setLogowanie(true)
+  setBladLogowania('')
+
+  try {
+    const { data, error } = await supabase.rpc(
+      'login_employee',
+      {
+        p_pin: pin.trim(),
+      }
+    )
+
+    if (error) throw error
+
+    if (!data || data.length === 0) {
+      setBladLogowania('Nieprawidłowy PIN')
+      return
+    }
+
+   const zalogowany = data[0]
+
+setPracownik(zalogowany)
+
+sessionStorage.setItem(
+  'pracownik',
+  JSON.stringify(zalogowany)
+)
+
+setPin('')
+if (
+  zalogowany.role !== 'administrator' &&
+  zalogowany.location_id
+) {
+  const lokalPracownika = lokale.find(
+    (lokal) => lokal.id === zalogowany.location_id
+  )
+
+  if (lokalPracownika) {
+    await wybierzLokal(lokalPracownika)
+  }
+}
+
+    console.log(
+      'Zalogowany pracownik:',
+      zalogowany
+    )
+  } catch (error) {
+    console.error('Błąd logowania:', error)
+    setBladLogowania('Nie udało się zalogować')
+  } finally {
+    setLogowanie(false)
+  }
+}
+const wylogujPracownika = () => {
+  sessionStorage.removeItem('pracownik')
+  setPracownik(null)
+  setPin('')
+  setBladLogowania('')
+  setWybranyLokal(null)
+  setPlanId(null)
+  setPlan([])
+  setEkran('wybor-lokalu')
+}
+const pobierzPracownikow = async () => {
+  if (!['administrator', 'manager'].includes(pracownik?.role)) return
+
+  setLadowaniePracownikow(true)
+
+  try {
+const { data, error } = await supabase.rpc('get_employees', {
+  p_requester_id: pracownik.id,
+})
+
+    if (error) throw error
+
+    setPracownicy(data || [])
+    setEkran('pracownicy')
+  } catch (error) {
+    console.error('Błąd pobierania pracowników:', error)
+    alert(`Nie udało się pobrać pracowników: ${error.message}`)
+  } finally {
+    setLadowaniePracownikow(false)
+  }
+}
+const zapiszPracownika = async () => {
+  if (!nowyPracownik.name.trim()) {
+    alert('Wpisz imię pracownika')
+    return
+  }
+
+if (
+  ['manager', 'administrator'].includes(nowyPracownik.role)
+) {
+  if (!/^\d{6}$/.test(nowyPracownik.pin)) {
+    alert('PIN managera i administratora musi mieć dokładnie 6 cyfr')
+    return
+  }
+} else {
+  if (!/^\d{4,8}$/.test(nowyPracownik.pin)) {
+    alert('PIN musi mieć od 4 do 8 cyfr')
+    return
+  }
+}
+
+  if (
+    pracownik.role === 'administrator' &&
+    nowyPracownik.role !== 'administrator' &&
+    !nowyPracownik.location_id
+  ) {
+    alert('Wybierz lokal')
+    return
+  }
+
+  try {
+  const { error } = await supabase.rpc('create_employee', {
+  p_requester_id: pracownik.id,
+  p_name: nowyPracownik.name.trim(),
+  p_role: nowyPracownik.role,
+  p_location_id: nowyPracownik.location_id
+    ? Number(nowyPracownik.location_id)
+    : null,
+  p_pin: nowyPracownik.pin,
+})
+
+    if (error) throw error
+
+    setNowyPracownik({
+      name: '',
+      role: 'employee',
+      location_id: '',
+      pin: '',
+    })
+
+    setPokazFormularzPracownika(false)
+
+    await pobierzPracownikow()
+  } catch (error) {
+    console.error('Błąd dodawania pracownika:', error)
+    alert(`Nie udało się dodać pracownika: ${error.message}`)
+  }
+}
+const zmienStatusPracownika = async (osoba) => {
+  try {
+    const nowyStatus = !osoba.active
+
+    const { error } = await supabase.rpc('set_employee_active', {
+      p_requester_id: pracownik.id,
+      p_employee_id: osoba.id,
+      p_active: nowyStatus,
+    })
+
+    if (error) throw error
+
+    await pobierzPracownikow()
+  } catch (error) {
+    console.error('Błąd zmiany statusu pracownika:', error)
+    alert(`Nie udało się zmienić statusu: ${error.message}`)
+  }
+}
+const zmienPinPracownika = async (osoba) => {
+if (
+  ['manager', 'administrator'].includes(osoba.role)
+) {
+  if (!/^\d{6}$/.test(nowyPin)) {
+    alert('PIN managera i administratora musi mieć dokładnie 6 cyfr')
+    return
+  }
+} else {
+  if (!/^\d{4,8}$/.test(nowyPin)) {
+    alert('PIN musi mieć od 4 do 8 cyfr')
+    return
+  }
+}
+
+  try {
+    const { error } = await supabase.rpc('change_employee_pin', {
+      p_requester_id: pracownik.id,
+      p_employee_id: osoba.id,
+      p_new_pin: nowyPin,
+    })
+
+    if (error) throw error
+
+    setNowyPin('')
+    setZmianaPinId(null)
+
+    alert(`PIN pracownika ${osoba.name} został zmieniony`)
+  } catch (error) {
+    console.error('Błąd zmiany PIN-u:', error)
+    alert(`Nie udało się zmienić PIN-u: ${error.message}`)
+  }
+}
+const zapiszEdycjePracownika = async (osoba) => {
+  if (!edytowanyPracownik.name.trim()) {
+    alert('Wpisz imię pracownika')
+    return
+  }
+
+  try {
+    const { error } = await supabase.rpc('update_employee', {
+      p_requester_id: pracownik.id,
+      p_employee_id: osoba.id,
+      p_name: edytowanyPracownik.name.trim(),
+      p_role: edytowanyPracownik.role,
+      p_location_id: edytowanyPracownik.location_id
+        ? Number(edytowanyPracownik.location_id)
+        : null,
+    })
+
+    if (error) throw error
+
+    setEdycjaPracownikaId(null)
+
+    setEdytowanyPracownik({
+      name: '',
+      role: 'employee',
+      location_id: '',
+    })
+
+    await pobierzPracownikow()
+
+    alert('Dane pracownika zostały zapisane')
+  } catch (error) {
+    console.error('Błąd edycji pracownika:', error)
+    alert(`Nie udało się zapisać zmian: ${error.message}`)
+  }
+}
   useEffect(() => {
     pobierzLokale()
   }, [])
+  useEffect(() => {
+  const timer = setInterval(() => {
+    setTykanie((wartosc) => wartosc + 1)
+  }, 60000)
+
+  return () => clearInterval(timer)
+}, [])
 useEffect(() => {
   if (!planId) return
 
@@ -94,70 +401,147 @@ useEffect(() => {
   // WYBÓR LOKALU
   // -----------------------------------------
 
-  const wybierzLokal = async (lokal) => {
-    setWybranyLokal(lokal)
+ const wybierzLokal = async (lokal) => {
+  setWybranyLokal(lokal)
 
-    setPlan([])
-    setPlanId(null)
-    setWybrane({})
+  setPlan([])
+  setPlanId(null)
+  setWybrane({})
 
+  // Pracownik trafia bezpośrednio do planu na dziś
+  if (pracownik?.role === 'employee') {
     await pobierzPlan(lokal.id)
+    return
   }
+
+  // Manager / su-chef / administrator
+  // trafiają do centrum planów
+  setLadowaniePlanow(true)
+
+  try {
+    const dzisiaj = new Date()
+
+    const dzisiejszaData = [
+      dzisiaj.getFullYear(),
+      String(dzisiaj.getMonth() + 1).padStart(2, '0'),
+      String(dzisiaj.getDate()).padStart(2, '0'),
+    ].join('-')
+
+    const { data, error } = await supabase
+      .from('Plans')
+      .select(`
+        id,
+        plan_date,
+        status,
+        location_id,
+        Plan_items (
+          id
+        )
+      `)
+      .eq('location_id', lokal.id)
+      .eq('status', 'active')
+      .gte('plan_date', dzisiejszaData)
+      .order('plan_date', { ascending: true })
+
+    if (error) throw error
+
+    setZaplanowanePlany(data || [])
+    setEkran('zaplanowane')
+  } catch (error) {
+    console.error(
+      'Błąd pobierania zaplanowanych planów:',
+      error
+    )
+
+    alert(
+      `Nie udało się pobrać planów: ${error.message}`
+    )
+  } finally {
+    setLadowaniePlanow(false)
+  }
+}
 
   // -----------------------------------------
   // POBIERANIE PLANU DLA KONKRETNEGO LOKALU
   // -----------------------------------------
 
-  const pobierzPlan = async (locationId) => {
-    setLadowanie(true)
+ const pobierzPlan = async (locationId) => {
+  setLadowanie(true)
 
-    try {
-      const { data: plans, error: planError } =
-        await supabase
-          .from('Plans')
-          .select('*')
-          .eq('status', 'active')
-          .eq('location_id', locationId)
-          .order('created_at', { ascending: false })
-          .limit(1)
+  try {
+    // Pracownik zawsze dostaje plan na DZISIAJ.
+    // Manager / su-chef / administrator pracują na wybranej dacie.
+    let szukanaData
 
-      if (planError) throw planError
+    if (pracownik?.role === 'employee') {
+      const dzisiaj = new Date()
 
-      // Lokal nie ma jeszcze aktywnego planu
-      if (!plans || plans.length === 0) {
-        setPlan([])
-        setPlanId(null)
-        setWybrane({})
+      szukanaData = [
+        dzisiaj.getFullYear(),
+        String(dzisiaj.getMonth() + 1).padStart(2, '0'),
+        String(dzisiaj.getDate()).padStart(2, '0'),
+      ].join('-')
+    } else {
+      szukanaData = dataPlanu
+    }
+
+    const { data: plans, error: planError } =
+      await supabase
+        .from('Plans')
+        .select('*')
+        .eq('status', 'active')
+        .eq('location_id', locationId)
+        .eq('plan_date', szukanaData)
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+    if (planError) throw planError
+
+    // Nie ma planu na wybraną datę
+    if (!plans || plans.length === 0) {
+      setPlan([])
+      setPlanId(null)
+      setWybrane({})
+
+      if (
+        ['administrator', 'manager', 'su-chef'].includes(
+          pracownik?.role
+        )
+      ) {
         setEkran('planowanie')
-        return
+      } else {
+        setEkran('brak-planu')
       }
 
-      const aktywnyPlan = plans[0]
-
-      const { data: items, error: itemsError } =
-        await supabase
-          .from('Plan_items')
-          .select('*')
-          .eq('plan_id', aktywnyPlan.id)
-          .order('id', { ascending: true })
-
-      if (itemsError) throw itemsError
-
-      setPlanId(aktywnyPlan.id)
-      setPlan(items || [])
-      setEkran('produkcja')
-    } catch (error) {
-      console.error('Błąd pobierania planu:', error)
-
-      alert(
-        `Nie udało się pobrać planu: ${error.message}`
-      )
-
-      setEkran('wybor-lokalu')
-    } finally {
-      setLadowanie(false)
+      return
     }
+
+    const aktywnyPlan = plans[0]
+
+    const { data: items, error: itemsError } =
+      await supabase
+        .from('Plan_items')
+        .select('*')
+        .eq('plan_id', aktywnyPlan.id)
+        .order('id', { ascending: true })
+
+    if (itemsError) throw itemsError
+
+    setPlanId(aktywnyPlan.id)
+    setPlan(items || [])
+    setEkran('produkcja')
+  } catch (error) {
+    console.error('Błąd pobierania planu:', error)
+
+    alert(
+      `Nie udało się pobrać planu: ${error.message}`
+    )
+
+    setEkran('wybor-lokalu')
+  } finally {
+    setLadowanie(false)
   }
+}
 
   // -----------------------------------------
   // ZMIANA PRODUKTU
@@ -235,91 +619,68 @@ useEffect(() => {
       // -------------------------------------
 
       if (!aktualnyPlanId) {
-        const jutro = new Date()
+const planDate = dataPlanu
 
-        jutro.setDate(
-          jutro.getDate() + 1
-        )
+  const { data: nowyPlanId, error: planError } =
+    await supabase.rpc('create_production_plan', {
+      p_requester_id: pracownik.id,
+      p_location_id: wybranyLokal.id,
+      p_plan_date: planDate,
+      p_items: nowyPlan.map((produkt) => ({
+        nazwa: produkt.nazwa,
+        ilosc: produkt.ilosc,
+        jednostka: produkt.jednostka,
+        priorytet: produkt.priorytet,
+      })),
+    })
 
-        const planDate = [
-          jutro.getFullYear(),
+  if (planError) throw planError
 
-          String(
-            jutro.getMonth() + 1
-          ).padStart(2, '0'),
+// Plan został utworzony.
+// Czyścimy formularz i wracamy do centrum planów.
+setPlanId(null)
+setPlan([])
+setWybrane({})
 
-          String(
-            jutro.getDate()
-          ).padStart(2, '0'),
-        ].join('-')
+await pobierzZaplanowanePlany()
 
-        const {
-          data: utworzonyPlan,
-          error: planError,
-        } = await supabase
-          .from('Plans')
-          .insert({
-            plan_date: planDate,
-            status: 'active',
+return
+} else {
+  // -----------------------------------
+  // EDYCJA ISTNIEJĄCEGO PLANU
+  // -----------------------------------
 
-            // NAJWAŻNIEJSZE:
-            // plan należy do konkretnego lokalu
-            location_id: wybranyLokal.id,
-          })
-          .select()
-          .single()
+  const { error: updateError } =
+    await supabase.rpc('update_production_plan', {
+      p_requester_id: pracownik.id,
+      p_plan_id: aktualnyPlanId,
+      p_items: nowyPlan.map((produkt) => ({
+        nazwa: produkt.nazwa,
+        ilosc: produkt.ilosc,
+        jednostka: produkt.jednostka,
+        priorytet: produkt.priorytet,
+      })),
+    })
 
-        if (planError) throw planError
+  if (updateError) throw updateError
 
-        aktualnyPlanId =
-          utworzonyPlan.id
-      } else {
-        // -----------------------------------
-        // EDYCJA ISTNIEJĄCEGO PLANU
-        // -----------------------------------
+  // RPC już zapisało nowe pozycje,
+  // więc pobieramy aktualny plan z bazy.
+  const { data: zapisanePozycje, error: itemsError } =
+    await supabase
+      .from('Plan_items')
+      .select('*')
+      .eq('plan_id', aktualnyPlanId)
+      .order('id', { ascending: true })
 
-        const { error: deleteError } =
-          await supabase
-            .from('Plan_items')
-            .delete()
-            .eq(
-              'plan_id',
-              aktualnyPlanId
-            )
+  if (itemsError) throw itemsError
 
-        if (deleteError)
-          throw deleteError
-      }
+  setPlan(zapisanePozycje || [])
+  setEkran('produkcja')
 
-      // -------------------------------------
-      // ZAPIS POZYCJI PLANU
-      // -------------------------------------
+  return
+}
 
-      const pozycjeDoZapisu =
-        nowyPlan.map((produkt) => ({
-          plan_id: aktualnyPlanId,
-          nazwa: produkt.nazwa,
-          ilosc: produkt.ilosc,
-          jednostka:
-            produkt.jednostka,
-          priorytet:
-            produkt.priorytet,
-          gotowe: false,
-        }))
-
-      const {
-        data: zapisanePozycje,
-        error: itemsError,
-      } = await supabase
-        .from('Plan_items')
-        .insert(pozycjeDoZapisu)
-        .select()
-
-      if (itemsError) throw itemsError
-
-      setPlanId(aktualnyPlanId)
-      setPlan(zapisanePozycje || [])
-      setEkran('produkcja')
     } catch (error) {
       console.error(
         'Błąd zapisu planu:',
@@ -337,61 +698,258 @@ useEffect(() => {
   // -----------------------------------------
   // GOTOWE / COFNIJ
   // -----------------------------------------
+  const zapiszEdycjePozycji = async (produkt) => {
+  if (!edytowanaPozycja.nazwa.trim()) {
+    alert('Wpisz nazwę produktu')
+    return
+  }
 
-  const oznaczGotowe = async (id) => {
-    const produkt = plan.find(
-      (element) => element.id === id
+  const ilosc = Number(edytowanaPozycja.ilosc)
+
+  if (!ilosc || ilosc <= 0) {
+    alert('Wpisz poprawną ilość')
+    return
+  }
+
+  try {
+    const { error } = await supabase.rpc(
+      'update_plan_item',
+      {
+        p_requester_id: pracownik.id,
+        p_item_id: produkt.id,
+        p_nazwa: edytowanaPozycja.nazwa.trim(),
+        p_ilosc: ilosc,
+        p_jednostka: edytowanaPozycja.jednostka,
+        p_priorytet: edytowanaPozycja.priorytet,
+      }
     )
 
-    if (!produkt) return
+    if (error) throw error
 
-    const nowyStatus =
-      !produkt.gotowe
-
-    // Aktualizacja ekranu od razu
     setPlan((poprzedniPlan) =>
       poprzedniPlan.map((element) =>
-        element.id === id
+        element.id === produkt.id
           ? {
               ...element,
-              gotowe: nowyStatus,
+              nazwa: edytowanaPozycja.nazwa.trim(),
+              ilosc,
+              jednostka: edytowanaPozycja.jednostka,
+              priorytet: edytowanaPozycja.priorytet,
             }
           : element
       )
     )
 
-    const { error } = await supabase
-      .from('Plan_items')
-      .update({
-        gotowe: nowyStatus,
-      })
-      .eq('id', id)
+    setEdycjaPozycjiId(null)
+  } catch (error) {
+    console.error('Błąd edycji pozycji:', error)
 
-    if (error) {
-      // Cofamy zmianę jeśli Supabase zwróci błąd
-      setPlan((poprzedniPlan) =>
-        poprzedniPlan.map((element) =>
-          element.id === id
-            ? {
-                ...element,
-                gotowe:
-                  produkt.gotowe,
-              }
-            : element
-        )
-      )
+    alert(
+      `Nie udało się zapisać zmian: ${error.message}`
+    )
+  }
+}
+const usunPozycje = async (produkt) => {
+  const potwierdzenie = window.confirm(
+    `Usunąć "${produkt.nazwa}" z planu?`
+  )
 
-      console.error(
-        'Błąd aktualizacji:',
-        error
-      )
+  if (!potwierdzenie) return
 
-      alert(
-        `Nie udało się zapisać zmiany: ${error.message}`
+  try {
+    const { error } = await supabase.rpc(
+      'delete_plan_item',
+      {
+        p_requester_id: pracownik.id,
+        p_item_id: produkt.id,
+      }
+    )
+
+    if (error) throw error
+
+    // Aktualizujemy ekran bez ponownego pobierania całego planu
+    setPlan((poprzedniPlan) =>
+      poprzedniPlan.filter(
+        (element) => element.id !== produkt.id
       )
-    }
+    )
+  } catch (error) {
+    console.error('Błąd usuwania pozycji:', error)
+
+    alert(
+      `Nie udało się usunąć pozycji: ${error.message}`
+    )
+  }
+}
+ const dodajPozycjeDoPlanu = async () => {
+  if (!planId) {
+    alert('Brak aktywnego planu')
+    return
   }
 
+  if (!nowaPozycja.nazwa.trim()) {
+    alert('Wpisz nazwę produktu')
+    return
+  }
+
+  const ilosc = Number(nowaPozycja.ilosc)
+
+  if (!ilosc || ilosc <= 0) {
+    alert('Wpisz poprawną ilość')
+    return
+  }
+
+  try {
+    const { error } = await supabase.rpc('add_plan_item', {
+      p_requester_id: pracownik.id,
+      p_plan_id: planId,
+      p_nazwa: nowaPozycja.nazwa.trim(),
+      p_ilosc: ilosc,
+      p_jednostka: nowaPozycja.jednostka,
+      p_priorytet: nowaPozycja.priorytet,
+    })
+
+    if (error) throw error
+
+    const { data, error: refreshError } = await supabase
+      .from('Plan_items')
+      .select('*')
+      .eq('plan_id', planId)
+      .order('id', { ascending: true })
+
+    if (refreshError) throw refreshError
+
+    setPlan(data || [])
+
+    setNowaPozycja({
+      nazwa: '',
+      ilosc: '',
+      jednostka: 'kg',
+      priorytet: 'normalny',
+    })
+
+    setPokazDodawaniePozycji(false)
+  } catch (error) {
+    console.error('Błąd dodawania pozycji:', error)
+
+    alert(
+      `Nie udało się dodać pozycji: ${error.message}`
+    )
+  }
+}
+const rozpocznijPrace = async (id) => {
+  try {
+    const { error } = await supabase.rpc(
+      'start_plan_item',
+      {
+        p_requester_id: pracownik.id,
+        p_item_id: id,
+      }
+    )
+
+    if (error) throw error
+
+    const { data, error: refreshError } = await supabase
+      .from('Plan_items')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (refreshError) throw refreshError
+
+    setPlan((poprzedniPlan) =>
+      poprzedniPlan.map((element) =>
+        element.id === id ? data : element
+      )
+    )
+  } catch (error) {
+    console.error('Błąd rozpoczęcia pracy:', error)
+
+    alert(
+      `Nie udało się rozpocząć pracy: ${error.message}`
+    )
+  }
+}
+
+const oznaczGotowe = async (id) => {
+
+  const produkt = plan.find(
+    (element) => element.id === id
+  )
+
+  if (!produkt) return
+
+  try {
+    const { error } = await supabase.rpc(
+      'complete_plan_item',
+      {
+        p_requester_id: pracownik.id,
+        p_item_id: id,
+      }
+    )
+
+    if (error) throw error
+
+    // Pobieramy dane zapisane przez bazę
+    const { data, error: refreshError } = await supabase
+      .from('Plan_items')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (refreshError) throw refreshError
+
+    setPlan((poprzedniPlan) =>
+      poprzedniPlan.map((element) =>
+        element.id === id ? data : element
+      )
+    )
+  } catch (error) {
+    console.error('Błąd zakończenia pracy:', error)
+
+    alert(
+      `Nie udało się zakończyć pracy: ${error.message}`
+    )
+  }
+}
+const obliczCzas = (startedAt, completedAt = null) => {
+  if (!startedAt) return null
+
+  const start = new Date(startedAt)
+  const koniec = completedAt
+    ? new Date(completedAt)
+    : new Date()
+
+  const sekundy = Math.max(
+    0,
+    Math.floor((koniec - start) / 1000)
+  )
+
+  if (sekundy < 60) {
+    return `${sekundy} sek`
+  }
+
+  const minuty = Math.floor(sekundy / 60)
+  const resztaSekund = sekundy % 60
+
+  if (minuty < 60) {
+    return `${minuty} min ${resztaSekund} sek`
+  }
+
+  const godziny = Math.floor(minuty / 60)
+  const resztaMinut = minuty % 60
+
+  return `${godziny} h ${resztaMinut} min`
+}
+const formatujGodzine = (data) => {
+  if (!data) return '--:--:--'
+
+  return new Date(data).toLocaleTimeString('pl-PL', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
+}
   // -----------------------------------------
   // EDYCJA PLANU
   // -----------------------------------------
@@ -442,13 +1000,13 @@ useEffect(() => {
       return
     }
 
-    const { error } = await supabase
-      .from('Plans')
-      .update({
-        status: 'completed',
-      })
-      .eq('id', planId)
-
+  const { error } = await supabase.rpc(
+  'complete_production_plan',
+  {
+    p_requester_id: pracownik.id,
+    p_plan_id: planId,
+  }
+)
     if (error) {
       console.error(
         'Błąd zakończenia planu:',
@@ -469,6 +1027,169 @@ useEffect(() => {
   }
 
   // -----------------------------------------
+// HISTORIA
+// -----------------------------------------
+const otworzZaplanowanyPlan = async (planZaplanowany) => {
+  setLadowanie(true)
+
+  try {
+    const { data: items, error } = await supabase
+      .from('Plan_items')
+      .select('*')
+      .eq('plan_id', planZaplanowany.id)
+      .order('id', { ascending: true })
+
+    if (error) throw error
+
+    setPlanId(planZaplanowany.id)
+    setPlan(items || [])
+    setDataPlanu(planZaplanowany.plan_date)
+    setWybrane({})
+
+    setEkran('produkcja')
+  } catch (error) {
+    console.error(
+      'Błąd otwierania zaplanowanego planu:',
+      error
+    )
+
+    alert(
+      `Nie udało się otworzyć planu: ${error.message}`
+    )
+  } finally {
+    setLadowanie(false)
+  }
+}
+
+const pobierzZaplanowanePlany = async () => {
+  if (!wybranyLokal) return
+
+  setLadowaniePlanow(true)
+
+  try {
+    // Dzisiejsza data YYYY-MM-DD
+    const dzisiaj = new Date()
+
+    const dzisiejszaData = [
+      dzisiaj.getFullYear(),
+      String(dzisiaj.getMonth() + 1).padStart(2, '0'),
+      String(dzisiaj.getDate()).padStart(2, '0'),
+    ].join('-')
+
+    const { data, error } = await supabase
+      .from('Plans')
+      .select(`
+        id,
+        plan_date,
+        status,
+        location_id,
+        Plan_items (
+          id
+        )
+      `)
+      .eq('location_id', wybranyLokal.id)
+      .eq('status', 'active')
+      .gte('plan_date', dzisiejszaData)
+      .order('plan_date', { ascending: true })
+
+    if (error) throw error
+
+    setZaplanowanePlany(data || [])
+    setEkran('zaplanowane')
+  } catch (error) {
+    console.error(
+      'Błąd pobierania zaplanowanych planów:',
+      error
+    )
+
+    alert(
+      `Nie udało się pobrać planów: ${error.message}`
+    )
+  } finally {
+    setLadowaniePlanow(false)
+  }
+}
+const pobierzHistorie = async () => {
+  if (!wybranyLokal) return
+
+  setLadowanieHistorii(true)
+
+  try {
+    // 1. Pobieramy plany i zakończone pozycje
+    const { data: plany, error: historiaError } = await supabase
+      .from('Plans')
+      .select(`
+        *,
+        Plan_items!inner (*)
+      `)
+      .eq('location_id', wybranyLokal.id)
+      .eq('Plan_items.gotowe', true)
+      .order('plan_date', { ascending: false })
+
+    if (historiaError) throw historiaError
+
+    // 2. Zbieramy ID pracowników z historii
+    const employeeIds = [
+      ...new Set(
+        (plany || [])
+          .flatMap((plan) => plan.Plan_items || [])
+          .map((item) => item.employee_id)
+          .filter(Boolean)
+      ),
+    ]
+
+    // 3. Pobieramy ich imiona
+    let mapaPracownikow = {}
+
+    if (employeeIds.length > 0) {
+const { data: osoby, error: employeesError } = await supabase.rpc(
+  'get_employee_names',
+  {
+    p_requester_id: pracownik.id,
+    p_employee_ids: employeeIds,
+  }
+)
+
+      if (employeesError) throw employeesError
+
+      mapaPracownikow = Object.fromEntries(
+        (osoby || []).map((osoba) => [
+          Number(osoba.id),
+          osoba.name,
+        ])
+      )
+    }
+
+    // 4. Doklejamy imię do każdej pozycji
+    const historiaZPracownikami = (plany || []).map((plan) => ({
+      ...plan,
+
+      Plan_items: (plan.Plan_items || []).map((item) => ({
+        ...item,
+
+        employee_name: item.employee_id
+          ? mapaPracownikow[Number(item.employee_id)] || 'Brak danych'
+          : 'Brak danych',
+      })),
+    }))
+console.log('PLANY Z BAZY:', plany)
+console.log('EMPLOYEE IDS:', employeeIds)
+console.log('MAPA PRACOWNIKÓW:', mapaPracownikow)
+console.log('GOTOWA HISTORIA:', historiaZPracownikami)
+
+    setHistoria(historiaZPracownikami)
+    setEkran('historia')
+  } catch (error) {
+    console.error('Błąd pobierania historii:', error)
+
+    alert(
+      `Nie udało się pobrać historii: ${error.message}`
+    )
+  } finally {
+    setLadowanieHistorii(false)
+  }
+}
+  // -----------------------------------------
   // ZMIANA LOKALU
   // -----------------------------------------
 
@@ -479,6 +1200,66 @@ useEffect(() => {
     setWybrane({})
     setEkran('wybor-lokalu')
   }
+
+  const zmienDatePlanu = async (e) => {
+      const nowaData = e.target.value
+
+      setDataPlanu(nowaData)
+
+      // Czyścimy poprzedni plan przed pobraniem nowej daty
+      setPlan([])
+      setPlanId(null)
+      setWybrane({})
+
+      if (wybranyLokal) {
+        setLadowanie(true)
+
+        try {
+          const { data: plans, error: planError } =
+            await supabase
+              .from('Plans')
+              .select('*')
+              .eq('status', 'active')
+              .eq('location_id', wybranyLokal.id)
+              .eq('plan_date', nowaData)
+              .order('created_at', { ascending: false })
+              .limit(1)
+
+          if (planError) throw planError
+
+          if (!plans || plans.length === 0) {
+            setEkran('planowanie')
+            return
+          }
+
+          const znalezionyPlan = plans[0]
+
+          const { data: items, error: itemsError } =
+            await supabase
+              .from('Plan_items')
+              .select('*')
+              .eq('plan_id', znalezionyPlan.id)
+              .order('id', { ascending: true })
+
+          if (itemsError) throw itemsError
+
+          setPlanId(znalezionyPlan.id)
+          setPlan(items || [])
+          setEkran('produkcja')
+        } catch (error) {
+          console.error(
+            'Błąd zmiany daty planu:',
+            error
+          )
+
+          alert(
+            `Nie udało się pobrać planu: ${error.message}`
+          )
+        } finally {
+          setLadowanie(false)
+        }
+      }
+    }
 
   // -----------------------------------------
   // ŁADOWANIE
@@ -498,58 +1279,61 @@ useEffect(() => {
   // -----------------------------------------
   // EKRAN WYBORU LOKALU
   // -----------------------------------------
+// -----------------------------------------
+// EKRAN LOGOWANIA
+// -----------------------------------------
 
-  if (ekran === 'wybor-lokalu') {
-    return (
-      <div className="app">
-        <header>
-          <h1>ZAGOTÓWKI</h1>
-          <p>Wybierz lokal</p>
-        </header>
+if (!pracownik) {
+  return (
+    <LoginScreen
+      pin={pin}
+      setPin={setPin}
+      bladLogowania={bladLogowania}
+      setBladLogowania={setBladLogowania}
+      logowanie={logowanie}
+      zalogujPracownika={zalogujPracownika}
+    />
+  )
+}
+if (ekran === 'wybor-lokalu') {
+  return (
+    <LocationSelectScreen
+      pracownik={pracownik}
+      lokale={lokale}
+      wylogujPracownika={wylogujPracownika}
+      pobierzPracownikow={pobierzPracownikow}
+      wybierzLokal={wybierzLokal}
+    />
+  )
+}
 
-        <main>
-          <h2>Gdzie pracujesz?</h2>
-
-          <div className="produkty">
-            {lokale.map((lokal) => (
-              <button
-                key={lokal.id}
-                className="produkt"
-                onClick={() =>
-                  wybierzLokal(lokal)
-                }
-                style={{
-                  width: '100%',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                }}
-              >
-                <strong>
-                  {lokal.name}
-                </strong>
-
-                {lokal.city && (
-                  <span
-                    style={{
-                      marginLeft: '10px',
-                    }}
-                  >
-                    {lokal.city}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-
-          {lokale.length === 0 && (
-            <p>
-              Brak aktywnych lokali.
-            </p>
-          )}
-        </main>
-      </div>
-    )
-  }
+  if (ekran === 'pracownicy') {
+  return (
+    <EmployeesScreen
+      pracownik={pracownik}
+      pokazFormularzPracownika={pokazFormularzPracownika}
+      setPokazFormularzPracownika={setPokazFormularzPracownika}
+      nowyPracownik={nowyPracownik}
+      setNowyPracownik={setNowyPracownik}
+      lokale={lokale}
+      zapiszPracownika={zapiszPracownika}
+      ladowaniePracownikow={ladowaniePracownikow}
+      pracownicy={pracownicy}
+      zmienStatusPracownika={zmienStatusPracownika}
+      edycjaPracownikaId={edycjaPracownikaId}
+      setEdycjaPracownikaId={setEdycjaPracownikaId}
+      edytowanyPracownik={edytowanyPracownik}
+      setEdytowanyPracownik={setEdytowanyPracownik}
+      zapiszEdycjePracownika={zapiszEdycjePracownika}
+      zmianaPinId={zmianaPinId}
+      setZmianaPinId={setZmianaPinId}
+      nowyPin={nowyPin}
+      setNowyPin={setNowyPin}
+      zmienPinPracownika={zmienPinPracownika}
+      onPowrot={() => setEkran('wybor-lokalu')}
+    />
+  )
+}
 
   // -----------------------------------------
   // EKRAN PRODUKCJI
@@ -561,279 +1345,133 @@ useEffect(() => {
     ).length
 
     return (
-      <div className="app">
-        <header>
-          <h1>ZAGOTÓWKI</h1>
-
-          <p>
-            {wybranyLokal?.name}
-          </p>
-        </header>
-
-        <main>
-          <div className="naglowek-produkcji">
-            <div>
-              <h2>Do zrobienia</h2>
-
-              <p className="licznik">
-                Pozostało:{' '}
-                <strong>
-                  {pozostalo}
-                </strong>
-              </p>
-            </div>
-
-            <button
-              className="powrot"
-              onClick={edytujPlan}
-            >
-              ← Edytuj plan
-            </button>
-          </div>
-
-          <button
-            className="powrot"
-            onClick={zmienLokal}
-            style={{
-              marginBottom: '20px',
-            }}
-          >
-            📍 Zmień lokal
-          </button>
-
-          <div className="produkty">
-            {plan.map((produkt) => (
-              <div
-                key={produkt.id}
-                className={`produkt zadanie ${
-                  produkt.gotowe
-                    ? 'gotowe'
-                    : ''
-                }`}
-              >
-                <div className="opis-zadania">
-                  <strong>
-                    {produkt.nazwa}
-                  </strong>
-
-                  <span className="ilosc-produkcja">
-                    {produkt.ilosc}{' '}
-                    {produkt.jednostka}
-                  </span>
-
-                  <span
-                    className={`priorytet ${produkt.priorytet}`}
-                  >
-                    {produkt.priorytet ===
-                    'pilny'
-                      ? 'Pilny'
-                      : produkt.priorytet ===
-                          'wysoki'
-                        ? 'Wysoki'
-                        : 'Normalny'}
-                  </span>
-                </div>
-
-                <button
-                  className="gotowe-button"
-                  onClick={() =>
-                    oznaczGotowe(
-                      produkt.id
-                    )
-                  }
-                >
-                  {produkt.gotowe
-                    ? '↩ Cofnij'
-                    : '✓ Gotowe'}
-                </button>
-              </div>
-            ))}
-          </div>
-
-          {pozostalo === 0 && (
-            <div className="wszystko-gotowe">
-              ✓ Wszystko gotowe
-            </div>
-          )}
-
-          <button
-            className="zakoncz-plan"
-            onClick={zakonczPlan}
-          >
-            Zakończ plan
-          </button>
-        </main>
-      </div>
+      <ProductionScreen
+        wybranyLokal={wybranyLokal}
+        pozostalo={pozostalo}
+        pracownik={pracownik}
+        edytujPlan={edytujPlan}
+        pokazDodawaniePozycji={pokazDodawaniePozycji}
+        setPokazDodawaniePozycji={setPokazDodawaniePozycji}
+        nowaPozycja={nowaPozycja}
+        setNowaPozycja={setNowaPozycja}
+        jednostki={jednostki}
+        dodajPozycjeDoPlanu={dodajPozycjeDoPlanu}
+        zmienLokal={zmienLokal}
+        pobierzPracownikow={pobierzPracownikow}
+        wylogujPracownika={wylogujPracownika}
+        pobierzHistorie={pobierzHistorie}
+        ladowanieHistorii={ladowanieHistorii}
+        pobierzZaplanowanePlany={pobierzZaplanowanePlany}
+        ladowaniePlanow={ladowaniePlanow}
+        plan={plan}
+        obliczCzas={obliczCzas}
+        rozpocznijPrace={rozpocznijPrace}
+        usunPozycje={usunPozycje}
+        edycjaPozycjiId={edycjaPozycjiId}
+        setEdycjaPozycjiId={setEdycjaPozycjiId}
+        edytowanaPozycja={edytowanaPozycja}
+        setEdytowanaPozycja={setEdytowanaPozycja}
+        zapiszEdycjePozycji={zapiszEdycjePozycji}
+        oznaczGotowe={oznaczGotowe}
+        zakonczPlan={zakonczPlan}
+      />
     )
   }
+// -----------------------------------------
+// EKRAN ZAPLANOWANYCH PLANÓW
+// -----------------------------------------
 
+if (ekran === 'zaplanowane') {
+  return (
+    <ScheduledPlansScreen
+      wybranyLokal={wybranyLokal}
+      zaplanowanePlany={zaplanowanePlany}
+      dataPlanu={dataPlanu}
+      setDataPlanu={setDataPlanu}
+      otworzZaplanowanyPlan={otworzZaplanowanyPlan}
+      onPowrot={() =>
+        setEkran(planId ? 'produkcja' : 'planowanie')
+      }
+      onUtworzPlan={() => {
+        setPlanId(null)
+        setPlan([])
+        setWybrane({})
+        setEkran('planowanie')
+      }}
+    />
+  )
+}
+  // -----------------------------------------
+// EKRAN HISTORII
+// -----------------------------------------
+
+if (ekran === 'historia') {
+  // Grupujemy wszystkie zakończone plany według dnia
+  const historiaWedlugDni = historia.reduce((grupy, planHistorii) => {
+    const data = planHistorii.plan_date
+
+    if (!grupy[data]) {
+      grupy[data] = []
+    }
+
+    grupy[data].push(planHistorii)
+
+    return grupy
+  }, {})
+
+  return (
+    <HistoryScreen
+      wybranyLokal={wybranyLokal}
+      historia={historia}
+      historiaWedlugDni={historiaWedlugDni}
+      otwartyDzien={otwartyDzien}
+      setOtwartyDzien={setOtwartyDzien}
+      formatujGodzine={formatujGodzine}
+      obliczCzas={obliczCzas}
+      onPowrot={() => setEkran(planId ? 'produkcja' : 'planowanie')}
+    />
+  )
+}
+// -----------------------------------------
+// BRAK AKTYWNEGO PLANU - EMPLOYEE
+// -----------------------------------------
+
+if (
+  ekran === 'brak-planu' &&
+  pracownik?.role === 'employee'
+) {
+  return (
+    <NoPlanScreen
+      wybranyLokal={wybranyLokal}
+      pracownik={pracownik}
+      pobierzHistorie={pobierzHistorie}
+      ladowanieHistorii={ladowanieHistorii}
+      wylogujPracownika={wylogujPracownika}
+    />
+  )
+}
   // -----------------------------------------
   // EKRAN PLANOWANIA
   // -----------------------------------------
 
   return (
-    <div className="app">
-      <header>
-        <h1>ZAGOTÓWKI</h1>
-
-        <p>
-          Plan produkcji na jutro
-        </p>
-      </header>
-
-      <main>
-        <div
-          style={{
-            marginBottom: '20px',
-          }}
-        >
-          <strong>
-            📍 {wybranyLokal?.name}
-          </strong>
-
-          <button
-            className="powrot"
-            onClick={zmienLokal}
-            style={{
-              marginLeft: '15px',
-            }}
-          >
-            Zmień lokal
-          </button>
-        </div>
-
-        <h2>Co przygotować?</h2>
-
-        <div className="produkty">
-          {produktyStartowe.map(
-            (produkt) => (
-              <div
-                className="produkt"
-                key={produkt.id}
-              >
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={
-                      wybrane[
-                        produkt.id
-                      ]?.aktywny ||
-                      false
-                    }
-                    onChange={(e) =>
-                      zmienProdukt(
-                        produkt.id,
-                        'aktywny',
-                        e.target.checked
-                      )
-                    }
-                  />
-
-                  <strong>
-                    {produkt.nazwa}
-                  </strong>
-                </label>
-
-                {wybrane[
-                  produkt.id
-                ]?.aktywny && (
-                  <div className="ustawienia">
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      placeholder="Ilość"
-                      value={
-                        wybrane[
-                          produkt.id
-                        ]?.ilosc ||
-                        ''
-                      }
-                      onChange={(e) =>
-                        zmienProdukt(
-                          produkt.id,
-                          'ilosc',
-                          e.target.value
-                        )
-                      }
-                    />
-
-                    <select
-                      value={
-                        wybrane[
-                          produkt.id
-                        ]?.jednostka ||
-                        produkt.domyslnaJednostka
-                      }
-                      onChange={(e) =>
-                        zmienProdukt(
-                          produkt.id,
-                          'jednostka',
-                          e.target.value
-                        )
-                      }
-                    >
-                      {jednostki.map(
-                        (jednostka) => (
-                          <option
-                            key={
-                              jednostka
-                            }
-                            value={
-                              jednostka
-                            }
-                          >
-                            {jednostka}
-                          </option>
-                        )
-                      )}
-                    </select>
-
-                    <select
-                      value={
-                        wybrane[
-                          produkt.id
-                        ]?.priorytet ||
-                        'normalny'
-                      }
-                      onChange={(e) =>
-                        zmienProdukt(
-                          produkt.id,
-                          'priorytet',
-                          e.target.value
-                        )
-                      }
-                    >
-                      <option value="normalny">
-                        Normalny
-                      </option>
-
-                      <option value="wysoki">
-                        Wysoki
-                      </option>
-
-                      <option value="pilny">
-                        Pilny
-                      </option>
-                    </select>
-                  </div>
-                )}
-              </div>
-            )
-          )}
-        </div>
-
-        <button
-          className="zatwierdz"
-          onClick={zatwierdzPlan}
-          disabled={zapisywanie}
-        >
-          {zapisywanie
-            ? 'Zapisywanie...'
-            : 'Zatwierdź plan'}
-        </button>
-      </main>
-    </div>
+    <PlanningScreen
+      wybranyLokal={wybranyLokal}
+      pracownik={pracownik}
+      zmienLokal={zmienLokal}
+      pobierzPracownikow={pobierzPracownikow}
+      wylogujPracownika={wylogujPracownika}
+      pobierzHistorie={pobierzHistorie}
+      ladowanieHistorii={ladowanieHistorii}
+      dataPlanu={dataPlanu}
+      zmienDatePlanu={zmienDatePlanu}
+      produktyStartowe={produktyStartowe}
+      wybrane={wybrane}
+      zmienProdukt={zmienProdukt}
+      jednostki={jednostki}
+      zatwierdzPlan={zatwierdzPlan}
+      zapisywanie={zapisywanie}
+    />
   )
 }
 
