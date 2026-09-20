@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import LoginScreen from './components/LoginScreen'
 import LocationSelectScreen from './components/LocationSelectScreen'
@@ -21,13 +21,19 @@ const jednostki = ['g', 'kg', 'ml', 'l', 'szt.']
 
 function App() {
 const [pracownik, setPracownik] = useState(() => {
-  const zapisanyPracownik =
-    sessionStorage.getItem('pracownik')
-
-  return zapisanyPracownik
-    ? JSON.parse(zapisanyPracownik)
-    : null
+  try {
+    const zapisany = JSON.parse(sessionStorage.getItem('pracownik') || 'null')
+    return zapisany?.id && ['employee', 'manager', 'su-chef', 'administrator'].includes(zapisany.role)
+      ? zapisany : null
+  } catch {
+    return null
+  }
 })
+// Zmiana kontekstu unieważnia odpowiedzi poprzedniego ekranu/sesji.
+const kontekst = useRef(0)
+const blokadaLogowania = useRef(false)
+const blokadaZapisu = useRef(false)
+const blokadaDodawania = useRef(false)
 const [pin, setPin] = useState('')
 const [bladLogowania, setBladLogowania] = useState('')
 const [logowanie, setLogowanie] = useState(false)
@@ -93,15 +99,24 @@ const [edytowanaPozycja, setEdytowanaPozycja] = useState({
   jednostka: 'kg',
   priorytet: 'normalny',
 })
+  const wyczyscFormularzPozycji = () => {
+    setEdycjaPozycjiId(null)
+    setPokazDodawaniePozycji(false)
+    setNowaPozycja({ nazwa: '', ilosc: '', jednostka: 'kg', priorytet: 'normalny' })
+  }
+
   // -----------------------------------------
   // START APLIKACJI - POBIERAMY LOKALE
   // -----------------------------------------
 const zalogujPracownika = async () => {
+  if (blokadaLogowania.current) return
+  const wersja = kontekst.current
   if (!pin.trim()) {
     setBladLogowania('Wpisz PIN')
     return
   }
 
+  blokadaLogowania.current = true
   setLogowanie(true)
   setBladLogowania('')
 
@@ -113,6 +128,7 @@ const zalogujPracownika = async () => {
       }
     )
 
+    if (wersja !== kontekst.current) return
     if (error) throw error
 
     if (!data || data.length === 0) {
@@ -148,14 +164,27 @@ if (
       zalogowany
     )
   } catch (error) {
+    if (wersja !== kontekst.current) return
     console.error('Błąd logowania:', error)
     setBladLogowania('Nie udało się zalogować')
   } finally {
+    blokadaLogowania.current = false
     setLogowanie(false)
   }
 }
 const wylogujPracownika = () => {
+  kontekst.current += 1
+  wyczyscFormularzPozycji()
   sessionStorage.removeItem('pracownik')
+  setWybrane({})
+  setHistoria([])
+  setZaplanowanePlany([])
+  setPracownicy([])
+  setEdycjaPracownikaId(null)
+  setZmianaPinId(null)
+  setNowyPin('')
+  setPokazFormularzPracownika(false)
+  setNowyPracownik({ name: '', role: 'employee', location_id: '', pin: '' })
   setPracownik(null)
   setPin('')
   setBladLogowania('')
@@ -165,6 +194,7 @@ const wylogujPracownika = () => {
   setEkran('wybor-lokalu')
 }
 const pobierzPracownikow = async () => {
+  const wersja = kontekst.current
   if (!['administrator', 'manager'].includes(pracownik?.role)) return
 
   setLadowaniePracownikow(true)
@@ -174,11 +204,13 @@ const { data, error } = await supabase.rpc('get_employees', {
   p_requester_id: pracownik.id,
 })
 
+    if (wersja !== kontekst.current) return
     if (error) throw error
 
     setPracownicy(data || [])
     setEkran('pracownicy')
   } catch (error) {
+    if (wersja !== kontekst.current) return
     console.error('Błąd pobierania pracowników:', error)
     alert(`Nie udało się pobrać pracowników: ${error.message}`)
   } finally {
@@ -186,6 +218,7 @@ const { data, error } = await supabase.rpc('get_employees', {
   }
 }
 const zapiszPracownika = async () => {
+  const wersja = kontekst.current
   if (!nowyPracownik.name.trim()) {
     alert('Wpisz imię pracownika')
     return
@@ -225,6 +258,7 @@ if (
   p_pin: nowyPracownik.pin,
 })
 
+    if (wersja !== kontekst.current) return
     if (error) throw error
 
     setNowyPracownik({
@@ -238,11 +272,13 @@ if (
 
     await pobierzPracownikow()
   } catch (error) {
+    if (wersja !== kontekst.current) return
     console.error('Błąd dodawania pracownika:', error)
     alert(`Nie udało się dodać pracownika: ${error.message}`)
   }
 }
 const zmienStatusPracownika = async (osoba) => {
+  const wersja = kontekst.current
   try {
     const nowyStatus = !osoba.active
 
@@ -252,15 +288,18 @@ const zmienStatusPracownika = async (osoba) => {
       p_active: nowyStatus,
     })
 
+    if (wersja !== kontekst.current) return
     if (error) throw error
 
     await pobierzPracownikow()
   } catch (error) {
+    if (wersja !== kontekst.current) return
     console.error('Błąd zmiany statusu pracownika:', error)
     alert(`Nie udało się zmienić statusu: ${error.message}`)
   }
 }
 const zmienPinPracownika = async (osoba) => {
+  const wersja = kontekst.current
 if (
   ['manager', 'administrator'].includes(osoba.role)
 ) {
@@ -282,6 +321,7 @@ if (
       p_new_pin: nowyPin,
     })
 
+    if (wersja !== kontekst.current) return
     if (error) throw error
 
     setNowyPin('')
@@ -289,11 +329,13 @@ if (
 
     alert(`PIN pracownika ${osoba.name} został zmieniony`)
   } catch (error) {
+    if (wersja !== kontekst.current) return
     console.error('Błąd zmiany PIN-u:', error)
     alert(`Nie udało się zmienić PIN-u: ${error.message}`)
   }
 }
 const zapiszEdycjePracownika = async (osoba) => {
+  const wersja = kontekst.current
   if (!edytowanyPracownik.name.trim()) {
     alert('Wpisz imię pracownika')
     return
@@ -310,6 +352,7 @@ const zapiszEdycjePracownika = async (osoba) => {
         : null,
     })
 
+    if (wersja !== kontekst.current) return
     if (error) throw error
 
     setEdycjaPracownikaId(null)
@@ -324,6 +367,7 @@ const zapiszEdycjePracownika = async (osoba) => {
 
     alert('Dane pracownika zostały zapisane')
   } catch (error) {
+    if (wersja !== kontekst.current) return
     console.error('Błąd edycji pracownika:', error)
     alert(`Nie udało się zapisać zmian: ${error.message}`)
   }
@@ -339,6 +383,7 @@ useEffect(() => {
   if (!planId) return
 
   let aktywny = true
+  let odczyt = 0
 
   const channel = supabase
     .channel(`plan-items-${planId}`)
@@ -351,13 +396,15 @@ useEffect(() => {
         filter: `plan_id=eq.${planId}`,
       },
       async () => {
+        const numerOdczytu = ++odczyt
+        const wersja = kontekst.current
         const { data, error } = await supabase
           .from('Plan_items')
           .select('*')
           .eq('plan_id', planId)
           .order('id', { ascending: true })
 
-        if (!aktywny) return
+        if (!aktywny || numerOdczytu !== odczyt || wersja !== kontekst.current) return
 
         if (error) {
           console.error('Błąd Realtime:', error)
@@ -408,6 +455,9 @@ useEffect(() => {
   // -----------------------------------------
 
  const wybierzLokal = async (lokal, aktualnyPracownik = pracownik) => {
+  kontekst.current += 1
+  wyczyscFormularzPozycji()
+  const wersja = kontekst.current
   setWybranyLokal(lokal)
 
   setPlan([])
@@ -451,11 +501,13 @@ useEffect(() => {
       .order('created_at', { ascending: false, nullsFirst: false })
       .order('id', { ascending: false })
 
+    if (wersja !== kontekst.current) return
     if (error) throw error
 
     setZaplanowanePlany(data || [])
     setEkran('zaplanowane')
   } catch (error) {
+    if (wersja !== kontekst.current) return
     console.error(
       'Błąd pobierania zaplanowanych planów:',
       error
@@ -474,6 +526,7 @@ useEffect(() => {
   // -----------------------------------------
 
  const pobierzPlan = async (locationId, aktualnyPracownik = pracownik) => {
+  const wersja = kontekst.current
   setLadowanie(true)
 
   try {
@@ -504,6 +557,7 @@ useEffect(() => {
         .order('id', { ascending: false })
         .limit(1)
 
+    if (wersja !== kontekst.current) return
     if (planError) throw planError
 
     // Nie ma planu na wybraną datę
@@ -534,6 +588,7 @@ useEffect(() => {
         .eq('plan_id', aktywnyPlan.id)
         .order('id', { ascending: true })
 
+    if (wersja !== kontekst.current) return
     if (itemsError) throw itemsError
 
     setDataPlanu(aktywnyPlan.plan_date)
@@ -541,6 +596,7 @@ useEffect(() => {
     setPlan(items || [])
     setEkran('produkcja')
   } catch (error) {
+    if (wersja !== kontekst.current) return
     console.error('Błąd pobierania planu:', error)
 
     alert(
@@ -549,7 +605,7 @@ useEffect(() => {
 
     setEkran('wybor-lokalu')
   } finally {
-    setLadowanie(false)
+    if (wersja === kontekst.current) setLadowanie(false)
   }
 }
 
@@ -573,6 +629,8 @@ useEffect(() => {
   // -----------------------------------------
 
   const zatwierdzPlan = async () => {
+    if (blokadaZapisu.current || !dataPlanu) return
+  const wersja = kontekst.current
     if (!wybranyLokal) {
       alert('Najpierw wybierz lokal.')
       return
@@ -619,6 +677,7 @@ useEffect(() => {
       return
     }
 
+    blokadaZapisu.current = true
     setZapisywanie(true)
 
     try {
@@ -644,6 +703,7 @@ const planDate = dataPlanu
       })),
     })
 
+  if (wersja !== kontekst.current) return
   if (planError) throw planError
 
 // Nie wybieramy planu ponownie po dacie: może istnieć kilka planów.
@@ -670,6 +730,7 @@ const { data: pozycjeNowegoPlanu, error: itemsError } = await supabase
   .eq('plan_id', nowyPlanId)
   .order('id', { ascending: true })
 
+if (wersja !== kontekst.current) return
 if (itemsError) {
   alert(`Plan został utworzony, ale nie udało się pobrać jego pozycji: ${itemsError.message}. Otwórz go ponownie z listy planów.`)
   await pobierzZaplanowanePlany()
@@ -699,6 +760,7 @@ return
       })),
     })
 
+  if (wersja !== kontekst.current) return
   if (updateError) throw updateError
 
   // RPC już zapisało nowe pozycje,
@@ -710,6 +772,7 @@ return
       .eq('plan_id', aktualnyPlanId)
       .order('id', { ascending: true })
 
+  if (wersja !== kontekst.current) return
   if (itemsError) throw itemsError
 
   setPlan(zapisanePozycje || [])
@@ -719,6 +782,7 @@ return
 }
 
     } catch (error) {
+    if (wersja !== kontekst.current) return
       console.error(
         'Błąd zapisu planu:',
         error
@@ -728,6 +792,7 @@ return
         `Nie udało się zapisać planu: ${error.message}`
       )
     } finally {
+      blokadaZapisu.current = false
       setZapisywanie(false)
     }
   }
@@ -736,6 +801,7 @@ return
   // GOTOWE / COFNIJ
   // -----------------------------------------
   const zapiszEdycjePozycji = async (produkt) => {
+  const wersja = kontekst.current
   if (!edytowanaPozycja.nazwa.trim()) {
     alert('Wpisz nazwę produktu')
     return
@@ -761,6 +827,7 @@ return
       }
     )
 
+    if (wersja !== kontekst.current) return
     if (error) throw error
 
     setPlan((poprzedniPlan) =>
@@ -779,6 +846,7 @@ return
 
     setEdycjaPozycjiId(null)
   } catch (error) {
+    if (wersja !== kontekst.current) return
     console.error('Błąd edycji pozycji:', error)
 
     alert(
@@ -787,6 +855,7 @@ return
   }
 }
 const usunPozycje = async (produkt) => {
+  const wersja = kontekst.current
   const potwierdzenie = window.confirm(
     `Usunąć "${produkt.nazwa}" z planu?`
   )
@@ -802,6 +871,7 @@ const usunPozycje = async (produkt) => {
       }
     )
 
+    if (wersja !== kontekst.current) return
     if (error) throw error
 
     // Aktualizujemy ekran bez ponownego pobierania całego planu
@@ -811,6 +881,7 @@ const usunPozycje = async (produkt) => {
       )
     )
   } catch (error) {
+    if (wersja !== kontekst.current) return
     console.error('Błąd usuwania pozycji:', error)
 
     alert(
@@ -819,6 +890,8 @@ const usunPozycje = async (produkt) => {
   }
 }
  const dodajPozycjeDoPlanu = async () => {
+  if (blokadaDodawania.current) return
+  const wersja = kontekst.current
   if (!planId) {
     alert('Brak aktywnego planu')
     return
@@ -836,6 +909,7 @@ const usunPozycje = async (produkt) => {
     return
   }
 
+  blokadaDodawania.current = true
   try {
     const { error } = await supabase.rpc('add_plan_item', {
       p_requester_id: pracownik.id,
@@ -846,15 +920,22 @@ const usunPozycje = async (produkt) => {
       p_priorytet: nowaPozycja.priorytet,
     })
 
+    if (wersja !== kontekst.current) return
     if (error) throw error
 
+    // Zapis już się udał: nie pozostawiamy formularza do ponownego wysłania.
+    wyczyscFormularzPozycji()
     const { data, error: refreshError } = await supabase
       .from('Plan_items')
       .select('*')
       .eq('plan_id', planId)
       .order('id', { ascending: true })
 
-    if (refreshError) throw refreshError
+    if (wersja !== kontekst.current) return
+    if (refreshError) {
+      alert('Pozycja została dodana, ale odświeżenie nie powiodło się. Otwórz plan ponownie; nie dodawaj jej drugi raz.')
+      return
+    }
 
     setPlan(data || [])
 
@@ -867,14 +948,18 @@ const usunPozycje = async (produkt) => {
 
     setPokazDodawaniePozycji(false)
   } catch (error) {
+    if (wersja !== kontekst.current) return
     console.error('Błąd dodawania pozycji:', error)
 
     alert(
       `Nie udało się dodać pozycji: ${error.message}`
     )
+  } finally {
+    blokadaDodawania.current = false
   }
 }
 const rozpocznijPrace = async (id) => {
+  const wersja = kontekst.current
   try {
     const { error } = await supabase.rpc(
       'start_plan_item',
@@ -884,6 +969,7 @@ const rozpocznijPrace = async (id) => {
       }
     )
 
+    if (wersja !== kontekst.current) return
     if (error) throw error
 
     const { data, error: refreshError } = await supabase
@@ -892,6 +978,7 @@ const rozpocznijPrace = async (id) => {
       .eq('id', id)
       .single()
 
+    if (wersja !== kontekst.current) return
     if (refreshError) throw refreshError
 
     setPlan((poprzedniPlan) =>
@@ -900,6 +987,7 @@ const rozpocznijPrace = async (id) => {
       )
     )
   } catch (error) {
+    if (wersja !== kontekst.current) return
     console.error('Błąd rozpoczęcia pracy:', error)
 
     alert(
@@ -909,6 +997,7 @@ const rozpocznijPrace = async (id) => {
 }
 
 const oznaczGotowe = async (id) => {
+  const wersja = kontekst.current
 
   const produkt = plan.find(
     (element) => element.id === id
@@ -925,6 +1014,7 @@ const oznaczGotowe = async (id) => {
       }
     )
 
+    if (wersja !== kontekst.current) return
     if (error) throw error
 
     // Pobieramy dane zapisane przez bazę
@@ -934,6 +1024,7 @@ const oznaczGotowe = async (id) => {
       .eq('id', id)
       .single()
 
+    if (wersja !== kontekst.current) return
     if (refreshError) throw refreshError
 
     setPlan((poprzedniPlan) =>
@@ -942,6 +1033,7 @@ const oznaczGotowe = async (id) => {
       )
     )
   } catch (error) {
+    if (wersja !== kontekst.current) return
     console.error('Błąd zakończenia pracy:', error)
 
     alert(
@@ -992,6 +1084,14 @@ const formatujGodzine = (data) => {
   // -----------------------------------------
 
   const edytujPlan = () => {
+  kontekst.current += 1
+  wyczyscFormularzPozycji()
+    if (plan.some((produkt) => produkt.started_at || produkt.gotowe ||
+      !produktyStartowe.some((startowy) => startowy.nazwa === produkt.nazwa)) ||
+      new Set(plan.map((produkt) => produkt.nazwa)).size !== plan.length) {
+      alert('Ten plan zawiera własne, powtórzone lub rozpoczęte pozycje. Edytuj poszczególne pozycje na ekranie produkcji.')
+      return
+    }
     const daneDoEdycji = {}
 
     plan.forEach((produkt) => {
@@ -1025,6 +1125,7 @@ const formatujGodzine = (data) => {
   // -----------------------------------------
 
   const zakonczPlan = async () => {
+  const wersja = kontekst.current
     const potwierdzenie =
       window.confirm(
         'Czy na pewno zakończyć dzisiejszy plan produkcji?'
@@ -1044,6 +1145,7 @@ const formatujGodzine = (data) => {
     p_plan_id: planId,
   }
 )
+    if (wersja !== kontekst.current) return
     if (error) {
       console.error(
         'Błąd zakończenia planu:',
@@ -1057,6 +1159,8 @@ const formatujGodzine = (data) => {
       return
     }
 
+    kontekst.current += 1
+    wyczyscFormularzPozycji()
     setPlan([])
     setPlanId(null)
     setWybrane({})
@@ -1067,6 +1171,9 @@ const formatujGodzine = (data) => {
 // HISTORIA
 // -----------------------------------------
 const otworzZaplanowanyPlan = async (planZaplanowany) => {
+  kontekst.current += 1
+  wyczyscFormularzPozycji()
+  const wersja = kontekst.current
   setLadowanie(true)
 
   try {
@@ -1076,6 +1183,7 @@ const otworzZaplanowanyPlan = async (planZaplanowany) => {
       .eq('plan_id', planZaplanowany.id)
       .order('id', { ascending: true })
 
+    if (wersja !== kontekst.current) return
     if (error) throw error
 
     setPlanId(planZaplanowany.id)
@@ -1085,6 +1193,7 @@ const otworzZaplanowanyPlan = async (planZaplanowany) => {
 
     setEkran('produkcja')
   } catch (error) {
+    if (wersja !== kontekst.current) return
     console.error(
       'Błąd otwierania zaplanowanego planu:',
       error
@@ -1094,11 +1203,12 @@ const otworzZaplanowanyPlan = async (planZaplanowany) => {
       `Nie udało się otworzyć planu: ${error.message}`
     )
   } finally {
-    setLadowanie(false)
+    if (wersja === kontekst.current) setLadowanie(false)
   }
 }
 
 const pobierzZaplanowanePlany = async () => {
+  const wersja = kontekst.current
   if (!wybranyLokal) return
 
   setLadowaniePlanow(true)
@@ -1131,11 +1241,13 @@ const pobierzZaplanowanePlany = async () => {
       .order('created_at', { ascending: false, nullsFirst: false })
       .order('id', { ascending: false })
 
+    if (wersja !== kontekst.current) return
     if (error) throw error
 
     setZaplanowanePlany(data || [])
     setEkran('zaplanowane')
   } catch (error) {
+    if (wersja !== kontekst.current) return
     console.error(
       'Błąd pobierania zaplanowanych planów:',
       error
@@ -1149,6 +1261,7 @@ const pobierzZaplanowanePlany = async () => {
   }
 }
 const pobierzHistorie = async () => {
+  const wersja = kontekst.current
   if (!wybranyLokal) return
 
   setLadowanieHistorii(true)
@@ -1165,6 +1278,7 @@ const pobierzHistorie = async () => {
       .eq('Plan_items.gotowe', true)
       .order('plan_date', { ascending: false })
 
+    if (wersja !== kontekst.current) return
     if (historiaError) throw historiaError
 
     // 2. Zbieramy ID pracowników z historii
@@ -1189,6 +1303,7 @@ const { data: osoby, error: employeesError } = await supabase.rpc(
   }
 )
 
+      if (wersja !== kontekst.current) return
       if (employeesError) throw employeesError
 
       mapaPracownikow = Object.fromEntries(
@@ -1219,6 +1334,7 @@ console.log('GOTOWA HISTORIA:', historiaZPracownikami)
     setHistoria(historiaZPracownikami)
     setEkran('historia')
   } catch (error) {
+    if (wersja !== kontekst.current) return
     console.error('Błąd pobierania historii:', error)
 
     alert(
@@ -1233,6 +1349,8 @@ console.log('GOTOWA HISTORIA:', historiaZPracownikami)
   // -----------------------------------------
 
   const zmienLokal = () => {
+  kontekst.current += 1
+  wyczyscFormularzPozycji()
     setWybranyLokal(null)
     setPlan([])
     setPlanId(null)
@@ -1241,7 +1359,11 @@ console.log('GOTOWA HISTORIA:', historiaZPracownikami)
   }
 
   const zmienDatePlanu = async (e) => {
+  kontekst.current += 1
+  wyczyscFormularzPozycji()
+  const wersja = kontekst.current
       const nowaData = e.target.value
+      if (!nowaData) return
 
       setDataPlanu(nowaData)
 
@@ -1265,6 +1387,7 @@ console.log('GOTOWA HISTORIA:', historiaZPracownikami)
               .order('id', { ascending: false })
               .limit(1)
 
+          if (wersja !== kontekst.current) return
           if (planError) throw planError
 
           if (!plans || plans.length === 0) {
@@ -1281,12 +1404,14 @@ console.log('GOTOWA HISTORIA:', historiaZPracownikami)
               .eq('plan_id', znalezionyPlan.id)
               .order('id', { ascending: true })
 
+          if (wersja !== kontekst.current) return
           if (itemsError) throw itemsError
 
           setPlanId(znalezionyPlan.id)
           setPlan(items || [])
           setEkran('produkcja')
         } catch (error) {
+    if (wersja !== kontekst.current) return
           console.error(
             'Błąd zmiany daty planu:',
             error
@@ -1296,7 +1421,7 @@ console.log('GOTOWA HISTORIA:', historiaZPracownikami)
             `Nie udało się pobrać planu: ${error.message}`
           )
         } finally {
-          setLadowanie(false)
+          if (wersja === kontekst.current) setLadowanie(false)
         }
       }
     }
@@ -1432,6 +1557,9 @@ if (ekran === 'zaplanowane') {
         setEkran(planId ? 'produkcja' : 'planowanie')
       }
       onUtworzPlan={(nowaData) => {
+        if (!nowaData) return
+        kontekst.current += 1
+  wyczyscFormularzPozycji()
         setDataPlanu(nowaData)
         setPlanId(null)
         setPlan([])
