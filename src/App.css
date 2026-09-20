@@ -339,3 +339,305 @@ main h2 {
     gap: 6px;
   }
 }
+/* Zachowaj kontrast jasnej aplikacji również przy ciemnym motywie systemu. */
+.app header h1 {
+  color: inherit;
+}
+
+.app main h2 {
+  color: #1f2937;
+}
+
+/* RWD: wspólne zabezpieczenia szerokości bez ukrywania overflow. */
+.app {
+  overflow-wrap: anywhere;
+  color-scheme: light;
+}
+
+.app :where(main, header, .produkt, .produkt div, .naglowek-produkcji > div) {
+  min-width: 0;
+}
+
+.app :where(button, input, select) {
+  max-width: 100%;
+}
+
+.app button {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.produkt input[type="checkbox"] {
+  flex-shrink: 0;
+}
+
+/* Zawijanie jest potrzebne także dla długich nazw na desktopie. */
+.zadanie,
+.opis-zadania,
+.naglowek-produkcji {
+  flex-wrap: wrap;
+}
+
+.opis-zadania {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.opis-zadania > strong {
+  min-width: 0;
+}
+
+.task-edit {
+  flex-basis: 100%;
+}
+
+.czas-produkcji,
+.historia-czas {
+  white-space: normal;
+}
+
+/* Telefon i tablet: wygodne cele dotykowe i elastyczne formularze. */
+@media (max-width: 1024px) {
+  .app :where(button, input:not([type="checkbox"]), select) {
+    min-height: 44px;
+  }
+
+  .app :where(input:not([type="checkbox"]), select) {
+    min-width: 0;
+    font-size: 16px;
+  }
+
+  .responsive-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    --inline-action-offset: 0px;
+  }
+
+  .responsive-form > :where(h3, div, .zatwierdz) {
+    grid-column: 1 / -1;
+  }
+
+  .responsive-form > :where(input, select, button) {
+    width: 100%;
+  }
+
+  .responsive-form .zatwierdz {
+    margin-top: 8px;
+  }
+
+  .screen-navigation {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    --inline-action-offset: 0px;
+  }
+
+  .screen-navigation > div {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .ustawienia {
+    flex-wrap: wrap;
+  }
+
+  .ustawienia > :where(input, select) {
+    flex: 1 1 150px;
+    min-width: 0;
+  }
+
+  .zadanie {
+    gap: 12px;
+    --inline-action-offset: 0px;
+  }
+
+  .zadanie > .opis-zadania {
+    flex-basis: 100%;
+    gap: 12px;
+  }
+
+  .zadanie > button {
+    flex: 1 1 140px;
+  }
+
+  .historia-pozycja {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .history-day-toggle {
+    min-height: 44px;
+  }
+
+  .employees-screen main > .powrot {
+    margin-bottom: 16px;
+  }
+
+  .employees-screen .responsive-form {
+    margin-bottom: 16px;
+  }
+}
+
+/* Telefon: pojedyncza kolumna, pełna szerokość akcji i pól. */
+@media (max-width: 600px) {
+  .app {
+    --inline-action-offset: 0px;
+    --empty-plan-padding: 30px 16px;
+  }
+
+  header {
+    padding: 20px 16px;
+  }
+
+  header h1 {
+    font-size: clamp(24px, 6vw, 32px);
+    line-height: 1.2;
+  }
+
+  header p {
+    line-height: 1.5;
+  }
+
+  header > button {
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+  }
+
+  main h2 {
+    font-size: 24px;
+    line-height: 1.25;
+  }
+
+  .produkt {
+    padding: 16px;
+  }
+
+  .location-city {
+    display: block;
+    margin-top: 4px;
+  }
+
+  .produkt label {
+    min-height: 44px;
+    font-size: 20px;
+  }
+
+  .naglowek-produkcji {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .screen-navigation > button,
+  main > button,
+  .employees-screen .produkt > button {
+    display: block;
+    width: 100%;
+  }
+
+  main > button + button,
+  .employees-screen .produkt > button + button {
+    margin-top: 12px;
+  }
+
+  .responsive-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ustawienia {
+    flex-direction: column;
+    align-items: stretch;
+    padding-left: 0;
+  }
+
+  .ustawienia > :where(input, select) {
+    flex: none;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .new-plan {
+    flex-direction: column;
+  }
+
+  .new-plan > *,
+  .app input[type="date"] {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .zadanie > .opis-zadania,
+  .zadanie > button,
+  .task-edit {
+    flex: none;
+    width: 100%;
+  }
+
+  .opis-zadania {
+    align-items: flex-start;
+    text-align: left;
+    font-size: 20px;
+  }
+
+  .historia-pozycja {
+    align-items: stretch;
+    text-align: left;
+    gap: 8px;
+  }
+
+  .historia-pozycja > * {
+    width: 100%;
+  }
+
+  .wszystko-gotowe {
+    padding: 18px 16px;
+    font-size: 20px;
+  }
+}
+
+/* Tylko ProductionScreen: licznik ze strong identyfikuje jego nagłówek,
+   również przy pustym planie i dla roli employee (bez zmian JSX). */
+@media (max-width: 600px) {
+  main:has(> .naglowek-produkcji .licznik > strong) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: max-content;
+    align-content: start;
+    column-gap: 12px;
+  }
+
+  main:has(> .naglowek-produkcji .licznik > strong) > * {
+    grid-column: 1 / -1;
+  }
+
+  main:has(> .naglowek-produkcji .licznik > strong) > .powrot {
+    grid-column: auto;
+    margin-top: 0;
+  }
+
+  main:has(> .naglowek-produkcji .licznik > strong) > .naglowek-produkcji {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: max-content;
+    align-content: start;
+  }
+
+  main:has(> .naglowek-produkcji .licznik > strong) > .naglowek-produkcji > div {
+    grid-column: 1 / -1;
+  }
+
+  main:has(> .naglowek-produkcji .licznik > strong) > .powrot,
+  main:has(> .naglowek-produkcji .licznik > strong) > .naglowek-produkcji > .powrot {
+    min-width: 0;
+    min-height: 52px;
+    height: auto;
+    align-self: start;
+    padding-inline: 8px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}

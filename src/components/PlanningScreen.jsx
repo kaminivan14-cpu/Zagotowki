@@ -27,6 +27,7 @@ export default function PlanningScreen({
 
       <main>
         <div
+          className="screen-navigation"
           style={{
             marginBottom: '20px',
           }}
@@ -58,7 +59,7 @@ export default function PlanningScreen({
             className="powrot"
             onClick={zmienLokal}
             style={{
-              marginLeft: '15px',
+              marginLeft: 'var(--inline-action-offset, 15px)',
             }}
           >
             Zmień lokal
@@ -68,7 +69,7 @@ export default function PlanningScreen({
     className="powrot"
     onClick={pobierzPracownikow}
     style={{
-      marginLeft: '10px',
+      marginLeft: 'var(--inline-action-offset, 10px)',
     }}
   >
     👥 Pracownicy
@@ -78,7 +79,7 @@ export default function PlanningScreen({
   className="powrot"
   onClick={wylogujPracownika}
   style={{
-    marginLeft: '10px',
+    marginLeft: 'var(--inline-action-offset, 10px)',
   }}
 >
   🚪 Wyloguj
@@ -88,7 +89,7 @@ export default function PlanningScreen({
   onClick={pobierzHistorie}
   disabled={ladowanieHistorii}
   style={{
-    marginLeft: '10px',
+    marginLeft: 'var(--inline-action-offset, 10px)',
   }}
 >
   {ladowanieHistorii

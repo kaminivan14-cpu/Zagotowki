@@ -14,10 +14,10 @@ export default function NoPlanScreen({
 
       <main>
         <div
-          className="produkt"
+          className="produkt empty-plan"
           style={{
             textAlign: 'center',
-            padding: '50px 30px',
+            padding: 'var(--empty-plan-padding, 50px 30px)',
           }}
         >
           <div style={{ fontSize: '55px' }}>
@@ -48,7 +48,7 @@ export default function NoPlanScreen({
         <button
           className="powrot"
           onClick={wylogujPracownika}
-          style={{ marginLeft: '10px' }}
+          style={{ marginLeft: 'var(--inline-action-offset, 10px)' }}
         >
           🚪 Wyloguj
         </button>

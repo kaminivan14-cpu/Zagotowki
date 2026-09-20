@@ -22,7 +22,7 @@ export default function EmployeesScreen({
   onPowrot,
 }) {
   return (
-    <div className="app">
+    <div className="app employees-screen">
       <header>
         <h1>👥 PRACOWNICY</h1>
 
@@ -49,7 +49,7 @@ export default function EmployeesScreen({
 </button>
 
 {pokazFormularzPracownika && (
-  <div className="produkt">
+  <div className="produkt responsive-form">
     <h3>Nowy pracownik</h3>
 
     <input
@@ -225,7 +225,7 @@ export default function EmployeesScreen({
     }}
     style={{
       marginTop: '10px',
-      marginLeft: '10px',
+      marginLeft: 'var(--inline-action-offset, 10px)',
       padding: '8px 14px',
       cursor: 'pointer',
     }}
@@ -234,7 +234,7 @@ export default function EmployeesScreen({
   </button>
 )}
 {edycjaPracownikaId === osoba.id && (
-  <div style={{ marginTop: '15px' }}>
+  <div className="responsive-form" style={{ marginTop: '15px' }}>
 
     <input
       type="text"
@@ -289,7 +289,7 @@ export default function EmployeesScreen({
     <button
       onClick={() => zapiszEdycjePracownika(osoba)}
       style={{
-        marginLeft: '10px',
+        marginLeft: 'var(--inline-action-offset, 10px)',
       }}
     >
       💾 Zapisz
@@ -298,7 +298,7 @@ export default function EmployeesScreen({
     <button
       onClick={() => setEdycjaPracownikaId(null)}
       style={{
-        marginLeft: '10px',
+        marginLeft: 'var(--inline-action-offset, 10px)',
       }}
     >
       Anuluj
@@ -322,7 +322,7 @@ export default function EmployeesScreen({
       }}
       style={{
         marginTop: '10px',
-        marginLeft: '10px',
+        marginLeft: 'var(--inline-action-offset, 10px)',
         padding: '8px 14px',
         cursor: 'pointer',
       }}
@@ -331,7 +331,7 @@ export default function EmployeesScreen({
     </button>
 
     {zmianaPinId === osoba.id && (
-      <div style={{ marginTop: '10px' }}>
+      <div className="responsive-form" style={{ marginTop: '10px' }}>
         <input
           type="password"
           inputMode="numeric"

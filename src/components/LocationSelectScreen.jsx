@@ -25,7 +25,7 @@ export default function LocationSelectScreen({
     className="wyloguj-button"
    onClick={pobierzPracownikow}
     style={{
-      marginLeft: '10px',
+      marginLeft: 'var(--inline-action-offset, 10px)',
     }}
   >
     👥 Pracownicy
@@ -65,8 +65,9 @@ export default function LocationSelectScreen({
 
                 {lokal.city && (
                   <span
+                    className="location-city"
                     style={{
-                      marginLeft: '10px',
+                      marginLeft: 'var(--inline-action-offset, 10px)',
                     }}
                   >
                     {lokal.city}

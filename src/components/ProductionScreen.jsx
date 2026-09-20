@@ -65,7 +65,7 @@ export default function ProductionScreen({
     onClick={() =>
       setPokazDodawaniePozycji(!pokazDodawaniePozycji)
     }
-    style={{ marginLeft: '10px' }}
+    style={{ marginLeft: 'var(--inline-action-offset, 10px)' }}
   >
     ➕ Dodaj pozycję
   </button>
@@ -74,7 +74,7 @@ export default function ProductionScreen({
 {pokazDodawaniePozycji &&
   ['administrator', 'manager', 'su-chef'].includes(pracownik?.role) && (
     <div
-      className="produkt"
+      className="produkt responsive-form"
       style={{ marginBottom: '20px' }}
     >
       <h3>➕ Dodaj pozycję do planu</h3>
@@ -168,7 +168,7 @@ export default function ProductionScreen({
     onClick={pobierzPracownikow}
     style={{
       marginBottom: '20px',
-      marginLeft: '10px',
+      marginLeft: 'var(--inline-action-offset, 10px)',
     }}
   >
     👥 Pracownicy
@@ -179,7 +179,7 @@ export default function ProductionScreen({
   onClick={wylogujPracownika}
   style={{
     marginBottom: '20px',
-    marginLeft: '10px',
+    marginLeft: 'var(--inline-action-offset, 10px)',
   }}
 >
   🚪 Wyloguj
@@ -190,7 +190,7 @@ export default function ProductionScreen({
   disabled={ladowanieHistorii}
   style={{
     marginBottom: '20px',
-    marginLeft: '10px',
+    marginLeft: 'var(--inline-action-offset, 10px)',
   }}
 >
   {ladowanieHistorii
@@ -204,7 +204,7 @@ export default function ProductionScreen({
     disabled={ladowaniePlanow}
     style={{
       marginBottom: '20px',
-      marginLeft: '10px',
+      marginLeft: 'var(--inline-action-offset, 10px)',
     }}
   >
     {ladowaniePlanow
@@ -271,7 +271,7 @@ export default function ProductionScreen({
     <button
       onClick={() => usunPozycje(produkt)}
       style={{
-        marginLeft: '8px',
+        marginLeft: 'var(--inline-action-offset, 8px)',
         padding: '10px 14px',
         cursor: 'pointer',
       }}
@@ -300,7 +300,7 @@ export default function ProductionScreen({
           })
         }}
         style={{
-          marginLeft: '8px',
+          marginLeft: 'var(--inline-action-offset, 8px)',
           padding: '10px 14px',
           cursor: 'pointer',
         }}
@@ -310,6 +310,7 @@ export default function ProductionScreen({
 
       {edycjaPozycjiId === produkt.id && (
         <div
+          className="responsive-form task-edit"
           style={{
             width: '100%',
             marginTop: '15px',
@@ -379,7 +380,7 @@ export default function ProductionScreen({
 
           <button
             onClick={() => setEdycjaPozycjiId(null)}
-            style={{ marginLeft: '8px' }}
+            style={{ marginLeft: 'var(--inline-action-offset, 8px)' }}
           >
             Anuluj
           </button>

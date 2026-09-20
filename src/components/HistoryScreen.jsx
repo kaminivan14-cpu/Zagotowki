@@ -58,6 +58,7 @@ export default function HistoryScreen({
                 >
                   {/* NAGŁÓWEK DNIA */}
                   <div
+                    className="history-day-toggle"
                     onClick={() =>
                       setOtwartyDzien(
                         otwarty ? null : data

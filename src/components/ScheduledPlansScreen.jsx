@@ -41,7 +41,7 @@ export default function ScheduledPlansScreen({
          
         </div>
 <div
-  className="produkt"
+  className="produkt new-plan"
   style={{
     marginBottom: '24px',
     display: 'flex',
