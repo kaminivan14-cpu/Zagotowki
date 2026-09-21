@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 export default function PlanningScreen({
   wybranyLokal,
   pracownik,
@@ -8,15 +10,24 @@ export default function PlanningScreen({
   ladowanieHistorii,
   dataPlanu,
   zmienDatePlanu,
-  produktyStartowe,
+  produkty,
+  ladowanieProduktow,
+  bladProduktow,
+  ponowPobranieProduktow,
   wybrane,
   zmienProdukt,
   jednostki,
   zatwierdzPlan,
   zapisywanie,
 }) {
+  const [szukaj, setSzukaj] = useState('')
+  const fraza = szukaj.trim().toLocaleLowerCase('pl-PL')
+  const widoczneProdukty = produkty.filter((produkt) =>
+    produkt.name.toLocaleLowerCase('pl-PL').includes(fraza)
+  )
+
   return (
-    <div className="app">
+    <div className="app planning-screen">
       <header>
         <h1>ZAGOTÓWKI</h1>
 
@@ -117,8 +128,32 @@ export default function PlanningScreen({
 </div>
         <h2>Co przygotować?</h2>
 
-        <div className="produkty">
-          {produktyStartowe.map(
+        <input
+          className="product-search"
+          type="search"
+          aria-label="Szukaj produktu"
+          placeholder="Szukaj produktu..."
+          value={szukaj}
+          onChange={(e) => setSzukaj(e.target.value)}
+          disabled={ladowanieProduktow || Boolean(bladProduktow)}
+        />
+        {ladowanieProduktow && <p role="status">Ładowanie katalogu produktów...</p>}
+        {bladProduktow && (
+          <div role="alert">
+            <p>{bladProduktow}</p>
+            <button className="powrot" onClick={ponowPobranieProduktow}>Spróbuj ponownie</button>
+          </div>
+        )}
+        {!ladowanieProduktow && !bladProduktow && (
+          <p role="status">
+            {produkty.length === 0 ? 'Katalog produktów jest pusty.' :
+              widoczneProdukty.length === 0 ? 'Brak produktów pasujących do wyszukiwania.' :
+                `Produkty: ${widoczneProdukty.length} z ${produkty.length}`}
+          </p>
+        )}
+
+        <div className="produkty" aria-busy={ladowanieProduktow}>
+          {!ladowanieProduktow && !bladProduktow && widoczneProdukty.map(
             (produkt) => (
               <div
                 className="produkt"
@@ -143,7 +178,7 @@ export default function PlanningScreen({
                   />
 
                   <strong>
-                    {produkt.nazwa}
+                    {produkt.name}
                   </strong>
                 </label>
 
@@ -176,7 +211,7 @@ export default function PlanningScreen({
                         wybrane[
                           produkt.id
                         ]?.jednostka ||
-                        produkt.domyslnaJednostka
+                        'kg'
                       }
                       onChange={(e) =>
                         zmienProdukt(
@@ -239,7 +274,7 @@ export default function PlanningScreen({
         <button
           className="zatwierdz"
           onClick={zatwierdzPlan}
-          disabled={zapisywanie}
+          disabled={zapisywanie || ladowanieProduktow || Boolean(bladProduktow) || produkty.length === 0}
         >
           {zapisywanie
             ? 'Zapisywanie...'

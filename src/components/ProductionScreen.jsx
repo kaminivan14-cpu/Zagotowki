@@ -5,6 +5,9 @@ export default function ProductionScreen({
   edytujPlan,
   pokazDodawaniePozycji,
   setPokazDodawaniePozycji,
+  produkty,
+  ladowanieProduktow,
+  bladProduktow,
   nowaPozycja,
   setNowaPozycja,
   jednostki,
@@ -78,6 +81,32 @@ export default function ProductionScreen({
       style={{ marginBottom: '20px' }}
     >
       <h3>➕ Dodaj pozycję do planu</h3>
+
+      <select
+        aria-label="Produkt z katalogu"
+        value={nowaPozycja.product_external_id ?? ''}
+        disabled={ladowanieProduktow || Boolean(bladProduktow)}
+        onChange={(e) => {
+          const produkt = produkty.find((element) =>
+            String(element.external_id) === e.target.value
+          )
+          setNowaPozycja({
+            ...nowaPozycja,
+            product_external_id: produkt?.external_id ?? null,
+            nazwa: produkt?.name ?? '',
+          })
+        }}
+      >
+        <option value="">Własna pozycja</option>
+        {produkty.map((produkt) => (
+          <option key={produkt.id} value={produkt.external_id}>{produkt.name}</option>
+        ))}
+      </select>
+      {ladowanieProduktow && <div role="status">Ładowanie katalogu produktów...</div>}
+      {bladProduktow && <div role="alert">{bladProduktow} Możesz dodać własną pozycję.</div>}
+      {!ladowanieProduktow && !bladProduktow && produkty.length === 0 && (
+        <div role="status">Katalog produktów jest pusty. Możesz dodać własną pozycję.</div>
+      )}
 
       <input
         type="text"
@@ -293,6 +322,7 @@ export default function ProductionScreen({
           setEdycjaPozycjiId(produkt.id)
 
           setEdytowanaPozycja({
+            product_external_id: produkt.product_external_id ?? null,
             nazwa: produkt.nazwa,
             ilosc: produkt.ilosc,
             jednostka: produkt.jednostka,

@@ -9,17 +9,28 @@ import ProductionScreen from './components/ProductionScreen'
 import HistoryScreen from './components/HistoryScreen'
 import PlanningScreen from './components/PlanningScreen'
 import { supabase } from './supabase'
-
-const produktyStartowe = [
-  { id: 1, nazwa: 'Ryż', domyslnaJednostka: 'kg' },
-  { id: 2, nazwa: 'Łosoś', domyslnaJednostka: 'kg' },
-  { id: 3, nazwa: 'Sos Spicy', domyslnaJednostka: 'l' },
-  { id: 4, nazwa: 'Tempura', domyslnaJednostka: 'kg' },
-]
+import { pobierzKatalogProduktow } from './productCatalog'
 
 const jednostki = ['g', 'kg', 'ml', 'l', 'szt.']
 
 function App() {
+  const [produkty, setProdukty] = useState([])
+  const [ladowanieProduktow, setLadowanieProduktow] = useState(true)
+  const [bladProduktow, setBladProduktow] = useState('')
+  const [probaKatalogu, setProbaKatalogu] = useState(0)
+
+  useEffect(() => {
+    let aktywny = true
+    pobierzKatalogProduktow().then((katalog) => {
+      if (aktywny) setProdukty(katalog)
+    }).catch(() => {
+      if (aktywny) setBladProduktow('Nie udało się pobrać katalogu produktów.')
+    }).finally(() => {
+      if (aktywny) setLadowanieProduktow(false)
+    })
+    return () => { aktywny = false }
+  }, [probaKatalogu])
+
 const [pracownik, setPracownik] = useState(() => {
   try {
     const zapisany = JSON.parse(sessionStorage.getItem('pracownik') || 'null')
@@ -45,6 +56,7 @@ const [logowanie, setLogowanie] = useState(false)
 
   const [wybrane, setWybrane] = useState({})
   const [plan, setPlan] = useState([])
+  const [pozycjeEdycji, setPozycjeEdycji] = useState([])
   const [planId, setPlanId] = useState(null)
   const [dataPlanu, setDataPlanu] = useState(() => {
   const jutro = new Date()
@@ -88,6 +100,7 @@ const [edytowanyPracownik, setEdytowanyPracownik] = useState({
 const [pokazDodawaniePozycji, setPokazDodawaniePozycji] = useState(false)
 
 const [nowaPozycja, setNowaPozycja] = useState({
+  product_external_id: null,
   nazwa: '',
   ilosc: '',
   jednostka: 'kg',
@@ -96,6 +109,7 @@ const [nowaPozycja, setNowaPozycja] = useState({
 const [edycjaPozycjiId, setEdycjaPozycjiId] = useState(null)
 
 const [edytowanaPozycja, setEdytowanaPozycja] = useState({
+  product_external_id: null,
   nazwa: '',
   ilosc: '',
   jednostka: 'kg',
@@ -104,7 +118,7 @@ const [edytowanaPozycja, setEdytowanaPozycja] = useState({
   const wyczyscFormularzPozycji = () => {
     setEdycjaPozycjiId(null)
     setPokazDodawaniePozycji(false)
-    setNowaPozycja({ nazwa: '', ilosc: '', jednostka: 'kg', priorytet: 'normalny' })
+    setNowaPozycja({ product_external_id: null, nazwa: '', ilosc: '', jednostka: 'kg', priorytet: 'normalny' })
   }
 
   // -----------------------------------------
@@ -626,6 +640,21 @@ useEffect(() => {
     }))
   }
 
+  // W edycji istniejące pozycje mają własne klucze, snapshot nazwy i ID
+  // z Plan_items. NULL pozostaje NULL, nawet jeśli nazwa pasuje do katalogu.
+  const pozycjeKatalogowePlanu = new Set(
+    pozycjeEdycji.filter((pozycja) => pozycja.product_external_id != null)
+      .map((pozycja) => String(pozycja.product_external_id))
+  )
+  const produktyDoPlanowania = planId ? [
+    ...pozycjeEdycji.map((pozycja) => ({
+      id: `plan-item:${pozycja.id}`,
+      name: pozycja.nazwa,
+      external_id: pozycja.product_external_id ?? null,
+    })),
+    ...produkty.filter((produkt) => !pozycjeKatalogowePlanu.has(String(produkt.external_id))),
+  ] : produkty
+
   // -----------------------------------------
   // ZAPIS PLANU
   // -----------------------------------------
@@ -638,13 +667,16 @@ useEffect(() => {
       return
     }
 
-    const nowyPlan = produktyStartowe
+    if (ladowanieProduktow || bladProduktow) return
+
+    const nowyPlan = produktyDoPlanowania
       .filter(
         (produkt) =>
           wybrane[produkt.id]?.aktywny
       )
       .map((produkt) => ({
-        nazwa: produkt.nazwa,
+        nazwa: produkt.name,
+        product_external_id: produkt.external_id ?? null,
 
         ilosc: Number(
           wybrane[produkt.id]?.ilosc
@@ -652,7 +684,7 @@ useEffect(() => {
 
         jednostka:
           wybrane[produkt.id]?.jednostka ||
-          produkt.domyslnaJednostka,
+          'kg',
 
         priorytet:
           wybrane[produkt.id]?.priorytet ||
@@ -722,6 +754,7 @@ if (istniejacyPlan) {
       p_location_id: wybranyLokal.id,
       p_plan_date: planDate,
       p_items: nowyPlan.map((produkt) => ({
+        product_external_id: produkt.product_external_id,
         nazwa: produkt.nazwa,
         ilosc: produkt.ilosc,
         jednostka: produkt.jednostka,
@@ -783,6 +816,7 @@ return
       p_requester_id: pracownik.id,
       p_plan_id: aktualnyPlanId,
       p_items: nowyPlan.map((produkt) => ({
+        product_external_id: produkt.product_external_id,
         nazwa: produkt.nazwa,
         ilosc: produkt.ilosc,
         jednostka: produkt.jednostka,
@@ -850,6 +884,7 @@ return
       {
         p_requester_id: pracownik.id,
         p_item_id: produkt.id,
+        p_product_external_id: edytowanaPozycja.product_external_id ?? null,
         p_nazwa: edytowanaPozycja.nazwa.trim(),
         p_ilosc: ilosc,
         p_jednostka: edytowanaPozycja.jednostka,
@@ -865,6 +900,7 @@ return
         element.id === produkt.id
           ? {
               ...element,
+              product_external_id: edytowanaPozycja.product_external_id ?? null,
               nazwa: edytowanaPozycja.nazwa.trim(),
               ilosc,
               jednostka: edytowanaPozycja.jednostka,
@@ -944,6 +980,7 @@ const usunPozycje = async (produkt) => {
     const { error } = await supabase.rpc('add_plan_item', {
       p_requester_id: pracownik.id,
       p_plan_id: planId,
+      p_product_external_id: nowaPozycja.product_external_id ?? null,
       p_nazwa: nowaPozycja.nazwa.trim(),
       p_ilosc: ilosc,
       p_jednostka: nowaPozycja.jednostka,
@@ -970,6 +1007,7 @@ const usunPozycje = async (produkt) => {
     setPlan(data || [])
 
     setNowaPozycja({
+      product_external_id: null,
       nazwa: '',
       ilosc: '',
       jednostka: 'kg',
@@ -1116,36 +1154,25 @@ const formatujGodzine = (data) => {
   const edytujPlan = () => {
   kontekst.current += 1
   wyczyscFormularzPozycji()
-    if (plan.some((produkt) => produkt.started_at || produkt.gotowe ||
-      !produktyStartowe.some((startowy) => startowy.nazwa === produkt.nazwa)) ||
-      new Set(plan.map((produkt) => produkt.nazwa)).size !== plan.length) {
-      alert('Ten plan zawiera własne, powtórzone lub rozpoczęte pozycje. Edytuj poszczególne pozycje na ekranie produkcji.')
+    if (ladowanieProduktow || bladProduktow) {
+      alert('Katalog jest niedostępny. Edytuj poszczególne pozycje na ekranie produkcji lub ponów pobranie katalogu na ekranie planowania.')
+      return
+    }
+    if (plan.some((produkt) => produkt.started_at || produkt.gotowe)) {
+      alert('Ten plan zawiera rozpoczęte lub zakończone pozycje. Edytuj poszczególne pozycje na ekranie produkcji.')
       return
     }
     const daneDoEdycji = {}
-
     plan.forEach((produkt) => {
-      const produktStartowy =
-        produktyStartowe.find(
-          (element) =>
-            element.nazwa ===
-            produkt.nazwa
-        )
-
-      if (!produktStartowy) return
-
-      daneDoEdycji[
-        produktStartowy.id
-      ] = {
+      daneDoEdycji[`plan-item:${produkt.id}`] = {
         aktywny: true,
         ilosc: produkt.ilosc,
-        jednostka:
-          produkt.jednostka,
-        priorytet:
-          produkt.priorytet,
+        jednostka: produkt.jednostka,
+        priorytet: produkt.priorytet,
       }
     })
 
+    setPozycjeEdycji(plan)
     setWybrane(daneDoEdycji)
     setEkran('planowanie')
   }
@@ -1547,6 +1574,9 @@ if (ekran === 'wybor-lokalu') {
         edytujPlan={edytujPlan}
         pokazDodawaniePozycji={pokazDodawaniePozycji}
         setPokazDodawaniePozycji={setPokazDodawaniePozycji}
+        produkty={produkty}
+        ladowanieProduktow={ladowanieProduktow}
+        bladProduktow={bladProduktow}
         nowaPozycja={nowaPozycja}
         setNowaPozycja={setNowaPozycja}
         jednostki={jednostki}
@@ -1700,7 +1730,14 @@ if (
       ladowanieHistorii={ladowanieHistorii}
       dataPlanu={dataPlanu}
       zmienDatePlanu={zmienDatePlanu}
-      produktyStartowe={produktyStartowe}
+      produkty={produktyDoPlanowania}
+      ladowanieProduktow={ladowanieProduktow}
+      bladProduktow={bladProduktow}
+      ponowPobranieProduktow={() => {
+        setLadowanieProduktow(true)
+        setBladProduktow('')
+        setProbaKatalogu((proba) => proba + 1)
+      }}
       wybrane={wybrane}
       zmienProdukt={zmienProdukt}
       jednostki={jednostki}
