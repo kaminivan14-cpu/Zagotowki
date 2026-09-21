@@ -7,6 +7,9 @@ export default function ScheduledPlansScreen({
   otworzZaplanowanyPlan,
   onPowrot,
   onUtworzPlan,
+  sprawdzaniePlanu,
+  komunikatNowegoPlanu,
+  onZmienDateNowegoPlanu,
 }) {
   // Data nowego planu nie zmienia daty aktualnie otwartego planu.
   const [dataNowegoPlanu, setDataNowegoPlanu] = useState(dataPlanu)
@@ -66,16 +69,24 @@ export default function ScheduledPlansScreen({
   <input
     type="date"
     value={dataNowegoPlanu}
-    onChange={(e) => setDataNowegoPlanu(e.target.value)}
+    disabled={sprawdzaniePlanu}
+    onChange={(e) => {
+      setDataNowegoPlanu(e.target.value)
+      onZmienDateNowegoPlanu()
+    }}
   />
 
   <button
     className="powrot"
     onClick={() => onUtworzPlan(dataNowegoPlanu)}
+    disabled={sprawdzaniePlanu}
   >
     ➕ Utwórz plan
   </button>
 </div>
+        {komunikatNowegoPlanu && (
+          <p role="alert">{komunikatNowegoPlanu}</p>
+        )}
         <div className="produkty">
           {zaplanowanePlany.map((planZaplanowany) => (
             <div

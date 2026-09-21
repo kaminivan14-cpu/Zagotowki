@@ -63,6 +63,8 @@ const [, setTykanie] = useState(0)
 const [historia, setHistoria] = useState([])
 const [zaplanowanePlany, setZaplanowanePlany] = useState([])
 const [ladowaniePlanow, setLadowaniePlanow] = useState(false)
+const [sprawdzaniePlanu, setSprawdzaniePlanu] = useState(false)
+const [komunikatNowegoPlanu, setKomunikatNowegoPlanu] = useState('')
 const [ladowanieHistorii, setLadowanieHistorii] = useState(false)
 const [otwartyDzien, setOtwartyDzien] = useState(null)
 const [pracownicy, setPracownicy] = useState([])
@@ -690,6 +692,30 @@ useEffect(() => {
       if (!aktualnyPlanId) {
 const planDate = dataPlanu
 
+const { data: istniejacePlany, error: sprawdzenieError } = await supabase
+  .from('Plans')
+  .select('id, plan_date, status')
+  .eq('location_id', wybranyLokal.id)
+  .eq('plan_date', planDate)
+  .order('created_at', { ascending: false, nullsFirst: false })
+  .order('id', { ascending: false })
+  .limit(1)
+
+if (wersja !== kontekst.current) return
+if (sprawdzenieError) throw sprawdzenieError
+
+const istniejacyPlan = istniejacePlany?.[0]
+if (istniejacyPlan) {
+  if (istniejacyPlan.status === 'active') {
+    if (window.confirm('Plan na ten dzień już istnieje\n\nCzy otworzyć istniejący plan?')) {
+      await otworzZaplanowanyPlan(istniejacyPlan)
+    }
+  } else {
+    alert('Plan na ten dzień już istnieje')
+  }
+  return
+}
+
   const { data: nowyPlanId, error: planError } =
     await supabase.rpc('create_production_plan', {
       p_requester_id: pracownik.id,
@@ -704,9 +730,13 @@ const planDate = dataPlanu
     })
 
   if (wersja !== kontekst.current) return
+  if (planError?.code === '23505') {
+    alert('Plan na ten dzień już istnieje.')
+    return
+  }
   if (planError) throw planError
 
-// Nie wybieramy planu ponownie po dacie: może istnieć kilka planów.
+// Otwieramy dokładnie plan utworzony przez RPC.
 // RPC powinno zwrócić skalarne ID utworzonego rekordu.
 if (
   !['number', 'string'].includes(typeof nowyPlanId) ||
@@ -1552,19 +1582,54 @@ if (ekran === 'zaplanowane') {
       wybranyLokal={wybranyLokal}
       zaplanowanePlany={zaplanowanePlany}
       dataPlanu={dataPlanu}
+      sprawdzaniePlanu={sprawdzaniePlanu}
+      komunikatNowegoPlanu={komunikatNowegoPlanu}
+      onZmienDateNowegoPlanu={() => setKomunikatNowegoPlanu('')}
       otworzZaplanowanyPlan={otworzZaplanowanyPlan}
-      onPowrot={() =>
-        setEkran(planId ? 'produkcja' : 'planowanie')
-      }
-      onUtworzPlan={(nowaData) => {
-        if (!nowaData) return
+      onPowrot={() => {
         kontekst.current += 1
-  wyczyscFormularzPozycji()
-        setDataPlanu(nowaData)
-        setPlanId(null)
-        setPlan([])
-        setWybrane({})
-        setEkran('planowanie')
+        setEkran(planId ? 'produkcja' : 'planowanie')
+      }}
+      onUtworzPlan={async (nowaData) => {
+        if (!nowaData || !wybranyLokal || sprawdzaniePlanu) return
+        setKomunikatNowegoPlanu('')
+        if (zaplanowanePlany.some((p) =>
+          p.location_id === wybranyLokal.id && p.plan_date === nowaData
+        )) {
+          setKomunikatNowegoPlanu('Plan na ten dzień już istnieje.')
+          return
+        }
+        kontekst.current += 1
+        const wersja = kontekst.current
+        setSprawdzaniePlanu(true)
+
+        try {
+          const { data, error } = await supabase
+            .from('Plans')
+            .select('id')
+            .eq('location_id', wybranyLokal.id)
+            .eq('plan_date', nowaData)
+            .limit(1)
+
+          if (wersja !== kontekst.current) return
+          if (error) throw error
+          if (data?.length) {
+            setKomunikatNowegoPlanu('Plan na ten dzień już istnieje.')
+            return
+          }
+
+          wyczyscFormularzPozycji()
+          setDataPlanu(nowaData)
+          setPlanId(null)
+          setPlan([])
+          setWybrane({})
+          setEkran('planowanie')
+        } catch (error) {
+          if (wersja !== kontekst.current) return
+          setKomunikatNowegoPlanu(`Nie udało się sprawdzić, czy plan już istnieje: ${error.message}`)
+        } finally {
+          setSprawdzaniePlanu(false)
+        }
       }}
     />
   )
