@@ -1,3 +1,6 @@
+import { Fragment, useState } from 'react'
+import TechnologyCard from './TechnologyCard'
+
 export default function ProductionScreen({
   wybranyLokal,
   pozostalo,
@@ -31,6 +34,8 @@ export default function ProductionScreen({
   oznaczGotowe,
   zakonczPlan,
 }) {
+  const [otwartaKartaId, setOtwartaKartaId] = useState(null)
+
   return (
     <div className="app">
         <header>
@@ -243,8 +248,8 @@ export default function ProductionScreen({
 )}
           <div className="produkty">
             {plan.map((produkt) => (
+              <Fragment key={produkt.id}>
               <div
-                key={produkt.id}
                 className={`produkt zadanie ${
                   produkt.gotowe
                     ? 'gotowe'
@@ -285,6 +290,18 @@ export default function ProductionScreen({
   </span>
 )}
                 </div>
+
+                {produkt.product_external_id != null && (
+                  <button
+                    type="button"
+                    className="powrot"
+                    aria-expanded={otwartaKartaId === produkt.id}
+                    aria-controls={`technology-card-${produkt.id}`}
+                    onClick={() => setOtwartaKartaId((id) => id === produkt.id ? null : produkt.id)}
+                  >
+                    Karta technologiczna
+                  </button>
+                )}
 
            {!produkt.started_at && !produkt.gotowe && (
   <button
@@ -436,6 +453,18 @@ export default function ProductionScreen({
   </button>
 )}
               </div>
+              {otwartaKartaId === produkt.id && produkt.product_external_id != null && (
+                <TechnologyCard
+                  key={String(produkt.product_external_id)}
+                  externalId={produkt.product_external_id}
+                  id={`technology-card-${produkt.id}`}
+                  onClose={() => {
+                    setOtwartaKartaId(null)
+                    document.querySelector(`[aria-controls="technology-card-${produkt.id}"]`)?.focus()
+                  }}
+                />
+              )}
+              </Fragment>
             ))}
           </div>
 

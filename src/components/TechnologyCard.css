@@ -1,0 +1,108 @@
+.technology-card {
+  text-align: left;
+  border: 2px solid #cbd5e1;
+}
+
+.technology-card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.technology-card .technology-card-heading h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.technology-card button {
+  min-height: 48px;
+}
+
+.recipe-heading {
+  padding: 12px 0;
+}
+
+.recipe-heading :is(h3, h4) {
+  margin: 0 0 8px;
+  font-size: 21px;
+  color: #111827;
+}
+
+.recipe-heading p {
+  margin: 0;
+}
+
+.recipe-ingredients {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.recipe-ingredients > li {
+  min-width: 0;
+  border-top: 1px solid #cbd5e1;
+}
+
+.recipe-ingredient-values {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  padding: 14px 0;
+}
+
+.recipe-ingredient-values dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.recipe-ingredient-values dt {
+  color: #475569;
+  font-size: 14px;
+}
+
+.recipe-ingredient-values dd {
+  margin: 4px 0 0;
+  font-weight: 600;
+  white-space: pre-wrap;
+}
+
+.recipe-expand {
+  width: 100%;
+  padding: 12px;
+  text-align: left;
+  border: 1px solid #94a3b8;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Bez narastających wcięć: dowolna głębokość zachowuje szerokość na telefonie. */
+.recipe-nested {
+  margin-top: 10px;
+  border-top: 3px solid #94a3b8;
+}
+
+.recipe-message {
+  color: #475569;
+  margin: 8px 0;
+}
+
+@media (max-width: 600px) {
+  .recipe-ingredient-values {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .technology-card-heading > button {
+    width: 100%;
+  }
+}
