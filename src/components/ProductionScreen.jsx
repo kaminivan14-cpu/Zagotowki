@@ -2,6 +2,14 @@ import { Fragment, useState } from 'react'
 import TechnologyCard from './TechnologyCard'
 
 export default function ProductionScreen({
+  tylkoOdczyt,
+  mozeRealizowac,
+  mozeEdytowac,
+  statusPlanu,
+  dataPlanu,
+  wznowPlan,
+  wznowienieDostepne,
+  wznawianie,
   wybranyLokal,
   pozostalo,
   pracownik,
@@ -47,6 +55,17 @@ export default function ProductionScreen({
         </header>
 
         <main>
+          <p style={{ marginBottom: '16px' }}>Plan: {dataPlanu}</p>
+          {statusPlanu === 'completed' && <p role="status">✓ Zakończony</p>}
+          {tylkoOdczyt && <p role="status">Plan tylko do odczytu.</p>}
+          {statusPlanu === 'completed' && ['administrator', 'manager', 'su-chef'].includes(pracownik?.role) && (
+            <div style={{ margin: '16px 0' }}>
+              <button className="powrot" onClick={wznowPlan} disabled={!wznowienieDostepne || wznawianie}>
+                {wznawianie ? 'Wznawianie…' : 'Wznów plan'}
+              </button>
+              {!wznowienieDostepne && <p>Wznowienie jest chwilowo niedostępne.</p>}
+            </div>
+          )}
           <div className="naglowek-produkcji">
             <div>
               <h2>Do zrobienia</h2>
@@ -59,7 +78,7 @@ export default function ProductionScreen({
               </p>
             </div>
 
-            {['administrator', 'manager', 'su-chef'].includes(pracownik?.role) && (
+            {mozeEdytowac && (
   <button
     className="powrot"
     onClick={edytujPlan}
@@ -67,7 +86,7 @@ export default function ProductionScreen({
     ← Edytuj plan
   </button>
 )}
-{['administrator', 'manager', 'su-chef'].includes(pracownik?.role) && (
+{mozeEdytowac && (
   <button
     className="powrot"
     onClick={() =>
@@ -80,7 +99,7 @@ export default function ProductionScreen({
 )}
           </div>
 {pokazDodawaniePozycji &&
-  ['administrator', 'manager', 'su-chef'].includes(pracownik?.role) && (
+  mozeEdytowac && (
     <div
       className="produkt responsive-form"
       style={{ marginBottom: '20px' }}
@@ -231,7 +250,7 @@ export default function ProductionScreen({
     ? 'Ładowanie...'
     : '📊 Historia'}
 </button>
-{['administrator', 'manager', 'su-chef'].includes(pracownik?.role) && (
+{pracownik && (
   <button
     className="powrot"
     onClick={pobierzZaplanowanePlany}
@@ -243,7 +262,7 @@ export default function ProductionScreen({
   >
     {ladowaniePlanow
       ? 'Ładowanie...'
-      : '📋 Zaplanowane'}
+      : '← Lista planów'}
   </button>
 )}
           <div className="produkty">
@@ -303,7 +322,7 @@ export default function ProductionScreen({
                   </button>
                 )}
 
-           {!produkt.started_at && !produkt.gotowe && (
+           {mozeRealizowac && !produkt.started_at && !produkt.gotowe && (
   <button
     className="w-robocie-button"
     onClick={() => rozpocznijPrace(produkt.id)}
@@ -313,7 +332,7 @@ export default function ProductionScreen({
 )}
 {!produkt.started_at &&
   !produkt.gotowe &&
-  ['administrator', 'manager', 'su-chef'].includes(pracownik?.role) && (
+  mozeEdytowac && (
     <button
       onClick={() => usunPozycje(produkt)}
       style={{
@@ -327,7 +346,7 @@ export default function ProductionScreen({
 )}
 {!produkt.started_at &&
   !produkt.gotowe &&
-  ['administrator', 'manager', 'su-chef'].includes(pracownik?.role) && (
+  mozeEdytowac && (
     <>
       <button
         onClick={() => {
@@ -435,7 +454,7 @@ export default function ProductionScreen({
       )}
     </>
 )}
-{produkt.started_at && !produkt.gotowe && (
+{mozeRealizowac && produkt.started_at && !produkt.gotowe && (
   <button
     className="gotowe-button"
     onClick={() => oznaczGotowe(produkt.id)}
@@ -444,7 +463,7 @@ export default function ProductionScreen({
   </button>
 )}
 
-{produkt.gotowe && (
+{produkt.gotowe && (tylkoOdczyt ? <span>✓ Gotowe</span> :
   <button
     className="gotowe-button"
     disabled
@@ -474,7 +493,7 @@ export default function ProductionScreen({
             </div>
           )}
 
-        {['administrator', 'manager', 'su-chef'].includes(pracownik?.role) && (
+        {mozeEdytowac && (
   <button
     className="zakoncz-plan"
     onClick={zakonczPlan}

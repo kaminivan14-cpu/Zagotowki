@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 export default function PlanningScreen({
+  onListaPlanow,
   wybranyLokal,
   pracownik,
   zmienLokal,
@@ -126,6 +127,10 @@ export default function PlanningScreen({
     }}
   />
 </div>
+        {['administrator', 'manager', 'su-chef'].includes(pracownik?.role) && (
+          <button className="powrot" onClick={onListaPlanow} disabled={zapisywanie}
+            style={{ marginBottom: '20px' }}>← Lista planów</button>
+        )}
         <h2>Co przygotować?</h2>
 
         <input

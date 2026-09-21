@@ -1,6 +1,11 @@
 import { useState } from 'react'
 
 export default function ScheduledPlansScreen({
+  pracownik,
+  dzisiaj,
+  onWyloguj,
+  onHistoria,
+  ladowanieHistorii,
   wybranyLokal,
   zaplanowanePlany,
   dataPlanu,
@@ -13,6 +18,12 @@ export default function ScheduledPlansScreen({
 }) {
   // Data nowego planu nie zmienia daty aktualnie otwartego planu.
   const [dataNowegoPlanu, setDataNowegoPlanu] = useState(dataPlanu)
+
+  const employee = pracownik?.role === 'employee'
+  const grupy = employee ? [
+    { tytul: 'DZISIAJ', plany: zaplanowanePlany.filter((plan) => plan.plan_date === dzisiaj) },
+    { tytul: 'NADCHODZĄCE PLANY', plany: zaplanowanePlany.filter((plan) => plan.plan_date > dzisiaj) },
+  ] : [{ tytul: null, plany: zaplanowanePlany }]
 
   return (
     <div className="app">
@@ -41,9 +52,14 @@ export default function ScheduledPlansScreen({
           >
             ← Powrót
           </button>
-         
+          {employee && <>
+            <button className="powrot" onClick={onHistoria} disabled={ladowanieHistorii}>
+              {ladowanieHistorii ? 'Ładowanie…' : '📊 Historia'}
+            </button>
+            <button className="powrot" onClick={onWyloguj}>Wyloguj</button>
+          </>}
         </div>
-<div
+{!employee && <div
   className="produkt new-plan"
   style={{
     marginBottom: '24px',
@@ -83,12 +99,16 @@ export default function ScheduledPlansScreen({
   >
     ➕ Utwórz plan
   </button>
-</div>
+</div>}
         {komunikatNowegoPlanu && (
           <p role="alert">{komunikatNowegoPlanu}</p>
         )}
+        {grupy.map((grupa, index) => (
+        <section key={index} style={{ marginTop: '24px' }}>
+          {grupa.tytul && <h2>{grupa.tytul}</h2>}
+          {employee && grupa.plany.length === 0 && <p>{index === 0 ? 'Brak planu na dziś.' : 'Brak nadchodzących planów.'}</p>}
         <div className="produkty">
-          {zaplanowanePlany.map((planZaplanowany) => (
+          {grupa.plany.map((planZaplanowany) => (
             <div
               key={planZaplanowany.id}
               className="produkt"
@@ -105,6 +125,8 @@ export default function ScheduledPlansScreen({
                   })}
                 </strong>
 
+                {planZaplanowany.status === 'completed' && <p><strong>✓ Zakończony</strong></p>}
+                {employee && planZaplanowany.plan_date > dzisiaj && <p>Tylko do odczytu</p>}
                 <div
                   style={{
                     marginTop: '8px',
@@ -128,7 +150,9 @@ export default function ScheduledPlansScreen({
           ))}
         </div>
 
-        {zaplanowanePlany.length === 0 && (
+        </section>
+        ))}
+        {!employee && zaplanowanePlany.length === 0 && (
           <div
             className="produkt"
             style={{
@@ -136,8 +160,7 @@ export default function ScheduledPlansScreen({
               textAlign: 'center',
             }}
           >
-            📭 Nie ma żadnych aktywnych planów
-            na dziś ani przyszłe dni.
+            📭 Nie ma żadnych planów dla tego lokalu.
           </div>
         )}
       </main>
