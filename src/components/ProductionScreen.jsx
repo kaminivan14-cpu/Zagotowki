@@ -476,6 +476,8 @@ export default function ProductionScreen({
                 <TechnologyCard
                   key={String(produkt.product_external_id)}
                   externalId={produkt.product_external_id}
+                  requestedQuantity={produkt.ilosc}
+                  unit={produkt.jednostka}
                   id={`technology-card-${produkt.id}`}
                   onClose={() => {
                     setOtwartaKartaId(null)

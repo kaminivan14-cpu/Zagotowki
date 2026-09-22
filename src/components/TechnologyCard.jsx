@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react'
 import { loadRecipe } from '../recipeCache'
+import { scaleRecipe } from '../recipeScaling'
 import './TechnologyCard.css'
 
 function useRecipe(externalId) {
@@ -24,7 +25,7 @@ function useRecipe(externalId) {
   }
 }
 
-function IngredientRecipe({ externalId, name, path }) {
+function IngredientRecipe({ externalId, name, path, requestedGrams }) {
   const { data, error, retry } = useRecipe(externalId)
   const [expanded, setExpanded] = useState(false)
   const contentId = useId()
@@ -52,26 +53,37 @@ function IngredientRecipe({ externalId, name, path }) {
       </button>
       {expanded && (
         <div id={contentId} className="recipe-nested">
-          <RecipeContent data={data} path={[...path, String(externalId)]} nested />
+          <RecipeContent data={data} path={[...path, String(externalId)]} requestedQuantity={requestedGrams} unit="g" nested />
         </div>
       )}
     </div>
   )
 }
 
-function RecipeContent({ data, path, nested = false }) {
+function displayGrams(value) {
+  if (value == null || !Number.isFinite(Number(value))) return '—'
+  const number = Number(value)
+  if (number > 0 && number < 0.001) return '< 0,001 g'
+  return `${new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 3 }).format(number)} g`
+}
+
+function RecipeContent({ data, path, requestedQuantity, unit, nested = false }) {
+  const scaled = scaleRecipe(data.product, data.ingredients, requestedQuantity, unit)
   const Heading = nested ? 'h4' : 'h3'
   return (
     <section className="recipe-content">
       <div className="recipe-heading">
         <Heading>{data.product.name ?? '—'}</Heading>
-        <p>Gramatura: <strong>{data.product.gramatura ?? '—'}</strong></p>
+        <p>Gramatura bazowa: <strong>{displayGrams(data.product.gramatura)}</strong></p>
+        {!scaled.error && <p>Do przygotowania: <strong>{displayGrams(scaled.requestedGrams)}</strong></p>}
       </div>
+      {scaled.error && data.ingredients.length > 0 && <p className="recipe-message" role="status">{scaled.error}</p>}
       {data.ingredients.length === 0 ? (
         <p role="status">Brak składników receptury dla tego produktu.</p>
       ) : (
         <ul className="recipe-ingredients">
           {data.ingredients.map((ingredient, index) => {
+            const calculated = scaled.ingredients[index]
             const cycle = ingredient.ingredient_external_id != null &&
               path.includes(String(ingredient.ingredient_external_id))
             return (
@@ -79,10 +91,12 @@ function RecipeContent({ data, path, nested = false }) {
                 <div className="recipe-ingredient-values">
                   <strong>{ingredient.ingredient_name ?? '—'}</strong>
                   <dl>
-                    <div><dt>Netto</dt><dd>{ingredient.netto ?? '—'}</dd></div>
-                    <div><dt>Brutto</dt><dd>{ingredient.brutto ?? '—'}</dd></div>
+                    <div><dt>Netto bazowe</dt><dd>{displayGrams(ingredient.netto)}</dd></div>
+                    <div><dt>Brutto bazowe</dt><dd>{displayGrams(ingredient.brutto)}</dd></div>
+                    <div className="recipe-required"><dt>Potrzebne brutto</dt><dd>{displayGrams(calculated?.requiredGross)}</dd></div>
                   </dl>
                 </div>
+                {calculated?.error && <p className="recipe-message" role="status">{calculated.error}</p>}
                 {cycle ? (
                   <p className="recipe-message" role="status">Nie można rozwinąć składnika: cykl w recepturze.</p>
                 ) : ingredient.ingredient_external_id != null && (
@@ -90,6 +104,7 @@ function RecipeContent({ data, path, nested = false }) {
                     externalId={ingredient.ingredient_external_id}
                     name={ingredient.ingredient_name}
                     path={path}
+                    requestedGrams={calculated?.requiredGross ?? null}
                   />
                 )}
               </li>
@@ -101,7 +116,7 @@ function RecipeContent({ data, path, nested = false }) {
   )
 }
 
-export default function TechnologyCard({ externalId, id, onClose }) {
+export default function TechnologyCard({ externalId, requestedQuantity, unit, id, onClose }) {
   const { data, error, retry } = useRecipe(externalId)
   return (
     <section className="produkt technology-card" id={id} aria-label="Karta technologiczna">
@@ -119,7 +134,7 @@ export default function TechnologyCard({ externalId, id, onClose }) {
       ) : !data.product ? (
         <p role="status">Nie znaleziono produktu w katalogu.</p>
       ) : (
-        <RecipeContent data={data} path={[String(externalId)]} />
+        <RecipeContent data={data} path={[String(externalId)]} requestedQuantity={requestedQuantity} unit={unit} />
       )}
     </section>
   )
