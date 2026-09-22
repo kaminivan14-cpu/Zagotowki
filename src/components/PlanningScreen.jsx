@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import PlanItemDetailsFields from './PlanItemDetailsFields'
 
 export default function PlanningScreen({
   onListaPlanow,
@@ -269,6 +270,8 @@ export default function PlanningScreen({
                         Pilny
                       </option>
                     </select>
+                    <PlanItemDetailsFields value={wybrane[produkt.id] || {}}
+                      onChange={(field, value) => zmienProdukt(produkt.id, field, value)} />
                   </div>
                 )}
               </div>

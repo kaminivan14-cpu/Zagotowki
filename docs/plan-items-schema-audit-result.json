@@ -1,0 +1,2332 @@
+{
+	"grants": [
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "INSERT",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "SELECT",
+			"with_hierarchy": "YES"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "UPDATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "DELETE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRUNCATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "REFERENCES",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRIGGER",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "INSERT",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "SELECT",
+			"with_hierarchy": "YES"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "UPDATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "DELETE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRUNCATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "REFERENCES",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRIGGER",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "INSERT",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "SELECT",
+			"with_hierarchy": "YES"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "UPDATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "DELETE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRUNCATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "REFERENCES",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRIGGER",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "INSERT",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "SELECT",
+			"with_hierarchy": "YES"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "UPDATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "DELETE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRUNCATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "REFERENCES",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Plans",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRIGGER",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "INSERT",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "SELECT",
+			"with_hierarchy": "YES"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "UPDATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "DELETE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRUNCATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "REFERENCES",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRIGGER",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "INSERT",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "SELECT",
+			"with_hierarchy": "YES"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "UPDATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "DELETE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRUNCATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "REFERENCES",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRIGGER",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "INSERT",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "SELECT",
+			"with_hierarchy": "YES"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "UPDATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "DELETE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRUNCATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "REFERENCES",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRIGGER",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "INSERT",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "SELECT",
+			"with_hierarchy": "YES"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "UPDATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "DELETE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRUNCATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "REFERENCES",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Locations",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRIGGER",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "INSERT",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "SELECT",
+			"with_hierarchy": "YES"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "UPDATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "DELETE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRUNCATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "REFERENCES",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRIGGER",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "INSERT",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "SELECT",
+			"with_hierarchy": "YES"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "UPDATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "DELETE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRUNCATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "REFERENCES",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRIGGER",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "INSERT",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "SELECT",
+			"with_hierarchy": "YES"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "UPDATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "DELETE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRUNCATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "REFERENCES",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRIGGER",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "INSERT",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "SELECT",
+			"with_hierarchy": "YES"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "UPDATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "DELETE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRUNCATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "REFERENCES",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Plan_items",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRIGGER",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "INSERT",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "SELECT",
+			"with_hierarchy": "YES"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "UPDATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "DELETE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRUNCATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "REFERENCES",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRIGGER",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "INSERT",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "SELECT",
+			"with_hierarchy": "YES"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "UPDATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "DELETE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRUNCATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "REFERENCES",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRIGGER",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "INSERT",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "SELECT",
+			"with_hierarchy": "YES"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "UPDATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "DELETE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRUNCATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "REFERENCES",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRIGGER",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "INSERT",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "SELECT",
+			"with_hierarchy": "YES"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "UPDATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "DELETE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRUNCATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "REFERENCES",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Employees",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRIGGER",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "INSERT",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "SELECT",
+			"with_hierarchy": "YES"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "UPDATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "DELETE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRUNCATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "REFERENCES",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRIGGER",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "INSERT",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "SELECT",
+			"with_hierarchy": "YES"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "UPDATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "DELETE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRUNCATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "REFERENCES",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRIGGER",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "INSERT",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "SELECT",
+			"with_hierarchy": "YES"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "UPDATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "DELETE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRUNCATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "REFERENCES",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRIGGER",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "INSERT",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "SELECT",
+			"with_hierarchy": "YES"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "UPDATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "DELETE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRUNCATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "REFERENCES",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Products",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRIGGER",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "INSERT",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "SELECT",
+			"with_hierarchy": "YES"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "UPDATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "DELETE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRUNCATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "REFERENCES",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "postgres",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "YES",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRIGGER",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "INSERT",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "SELECT",
+			"with_hierarchy": "YES"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "UPDATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "DELETE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRUNCATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "REFERENCES",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "anon",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRIGGER",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "INSERT",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "SELECT",
+			"with_hierarchy": "YES"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "UPDATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "DELETE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRUNCATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "REFERENCES",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "authenticated",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRIGGER",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "INSERT",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "SELECT",
+			"with_hierarchy": "YES"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "UPDATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "DELETE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRUNCATE",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "REFERENCES",
+			"with_hierarchy": "NO"
+		},
+		{
+			"grantee": "service_role",
+			"grantor": "postgres",
+			"table_name": "Recipe_ingredients",
+			"is_grantable": "NO",
+			"table_schema": "public",
+			"table_catalog": "postgres",
+			"privilege_type": "TRIGGER",
+			"with_hierarchy": "NO"
+		}
+	],
+	"tables": [
+		{
+			"oid": "17579",
+			"relacl": [
+				"postgres=arwdDxtm/postgres",
+				"anon=arwdDxtm/postgres",
+				"authenticated=arwdDxtm/postgres",
+				"service_role=arwdDxtm/postgres"
+			],
+			"nspname": "public",
+			"relname": "Plans",
+			"relrowsecurity": true,
+			"relforcerowsecurity": false
+		},
+		{
+			"oid": "17681",
+			"relacl": [
+				"postgres=arwdDxtm/postgres",
+				"anon=arwdDxtm/postgres",
+				"authenticated=arwdDxtm/postgres",
+				"service_role=arwdDxtm/postgres"
+			],
+			"nspname": "public",
+			"relname": "Locations",
+			"relrowsecurity": true,
+			"relforcerowsecurity": false
+		},
+		{
+			"oid": "17595",
+			"relacl": [
+				"postgres=arwdDxtm/postgres",
+				"anon=arwdDxtm/postgres",
+				"authenticated=arwdDxtm/postgres",
+				"service_role=arwdDxtm/postgres"
+			],
+			"nspname": "public",
+			"relname": "Plan_items",
+			"relrowsecurity": true,
+			"relforcerowsecurity": false
+		},
+		{
+			"oid": "17841",
+			"relacl": [
+				"postgres=arwdDxtm/postgres",
+				"anon=arwdDxtm/postgres",
+				"authenticated=arwdDxtm/postgres",
+				"service_role=arwdDxtm/postgres"
+			],
+			"nspname": "public",
+			"relname": "Employees",
+			"relrowsecurity": true,
+			"relforcerowsecurity": false
+		},
+		{
+			"oid": "17951",
+			"relacl": [
+				"postgres=arwdDxtm/postgres",
+				"anon=arwdDxtm/postgres",
+				"authenticated=arwdDxtm/postgres",
+				"service_role=arwdDxtm/postgres"
+			],
+			"nspname": "public",
+			"relname": "Products",
+			"relrowsecurity": true,
+			"relforcerowsecurity": false
+		},
+		{
+			"oid": "17962",
+			"relacl": [
+				"postgres=arwdDxtm/postgres",
+				"anon=arwdDxtm/postgres",
+				"authenticated=arwdDxtm/postgres",
+				"service_role=arwdDxtm/postgres"
+			],
+			"nspname": "public",
+			"relname": "Recipe_ingredients",
+			"relrowsecurity": true,
+			"relforcerowsecurity": false
+		}
+	],
+	"columns": [
+		{
+			"type": "timestamp with time zone",
+			"table": "Plans",
+			"column": "created_at",
+			"default": "now()",
+			"not_null": true
+		},
+		{
+			"type": "text",
+			"table": "Plans",
+			"column": "status",
+			"default": "'active'::text",
+			"not_null": false
+		},
+		{
+			"type": "timestamp with time zone",
+			"table": "Plan_items",
+			"column": "created_at",
+			"default": "now()",
+			"not_null": true
+		},
+		{
+			"type": "text",
+			"table": "Plan_items",
+			"column": "priorytet",
+			"default": "'normalny'::text",
+			"not_null": false
+		},
+		{
+			"type": "boolean",
+			"table": "Plan_items",
+			"column": "gotowe",
+			"default": "false",
+			"not_null": false
+		},
+		{
+			"type": "timestamp with time zone",
+			"table": "Locations",
+			"column": "created_at",
+			"default": "now()",
+			"not_null": true
+		},
+		{
+			"type": "boolean",
+			"table": "Locations",
+			"column": "active",
+			"default": "true",
+			"not_null": false
+		},
+		{
+			"type": "timestamp with time zone",
+			"table": "Employees",
+			"column": "created_at",
+			"default": "now()",
+			"not_null": true
+		},
+		{
+			"type": "boolean",
+			"table": "Employees",
+			"column": "active",
+			"default": "true",
+			"not_null": false
+		},
+		{
+			"type": "timestamp with time zone",
+			"table": "Products",
+			"column": "updated_at",
+			"default": "now()",
+			"not_null": true
+		},
+		{
+			"type": "timestamp with time zone",
+			"table": "Recipe_ingredients",
+			"column": "updated_at",
+			"default": "now()",
+			"not_null": true
+		},
+		{
+			"type": "date",
+			"table": "Plans",
+			"column": "plan_date",
+			"default": null,
+			"not_null": true
+		},
+		{
+			"type": "bigint",
+			"table": "Recipe_ingredients",
+			"column": "ingredient_external_id",
+			"default": null,
+			"not_null": true
+		},
+		{
+			"type": "text",
+			"table": "Locations",
+			"column": "city",
+			"default": null,
+			"not_null": false
+		},
+		{
+			"type": "numeric",
+			"table": "Plan_items",
+			"column": "ilosc",
+			"default": null,
+			"not_null": false
+		},
+		{
+			"type": "text",
+			"table": "Employees",
+			"column": "name",
+			"default": null,
+			"not_null": false
+		},
+		{
+			"type": "text",
+			"table": "Recipe_ingredients",
+			"column": "ingredient_name",
+			"default": null,
+			"not_null": true
+		},
+		{
+			"type": "bigint",
+			"table": "Employees",
+			"column": "id",
+			"default": null,
+			"not_null": true
+		},
+		{
+			"type": "bigint",
+			"table": "Plans",
+			"column": "id",
+			"default": null,
+			"not_null": true
+		},
+		{
+			"type": "bigint",
+			"table": "Recipe_ingredients",
+			"column": "id",
+			"default": null,
+			"not_null": true
+		},
+		{
+			"type": "bigint",
+			"table": "Employees",
+			"column": "location_id",
+			"default": null,
+			"not_null": false
+		},
+		{
+			"type": "bigint",
+			"table": "Products",
+			"column": "external_id",
+			"default": null,
+			"not_null": true
+		},
+		{
+			"type": "numeric",
+			"table": "Recipe_ingredients",
+			"column": "brutto",
+			"default": null,
+			"not_null": false
+		},
+		{
+			"type": "bigint",
+			"table": "Plan_items",
+			"column": "employee_id",
+			"default": null,
+			"not_null": false
+		},
+		{
+			"type": "timestamp with time zone",
+			"table": "Plan_items",
+			"column": "started_at",
+			"default": null,
+			"not_null": false
+		},
+		{
+			"type": "bigint",
+			"table": "Plan_items",
+			"column": "product_external_id",
+			"default": null,
+			"not_null": false
+		},
+		{
+			"type": "text",
+			"table": "Employees",
+			"column": "pin_hash",
+			"default": null,
+			"not_null": false
+		},
+		{
+			"type": "text",
+			"table": "Locations",
+			"column": "name",
+			"default": null,
+			"not_null": false
+		},
+		{
+			"type": "text",
+			"table": "Plan_items",
+			"column": "nazwa",
+			"default": null,
+			"not_null": false
+		},
+		{
+			"type": "text",
+			"table": "Products",
+			"column": "name",
+			"default": null,
+			"not_null": true
+		},
+		{
+			"type": "bigint",
+			"table": "Plan_items",
+			"column": "id",
+			"default": null,
+			"not_null": true
+		},
+		{
+			"type": "bigint",
+			"table": "Locations",
+			"column": "id",
+			"default": null,
+			"not_null": true
+		},
+		{
+			"type": "text",
+			"table": "Employees",
+			"column": "role",
+			"default": null,
+			"not_null": false
+		},
+		{
+			"type": "numeric",
+			"table": "Products",
+			"column": "gramatura",
+			"default": null,
+			"not_null": true
+		},
+		{
+			"type": "bigint",
+			"table": "Plan_items",
+			"column": "plan_id",
+			"default": null,
+			"not_null": false
+		},
+		{
+			"type": "text",
+			"table": "Locations",
+			"column": "external_id",
+			"default": null,
+			"not_null": false
+		},
+		{
+			"type": "numeric",
+			"table": "Recipe_ingredients",
+			"column": "netto",
+			"default": null,
+			"not_null": false
+		},
+		{
+			"type": "bigint",
+			"table": "Plans",
+			"column": "location_id",
+			"default": null,
+			"not_null": true
+		},
+		{
+			"type": "bigint",
+			"table": "Products",
+			"column": "id",
+			"default": null,
+			"not_null": true
+		},
+		{
+			"type": "timestamp with time zone",
+			"table": "Plan_items",
+			"column": "completed_at",
+			"default": null,
+			"not_null": false
+		},
+		{
+			"type": "bigint",
+			"table": "Recipe_ingredients",
+			"column": "product_external_id",
+			"default": null,
+			"not_null": true
+		},
+		{
+			"type": "text",
+			"table": "Plan_items",
+			"column": "jednostka",
+			"default": null,
+			"not_null": false
+		}
+	],
+	"policies": [
+		{
+			"cmd": "SELECT",
+			"qual": "true",
+			"roles": [
+				"public"
+			],
+			"tablename": "Plans",
+			"permissive": "PERMISSIVE",
+			"policyname": "Allow public read Plans",
+			"schemaname": "public",
+			"with_check": null
+		},
+		{
+			"cmd": "SELECT",
+			"qual": "true",
+			"roles": [
+				"public"
+			],
+			"tablename": "Locations",
+			"permissive": "PERMISSIVE",
+			"policyname": "Allow read active location",
+			"schemaname": "public",
+			"with_check": null
+		},
+		{
+			"cmd": "SELECT",
+			"qual": "true",
+			"roles": [
+				"public"
+			],
+			"tablename": "Plan_items",
+			"permissive": "PERMISSIVE",
+			"policyname": "Allow public read Plan_items",
+			"schemaname": "public",
+			"with_check": null
+		},
+		{
+			"cmd": "SELECT",
+			"qual": "true",
+			"roles": [
+				"anon",
+				"authenticated"
+			],
+			"tablename": "Products",
+			"permissive": "PERMISSIVE",
+			"policyname": "Products readable by app",
+			"schemaname": "public",
+			"with_check": null
+		},
+		{
+			"cmd": "SELECT",
+			"qual": "true",
+			"roles": [
+				"anon",
+				"authenticated"
+			],
+			"tablename": "Recipe_ingredients",
+			"permissive": "PERMISSIVE",
+			"policyname": "Recipe ingredients readable by app",
+			"schemaname": "public",
+			"with_check": null
+		}
+	],
+	"triggers": [
+		{
+			"table": "\"Products\"",
+			"definition": "CREATE TRIGGER products_set_updated_at BEFORE UPDATE ON public.\"Products\" FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+		},
+		{
+			"table": "\"Recipe_ingredients\"",
+			"definition": "CREATE TRIGGER recipe_ingredients_set_updated_at BEFORE UPDATE ON public.\"Recipe_ingredients\" FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+		}
+	],
+	"functions": [
+		{
+			"acl": [
+				"=X/postgres",
+				"postgres=X/postgres",
+				"anon=X/postgres",
+				"authenticated=X/postgres",
+				"service_role=X/postgres"
+			],
+			"owner": "postgres",
+			"signature": "complete_production_plan(bigint,bigint)",
+			"definition": "CREATE OR REPLACE FUNCTION public.complete_production_plan(p_requester_id bigint, p_plan_id bigint)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\ndeclare\n  v_role text;\n  v_user_location_id bigint;\n  v_plan_location_id bigint;\nbegin\n\n  -- Sprawdzamy pracownika\n  select role, location_id\n  into v_role, v_user_location_id\n  from public.\"Employees\"\n  where id = p_requester_id\n    and active = true;\n\n  if not found then\n    raise exception 'Brak dostępu';\n  end if;\n\n  -- Employee nie może kończyć całego planu\n  if v_role not in ('administrator', 'manager', 'su-chef') then\n    raise exception 'Nie masz uprawnień do zakończenia planu';\n  end if;\n\n  -- Sprawdzamy lokal planu\n  select location_id\n  into v_plan_location_id\n  from public.\"Plans\"\n  where id = p_plan_id\n    and status = 'active';\n\n  if not found then\n    raise exception 'Nie znaleziono aktywnego planu';\n  end if;\n\n  -- Manager i su-chef tylko w swoim lokalu\n  if v_role <> 'administrator'\n     and v_user_location_id <> v_plan_location_id then\n    raise exception 'Nie masz uprawnień do tego lokalu';\n  end if;\n\n  -- Kończymy plan\n  update public.\"Plans\"\n  set status = 'completed'\n  where id = p_plan_id;\n\nend;\n$function$\n"
+		},
+		{
+			"acl": [
+				"=X/postgres",
+				"postgres=X/postgres",
+				"anon=X/postgres",
+				"authenticated=X/postgres",
+				"service_role=X/postgres"
+			],
+			"owner": "postgres",
+			"signature": "delete_plan_item(bigint,bigint)",
+			"definition": "CREATE OR REPLACE FUNCTION public.delete_plan_item(p_requester_id bigint, p_item_id bigint)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_role text;\n  v_user_location_id bigint;\n\n  v_plan_location_id bigint;\n  v_started_at timestamptz;\n  v_gotowe boolean;\nBEGIN\n\n  -- Kto wykonuje operację?\n  SELECT\n    e.role,\n    e.location_id\n  INTO\n    v_role,\n    v_user_location_id\n  FROM public.\"Employees\" e\n  WHERE e.id = p_requester_id\n    AND e.active = true;\n\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Brak dostępu';\n  END IF;\n\n  -- Tylko administrator, manager i su-chef\n  IF v_role NOT IN ('administrator', 'manager', 'su-chef') THEN\n    RAISE EXCEPTION 'Nie masz uprawnień do usuwania pozycji';\n  END IF;\n\n  -- Pobieramy pozycję i jej plan\n  SELECT\n    p.location_id,\n    pi.started_at,\n    COALESCE(pi.gotowe, false)\n  INTO\n    v_plan_location_id,\n    v_started_at,\n    v_gotowe\n  FROM public.\"Plan_items\" pi\n  JOIN public.\"Plans\" p\n    ON p.id = pi.plan_id\n  WHERE pi.id = p_item_id\n    AND p.status = 'active';\n\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Nie znaleziono pozycji w aktywnym planie';\n  END IF;\n\n  -- Manager i su-chef tylko w swoim lokalu\n  IF v_role <> 'administrator'\n     AND v_user_location_id IS DISTINCT FROM v_plan_location_id THEN\n    RAISE EXCEPTION 'Nie masz uprawnień do tego lokalu';\n  END IF;\n\n  -- Rozpoczętej pracy nie wolno usuwać\n  IF v_started_at IS NOT NULL THEN\n    RAISE EXCEPTION 'Nie można usunąć rozpoczętej pozycji';\n  END IF;\n\n  -- Gotowej pozycji tym bardziej nie usuwamy\n  IF v_gotowe THEN\n    RAISE EXCEPTION 'Nie można usunąć zakończonej pozycji';\n  END IF;\n\n  DELETE FROM public.\"Plan_items\"\n  WHERE id = p_item_id;\n\nEND;\n$function$\n"
+		},
+		{
+			"acl": [
+				"=X/postgres",
+				"postgres=X/postgres",
+				"anon=X/postgres",
+				"authenticated=X/postgres",
+				"service_role=X/postgres"
+			],
+			"owner": "postgres",
+			"signature": "set_updated_at()",
+			"definition": "CREATE OR REPLACE FUNCTION public.set_updated_at()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.updated_at = NOW();\n  RETURN NEW;\nEND;\n$function$\n"
+		},
+		{
+			"acl": [
+				"=X/postgres",
+				"postgres=X/postgres",
+				"anon=X/postgres",
+				"authenticated=X/postgres",
+				"service_role=X/postgres"
+			],
+			"owner": "postgres",
+			"signature": "start_plan_item(bigint,bigint)",
+			"definition": "CREATE OR REPLACE FUNCTION public.start_plan_item(p_requester_id bigint, p_item_id bigint)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$BEGIN\n-- ZAGOTOWKI_CURRENT_DATE_GUARD_V1\n\n  -- Dotyczy wszystkich ról. Brak lub inna data nie może uruchomić starego RPC.\n  -- Blokada planu utrzymuje status/datę stabilne do końca operacji.\n  PERFORM 1\n  FROM public.\"Plans\" AS date_guard_plan\n  JOIN public.\"Plan_items\" AS date_guard_item ON date_guard_item.plan_id = date_guard_plan.id\n  WHERE date_guard_item.id = p_item_id\n    AND date_guard_plan.plan_date = (now() AT TIME ZONE 'Europe/Warsaw')::date\n  FOR UPDATE OF date_guard_plan;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Operacja jest dostępna wyłącznie dla planu na dziś' USING ERRCODE = '42501';\n  END IF;\n\n\nDECLARE\n  v_user_location_id bigint;\n  v_plan_location_id bigint;\n  v_item_started_at timestamptz;\n  v_item_gotowe boolean;\nBEGIN\n\n  -- Sprawdzamy pracownika\n  SELECT e.location_id\n  INTO v_user_location_id\n  FROM public.\"Employees\" e\n  WHERE e.id = p_requester_id\n    AND e.active = true;\n\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Brak dostępu';\n  END IF;\n\n  -- Pracownik musi być przypisany do lokalu\n  IF v_user_location_id IS NULL THEN\n    RAISE EXCEPTION 'Pracownik nie jest przypisany do lokalu';\n  END IF;\n\n  -- Sprawdzamy pozycję + aktywny plan\n  SELECT\n    p.location_id,\n    pi.started_at,\n    COALESCE(pi.gotowe, false)\n  INTO\n    v_plan_location_id,\n    v_item_started_at,\n    v_item_gotowe\n  FROM public.\"Plan_items\" pi\n  JOIN public.\"Plans\" p\n    ON p.id = pi.plan_id\n  WHERE pi.id = p_item_id\n    AND p.status = 'active';\n\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Nie znaleziono pozycji w aktywnym planie';\n  END IF;\n\n  -- Tylko własny lokal\n  IF v_user_location_id IS DISTINCT FROM v_plan_location_id THEN\n    RAISE EXCEPTION 'Nie masz uprawnień do tego lokalu';\n  END IF;\n\n  -- Nie uruchamiamy ponownie zakończonego zadania\n  IF v_item_gotowe THEN\n    RAISE EXCEPTION 'Ta pozycja jest już zakończona';\n  END IF;\n\n  -- Nie resetujemy czasu przez ponowne kliknięcie\n  IF v_item_started_at IS NOT NULL THEN\n    RAISE EXCEPTION 'Ta pozycja jest już w trakcie pracy';\n  END IF;\n\n  UPDATE public.\"Plan_items\"\n  SET\n    started_at = now(),\n    completed_at = NULL,\n    gotowe = false\n  WHERE id = p_item_id;\n\nEND;\nEND;\n$function$\n"
+		},
+		{
+			"acl": [
+				"=X/postgres",
+				"postgres=X/postgres",
+				"anon=X/postgres",
+				"authenticated=X/postgres",
+				"service_role=X/postgres"
+			],
+			"owner": "postgres",
+			"signature": "create_production_plan(bigint,bigint,date,jsonb)",
+			"definition": "CREATE OR REPLACE FUNCTION public.create_production_plan(p_requester_id bigint, p_location_id bigint, p_plan_date date, p_items jsonb)\n RETURNS bigint\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\ndeclare\n  v_role text;\n  v_user_location_id bigint;\n  v_plan_id bigint;\nbegin\n\n  select role, location_id\n  into v_role, v_user_location_id\n  from public.\"Employees\"\n  where id = p_requester_id\n    and active = true;\n\n  if not found then\n    raise exception 'Brak dostępu';\n  end if;\n\n  if v_role not in ('administrator', 'manager', 'su-chef') then\n    raise exception 'Nie masz uprawnień do tworzenia planu';\n  end if;\n\n  if v_role <> 'administrator'\n     and v_user_location_id <> p_location_id then\n    raise exception 'Nie masz uprawnień do tego lokalu';\n  end if;\n\n  insert into public.\"Plans\" (\n    plan_date,\n    status,\n    location_id\n  )\n  values (\n    p_plan_date,\n    'active',\n    p_location_id\n  )\n  returning id into v_plan_id;\n\n  insert into public.\"Plan_items\" (\n    plan_id,\n    product_external_id,\n    nazwa,\n    ilosc,\n    jednostka,\n    priorytet,\n    gotowe\n  )\n  select\n    v_plan_id,\n    x.product_external_id,\n    x.nazwa,\n    x.ilosc,\n    x.jednostka,\n    x.priorytet,\n    false\n  from jsonb_to_recordset(p_items) as x(\n    product_external_id bigint,\n    nazwa text,\n    ilosc numeric,\n    jednostka text,\n    priorytet text\n  );\n\n  return v_plan_id;\n\nend;\n$function$\n"
+		},
+		{
+			"acl": [
+				"=X/postgres",
+				"postgres=X/postgres",
+				"anon=X/postgres",
+				"authenticated=X/postgres",
+				"service_role=X/postgres"
+			],
+			"owner": "postgres",
+			"signature": "update_production_plan(bigint,bigint,jsonb)",
+			"definition": "CREATE OR REPLACE FUNCTION public.update_production_plan(p_requester_id bigint, p_plan_id bigint, p_items jsonb)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\ndeclare\n  v_role text;\n  v_user_location_id bigint;\n  v_plan_location_id bigint;\nbegin\n\n  select role, location_id\n  into v_role, v_user_location_id\n  from public.\"Employees\"\n  where id = p_requester_id\n    and active = true;\n\n  if not found then\n    raise exception 'Brak dostępu';\n  end if;\n\n  if v_role not in ('administrator', 'manager', 'su-chef') then\n    raise exception 'Nie masz uprawnień do edycji planu';\n  end if;\n\n  select location_id\n  into v_plan_location_id\n  from public.\"Plans\"\n  where id = p_plan_id\n    and status = 'active';\n\n  if not found then\n    raise exception 'Nie znaleziono aktywnego planu';\n  end if;\n\n  if v_role <> 'administrator'\n     and v_user_location_id <> v_plan_location_id then\n    raise exception 'Nie masz uprawnień do tego lokalu';\n  end if;\n\n  delete from public.\"Plan_items\"\n  where plan_id = p_plan_id;\n\n  insert into public.\"Plan_items\" (\n    plan_id,\n    product_external_id,\n    nazwa,\n    ilosc,\n    jednostka,\n    priorytet,\n    gotowe\n  )\n  select\n    p_plan_id,\n    x.product_external_id,\n    x.nazwa,\n    x.ilosc,\n    x.jednostka,\n    x.priorytet,\n    false\n  from jsonb_to_recordset(p_items) as x(\n    product_external_id bigint,\n    nazwa text,\n    ilosc numeric,\n    jednostka text,\n    priorytet text\n  );\n\nend;\n$function$\n"
+		},
+		{
+			"acl": [
+				"=X/postgres",
+				"postgres=X/postgres",
+				"anon=X/postgres",
+				"authenticated=X/postgres",
+				"service_role=X/postgres"
+			],
+			"owner": "postgres",
+			"signature": "add_plan_item(bigint,bigint,text,numeric,text,text,bigint)",
+			"definition": "CREATE OR REPLACE FUNCTION public.add_plan_item(p_requester_id bigint, p_plan_id bigint, p_nazwa text, p_ilosc numeric, p_jednostka text, p_priorytet text, p_product_external_id bigint DEFAULT NULL::bigint)\n RETURNS bigint\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_role text;\n  v_user_location_id bigint;\n  v_plan_location_id bigint;\n  v_item_id bigint;\nBEGIN\n\n  SELECT role, location_id\n  INTO v_role, v_user_location_id\n  FROM public.\"Employees\"\n  WHERE id = p_requester_id\n    AND active = true;\n\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Brak dostępu';\n  END IF;\n\n  IF v_role NOT IN ('administrator', 'manager', 'su-chef') THEN\n    RAISE EXCEPTION 'Nie masz uprawnień do dodawania pozycji';\n  END IF;\n\n  SELECT location_id\n  INTO v_plan_location_id\n  FROM public.\"Plans\"\n  WHERE id = p_plan_id\n    AND status = 'active';\n\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Nie znaleziono aktywnego planu';\n  END IF;\n\n  IF v_role <> 'administrator'\n     AND v_user_location_id IS DISTINCT FROM v_plan_location_id THEN\n    RAISE EXCEPTION 'Nie masz uprawnień do tego lokalu';\n  END IF;\n\n  IF p_nazwa IS NULL OR trim(p_nazwa) = '' THEN\n    RAISE EXCEPTION 'Nazwa jest wymagana';\n  END IF;\n\n  IF p_ilosc IS NULL OR p_ilosc <= 0 THEN\n    RAISE EXCEPTION 'Ilość musi być większa od 0';\n  END IF;\n\n  IF p_jednostka NOT IN ('g', 'kg', 'ml', 'l', 'szt.') THEN\n    RAISE EXCEPTION 'Nieprawidłowa jednostka';\n  END IF;\n\n  IF p_priorytet NOT IN ('normalny', 'wysoki', 'pilny') THEN\n    RAISE EXCEPTION 'Nieprawidłowy priorytet';\n  END IF;\n\n  INSERT INTO public.\"Plan_items\" (\n    plan_id,\n    product_external_id,\n    nazwa,\n    ilosc,\n    jednostka,\n    priorytet,\n    gotowe\n  )\n  VALUES (\n    p_plan_id,\n    p_product_external_id,\n    trim(p_nazwa),\n    p_ilosc,\n    p_jednostka,\n    p_priorytet,\n    false\n  )\n  RETURNING id INTO v_item_id;\n\n  RETURN v_item_id;\n\nEND;\n$function$\n"
+		},
+		{
+			"acl": [
+				"=X/postgres",
+				"postgres=X/postgres",
+				"anon=X/postgres",
+				"authenticated=X/postgres",
+				"service_role=X/postgres"
+			],
+			"owner": "postgres",
+			"signature": "update_plan_item(bigint,bigint,text,numeric,text,text,bigint)",
+			"definition": "CREATE OR REPLACE FUNCTION public.update_plan_item(p_requester_id bigint, p_item_id bigint, p_nazwa text, p_ilosc numeric, p_jednostka text, p_priorytet text, p_product_external_id bigint DEFAULT NULL::bigint)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_role text;\n  v_user_location_id bigint;\n  v_plan_location_id bigint;\n  v_started_at timestamptz;\n  v_gotowe boolean;\nBEGIN\n\n  SELECT e.role, e.location_id\n  INTO v_role, v_user_location_id\n  FROM public.\"Employees\" e\n  WHERE e.id = p_requester_id\n    AND e.active = true;\n\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Brak dostępu';\n  END IF;\n\n  IF v_role NOT IN ('administrator', 'manager', 'su-chef') THEN\n    RAISE EXCEPTION 'Nie masz uprawnień do edycji pozycji';\n  END IF;\n\n  SELECT\n    p.location_id,\n    pi.started_at,\n    COALESCE(pi.gotowe, false)\n  INTO\n    v_plan_location_id,\n    v_started_at,\n    v_gotowe\n  FROM public.\"Plan_items\" pi\n  JOIN public.\"Plans\" p\n    ON p.id = pi.plan_id\n  WHERE pi.id = p_item_id\n    AND p.status = 'active';\n\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Nie znaleziono pozycji w aktywnym planie';\n  END IF;\n\n  IF v_role <> 'administrator'\n     AND v_user_location_id IS DISTINCT FROM v_plan_location_id THEN\n    RAISE EXCEPTION 'Nie masz uprawnień do tego lokalu';\n  END IF;\n\n  IF v_started_at IS NOT NULL OR v_gotowe THEN\n    RAISE EXCEPTION 'Nie można edytować rozpoczętej pozycji';\n  END IF;\n\n  IF p_nazwa IS NULL OR trim(p_nazwa) = '' THEN\n    RAISE EXCEPTION 'Nazwa jest wymagana';\n  END IF;\n\n  IF p_ilosc IS NULL OR p_ilosc <= 0 THEN\n    RAISE EXCEPTION 'Ilość musi być większa od 0';\n  END IF;\n\n  IF p_jednostka NOT IN ('g', 'kg', 'ml', 'l', 'szt.') THEN\n    RAISE EXCEPTION 'Nieprawidłowa jednostka';\n  END IF;\n\n  IF p_priorytet NOT IN ('normalny', 'wysoki', 'pilny') THEN\n    RAISE EXCEPTION 'Nieprawidłowy priorytet';\n  END IF;\n\n  UPDATE public.\"Plan_items\"\n  SET\n    product_external_id = p_product_external_id,\n    nazwa = trim(p_nazwa),\n    ilosc = p_ilosc,\n    jednostka = p_jednostka,\n    priorytet = p_priorytet\n  WHERE id = p_item_id;\n\nEND;\n$function$\n"
+		},
+		{
+			"acl": [
+				"postgres=X/postgres",
+				"anon=X/postgres",
+				"authenticated=X/postgres",
+				"service_role=X/postgres"
+			],
+			"owner": "postgres",
+			"signature": "reopen_production_plan(bigint,bigint)",
+			"definition": "CREATE OR REPLACE FUNCTION public.reopen_production_plan(p_requester_id bigint, p_plan_id bigint)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog'\nAS $function$\nDECLARE\n  requester public.\"Employees\"%ROWTYPE;\n  target_plan public.\"Plans\"%ROWTYPE;\nBEGIN\n  SELECT * INTO requester FROM public.\"Employees\"\n    WHERE id = p_requester_id AND active = true\n    FOR SHARE;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Nieaktywny lub nieistniejący pracownik' USING ERRCODE = '42501';\n  END IF;\n  IF requester.role IS NULL OR requester.role NOT IN ('administrator', 'manager', 'su-chef') THEN\n    RAISE EXCEPTION 'Brak uprawnień do wznowienia planu' USING ERRCODE = '42501';\n  END IF;\n\n  SELECT * INTO target_plan FROM public.\"Plans\" WHERE id = p_plan_id FOR UPDATE;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Plan nie istnieje' USING ERRCODE = 'P0002';\n  END IF;\n  IF requester.role <> 'administrator' AND\n    (requester.location_id IS NULL OR requester.location_id IS DISTINCT FROM target_plan.location_id) THEN\n    RAISE EXCEPTION 'Brak uprawnień do tego lokalu' USING ERRCODE = '42501';\n  END IF;\n  IF target_plan.status IS DISTINCT FROM 'completed' THEN\n    RAISE EXCEPTION 'Wznowić można wyłącznie zakończony plan' USING ERRCODE = '55000';\n  END IF;\n\n  UPDATE public.\"Plans\" SET status = 'active' WHERE id = p_plan_id;\n  -- Żadnych operacji na Plan_items ani innych polach Plans.\nEND;\n$function$\n"
+		},
+		{
+			"acl": [
+				"=X/postgres",
+				"postgres=X/postgres",
+				"anon=X/postgres",
+				"authenticated=X/postgres",
+				"service_role=X/postgres"
+			],
+			"owner": "postgres",
+			"signature": "complete_plan_item(bigint,bigint)",
+			"definition": "CREATE OR REPLACE FUNCTION public.complete_plan_item(p_requester_id bigint, p_item_id bigint)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$BEGIN\n-- ZAGOTOWKI_CURRENT_DATE_GUARD_V1\n\n  -- Dotyczy wszystkich ról. Brak lub inna data nie może uruchomić starego RPC.\n  -- Blokada planu utrzymuje status/datę stabilne do końca operacji.\n  PERFORM 1\n  FROM public.\"Plans\" AS date_guard_plan\n  JOIN public.\"Plan_items\" AS date_guard_item ON date_guard_item.plan_id = date_guard_plan.id\n  WHERE date_guard_item.id = p_item_id\n    AND date_guard_plan.plan_date = (now() AT TIME ZONE 'Europe/Warsaw')::date\n  FOR UPDATE OF date_guard_plan;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Operacja jest dostępna wyłącznie dla planu na dziś' USING ERRCODE = '42501';\n  END IF;\n\n\nDECLARE\n  v_user_location_id bigint;\n  v_plan_location_id bigint;\n  v_item_started_at timestamptz;\n  v_item_gotowe boolean;\nBEGIN\n\n  -- Sprawdzamy pracownika\n  SELECT e.location_id\n  INTO v_user_location_id\n  FROM public.\"Employees\" e\n  WHERE e.id = p_requester_id\n    AND e.active = true;\n\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Brak dostępu';\n  END IF;\n\n  IF v_user_location_id IS NULL THEN\n    RAISE EXCEPTION 'Pracownik nie jest przypisany do lokalu';\n  END IF;\n\n  -- Sprawdzamy pozycję + aktywny plan\n  SELECT\n    p.location_id,\n    pi.started_at,\n    COALESCE(pi.gotowe, false)\n  INTO\n    v_plan_location_id,\n    v_item_started_at,\n    v_item_gotowe\n  FROM public.\"Plan_items\" pi\n  JOIN public.\"Plans\" p\n    ON p.id = pi.plan_id\n  WHERE pi.id = p_item_id\n    AND p.status = 'active';\n\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Nie znaleziono pozycji w aktywnym planie';\n  END IF;\n\n  -- Tylko własny lokal\n  IF v_user_location_id IS DISTINCT FROM v_plan_location_id THEN\n    RAISE EXCEPTION 'Nie masz uprawnień do tego lokalu';\n  END IF;\n\n  -- Musi być wcześniej rozpoczęta\n  IF v_item_started_at IS NULL THEN\n    RAISE EXCEPTION 'Najpierw rozpocznij pracę';\n  END IF;\n\n  IF v_item_gotowe THEN\n    RAISE EXCEPTION 'Ta pozycja jest już zakończona';\n  END IF;\n\n  -- WAŻNE:\n  -- employee_id pochodzi z requester_id.\n  -- Frontend nie może wskazać innego pracownika.\n  UPDATE public.\"Plan_items\"\n  SET\n    gotowe = true,\n    completed_at = now(),\n    employee_id = p_requester_id\n  WHERE id = p_item_id;\n\nEND;\nEND;\n$function$\n"
+		}
+	],
+	"constraints": [
+		{
+			"name": "Plans_pkey",
+			"table": "\"Plans\"",
+			"definition": "PRIMARY KEY (id)"
+		},
+		{
+			"name": "Plan_items_pkey",
+			"table": "\"Plan_items\"",
+			"definition": "PRIMARY KEY (id)"
+		},
+		{
+			"name": "Plan_items_plan_id_fkey",
+			"table": "\"Plan_items\"",
+			"definition": "FOREIGN KEY (plan_id) REFERENCES \"Plans\"(id) ON DELETE CASCADE"
+		},
+		{
+			"name": "Locations_pkey",
+			"table": "\"Locations\"",
+			"definition": "PRIMARY KEY (id)"
+		},
+		{
+			"name": "Plans_location_id_fkey",
+			"table": "\"Plans\"",
+			"definition": "FOREIGN KEY (location_id) REFERENCES \"Locations\"(id)"
+		},
+		{
+			"name": "Employees_pkey",
+			"table": "\"Employees\"",
+			"definition": "PRIMARY KEY (id)"
+		},
+		{
+			"name": "Employees_location_id_fkey",
+			"table": "\"Employees\"",
+			"definition": "FOREIGN KEY (location_id) REFERENCES \"Locations\"(id)"
+		},
+		{
+			"name": "plan_items_employee_id_fkey",
+			"table": "\"Plan_items\"",
+			"definition": "FOREIGN KEY (employee_id) REFERENCES \"Employees\"(id) ON DELETE SET NULL"
+		},
+		{
+			"name": "plans_location_date_unique",
+			"table": "\"Plans\"",
+			"definition": "UNIQUE (location_id, plan_date)"
+		},
+		{
+			"name": "Products_pkey",
+			"table": "\"Products\"",
+			"definition": "PRIMARY KEY (id)"
+		},
+		{
+			"name": "Products_external_id_key",
+			"table": "\"Products\"",
+			"definition": "UNIQUE (external_id)"
+		},
+		{
+			"name": "Recipe_ingredients_pkey",
+			"table": "\"Recipe_ingredients\"",
+			"definition": "PRIMARY KEY (id)"
+		},
+		{
+			"name": "recipe_product_ingredient_unique",
+			"table": "\"Recipe_ingredients\"",
+			"definition": "UNIQUE (product_external_id, ingredient_external_id)"
+		},
+		{
+			"name": "recipe_product_fk",
+			"table": "\"Recipe_ingredients\"",
+			"definition": "FOREIGN KEY (product_external_id) REFERENCES \"Products\"(external_id) ON UPDATE CASCADE ON DELETE CASCADE"
+		},
+		{
+			"name": "plan_items_product_external_id_fkey",
+			"table": "\"Plan_items\"",
+			"definition": "FOREIGN KEY (product_external_id) REFERENCES \"Products\"(external_id) ON UPDATE CASCADE ON DELETE SET NULL"
+		}
+	]
+}

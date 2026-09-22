@@ -663,3 +663,70 @@ main h2 {
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+.product-combobox {
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 12px;
+}
+.product-combobox label, .product-combobox small {
+  display: block;
+  margin: 6px 0;
+}
+.product-combobox input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.product-combobox-options {
+  list-style: none;
+  margin: 4px 0;
+  padding: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #94a3b8;
+  border-radius: 8px;
+  background: white;
+  color: #0f172a;
+}
+.product-combobox-options:empty { display: none; }
+.product-combobox-options li {
+  padding: 12px;
+  min-height: 44px;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.product-combobox-options li:hover,
+.product-combobox-options li[aria-selected="true"] {
+  background: #e2e8f0;
+}
+
+.plan-item-details-fields {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(0, 2fr);
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  margin: 12px 0;
+}
+.plan-item-details-fields label { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.plan-item-details-fields :is(input, textarea) {
+  width: 100%; min-width: 0; box-sizing: border-box;
+  padding: 10px; border: 1px solid #94a3b8; border-radius: 6px;
+  font: inherit; min-height: 44px;
+}
+.plan-item-details-fields textarea { resize: vertical; }
+.item-ready-time { display: block; font-weight: 700; margin-top: 8px; }
+.item-note { white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0 0; }
+.plan-delete-action { margin-bottom: 16px; }
+.plan-delete-action button { color: #b91c1c; }
+.ustawienia { flex-wrap: wrap; }
+@media (max-width: 600px) {
+  .plan-item-details-fields { grid-template-columns: minmax(0, 1fr); }
+}
+.item-form-field { display: inline-flex; flex-direction: column; gap: 6px; min-width: 0; margin: 6px; }
+.item-form-field :is(input, select) { min-width: 0; width: 100%; box-sizing: border-box; }
+@media (max-width: 1024px) { .responsive-form > .item-form-field { margin: 0; } }
+@media (max-width: 600px) { .responsive-form > .item-form-field { grid-column: 1 / -1; } }

@@ -10,6 +10,7 @@ import PlanningScreen from './components/PlanningScreen'
 import { supabase } from './supabase'
 import { managementRoles, productionDate, employeeCanViewPlan, canWorkOnPlan } from './planAccess'
 import { pobierzKatalogProduktow } from './productCatalog'
+import { itemDetails, hasProductionHistory, canDeletePlan } from './planItemDetails'
 
 const jednostki = ['g', 'kg', 'ml', 'l', 'szt.']
 
@@ -60,6 +61,8 @@ const [logowanie, setLogowanie] = useState(false)
   const [planId, setPlanId] = useState(null)
   const [otwartyPlan, setOtwartyPlan] = useState(null)
   const [wznawianie, setWznawianie] = useState(false)
+  const [usuwaniePlanu, setUsuwaniePlanu] = useState(false)
+  const blokadaUsuwaniaPlanu = useRef(false)
   const blokadaWznowienia = useRef(false)
   // Włączyć dopiero po audycie i wdrożeniu opisanego kontraktu RPC.
   const wznowienieDostepne = import.meta.env.VITE_PLAN_REOPEN_ENABLED === 'true'
@@ -109,6 +112,8 @@ const [pokazDodawaniePozycji, setPokazDodawaniePozycji] = useState(false)
 
 const [nowaPozycja, setNowaPozycja] = useState({
   product_external_id: null,
+  note: '',
+  ready_time: '',
   nazwa: '',
   ilosc: '',
   jednostka: 'kg',
@@ -118,6 +123,8 @@ const [edycjaPozycjiId, setEdycjaPozycjiId] = useState(null)
 
 const [edytowanaPozycja, setEdytowanaPozycja] = useState({
   product_external_id: null,
+  note: '',
+  ready_time: '',
   nazwa: '',
   ilosc: '',
   jednostka: 'kg',
@@ -126,7 +133,7 @@ const [edytowanaPozycja, setEdytowanaPozycja] = useState({
   const wyczyscFormularzPozycji = () => {
     setEdycjaPozycjiId(null)
     setPokazDodawaniePozycji(false)
-    setNowaPozycja({ product_external_id: null, nazwa: '', ilosc: '', jednostka: 'kg', priorytet: 'normalny' })
+    setNowaPozycja({ note: '', ready_time: '', product_external_id: null, nazwa: '', ilosc: '', jednostka: 'kg', priorytet: 'normalny' })
   }
 
   // -----------------------------------------
@@ -584,6 +591,9 @@ useEffect(() => {
 
     if (ladowanieProduktow || bladProduktow) return
 
+    try {
+      Object.values(wybrane).filter((p) => p.aktywny).forEach(itemDetails)
+    } catch (error) { alert(error.message); return }
     const nowyPlan = produktyDoPlanowania
       .filter(
         (produkt) =>
@@ -605,6 +615,7 @@ useEffect(() => {
           wybrane[produkt.id]?.priorytet ||
           'normalny',
 
+        ...itemDetails(wybrane[produkt.id] || {}),
         gotowe: false,
       }))
 
@@ -670,6 +681,8 @@ if (istniejacyPlan) {
         ilosc: produkt.ilosc,
         jednostka: produkt.jednostka,
         priorytet: produkt.priorytet,
+        note: produkt.note,
+        ready_time: produkt.ready_time,
       })),
     })
 
@@ -734,6 +747,8 @@ return
         ilosc: produkt.ilosc,
         jednostka: produkt.jednostka,
         priorytet: produkt.priorytet,
+        note: produkt.note,
+        ready_time: produkt.ready_time,
       })),
     })
 
@@ -785,6 +800,8 @@ return
     return
   }
 
+  let details
+  try { details = itemDetails(edytowanaPozycja) } catch (error) { alert(error.message); return }
   const ilosc = Number(edytowanaPozycja.ilosc)
 
   if (!ilosc || ilosc <= 0) {
@@ -803,6 +820,8 @@ return
         p_ilosc: ilosc,
         p_jednostka: edytowanaPozycja.jednostka,
         p_priorytet: edytowanaPozycja.priorytet,
+        p_note: details.note,
+        p_ready_time: details.ready_time,
       }
     )
 
@@ -819,6 +838,7 @@ return
               ilosc,
               jednostka: edytowanaPozycja.jednostka,
               priorytet: edytowanaPozycja.priorytet,
+              ...details,
             }
           : element
       )
@@ -884,6 +904,8 @@ const usunPozycje = async (produkt) => {
     return
   }
 
+  let details
+  try { details = itemDetails(nowaPozycja) } catch (error) { alert(error.message); return }
   const ilosc = Number(nowaPozycja.ilosc)
 
   if (!ilosc || ilosc <= 0) {
@@ -901,6 +923,8 @@ const usunPozycje = async (produkt) => {
       p_ilosc: ilosc,
       p_jednostka: nowaPozycja.jednostka,
       p_priorytet: nowaPozycja.priorytet,
+      p_note: details.note,
+      p_ready_time: details.ready_time,
     })
 
     if (wersja !== kontekst.current) return
@@ -1077,7 +1101,7 @@ const formatujGodzine = (data) => {
       alert('Katalog jest niedostępny. Edytuj poszczególne pozycje na ekranie produkcji lub ponów pobranie katalogu na ekranie planowania.')
       return
     }
-    if (plan.some((produkt) => produkt.started_at || produkt.gotowe)) {
+    if (plan.some(hasProductionHistory)) {
       alert('Ten plan zawiera rozpoczęte lub zakończone pozycje. Edytuj poszczególne pozycje na ekranie produkcji.')
       return
     }
@@ -1088,6 +1112,8 @@ const formatujGodzine = (data) => {
         ilosc: produkt.ilosc,
         jednostka: produkt.jednostka,
         priorytet: produkt.priorytet,
+        note: produkt.note || '',
+        ready_time: produkt.ready_time?.slice(0, 5) || '',
       }
     })
 
@@ -1423,6 +1449,32 @@ console.log('GOTOWA HISTORIA:', historiaZPracownikami)
     void pobierzZaplanowanePlany()
   }
 
+  const usunPlan = async () => {
+    if (!canDeletePlan(pracownik, otwartyPlan) || blokadaUsuwaniaPlanu.current) return
+    if (otwartyPlan.status !== 'active' || plan.some(hasProductionHistory)) {
+      alert('Rozpoczętego lub zakończonego planu nie można usunąć. Historia pozostaje zachowana.')
+      return
+    }
+    const data = otwartyPlan.plan_date.split('-').reverse().join('.')
+    if (!window.confirm(`Czy na pewno chcesz usunąć plan z dnia ${data}? Tej operacji nie można cofnąć.`)) return
+    const wersja = kontekst.current
+    blokadaUsuwaniaPlanu.current = true
+    setUsuwaniePlanu(true)
+    try {
+      const { error } = await supabase.rpc('delete_production_plan', {
+        p_requester_id: pracownik.id, p_plan_id: otwartyPlan.id,
+      })
+      if (wersja !== kontekst.current) return
+      if (error) throw error
+      wrocDoListyPlanow()
+    } catch (error) {
+      if (wersja === kontekst.current) alert(`Nie udało się usunąć planu: ${error.message}`)
+    } finally {
+      blokadaUsuwaniaPlanu.current = false
+      setUsuwaniePlanu(false)
+    }
+  }
+
   const wznowPlan = async () => {
     if (!wznowienieDostepne || blokadaWznowienia.current ||
       !managementRoles.includes(pracownik?.role) || otwartyPlan?.status !== 'completed') return
@@ -1530,6 +1582,9 @@ if (ekran === 'wybor-lokalu') {
     return (
       <ProductionScreen
         wybranyLokal={wybranyLokal}
+        mozeUsunacPlan={canDeletePlan(pracownik, otwartyPlan)}
+        usunPlan={usunPlan}
+        usuwaniePlanu={usuwaniePlanu}
         pozostalo={pozostalo}
         tylkoOdczyt={tylkoOdczyt}
         mozeRealizowac={canWorkOnPlan(pracownik, otwartyPlan)}
