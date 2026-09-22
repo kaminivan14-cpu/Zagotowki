@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { scaleRecipe } from '../src/recipeScaling.js'
+import { scaleRecipe, extendRecipePath } from '../src/recipeScaling.js'
 
 const calculate = (base, requested, gross, unit = 'g') =>
   scaleRecipe({ gramatura: base }, [{ brutto: gross, netto: 999 }], requested, unit)
@@ -33,4 +33,29 @@ test('source data unchanged; existing nested recipe can use parent gross', () =>
   assert.equal(child.ingredients[0].requiredGross,90)
   assert.deepEqual(source,[{brutto:90,netto:1}])
   assert.notEqual(parent.ingredients[0],source[0])
+})
+
+test('Miodownik → Krem → Śmietana/Mascarpone uses required parent gross', () => {
+  const parent = calculate(2000, 2000, 500)
+  const cream = scaleRecipe({gramatura:1000}, [{brutto:600},{brutto:400}], parent.ingredients[0].requiredGross, 'g')
+  assert.deepEqual(cream.ingredients.map(i => i.requiredGross), [300,200])
+})
+test('four levels pass unrounded gross; invalid child stops calculation', () => {
+  let required = 500
+  for (const [base,gross] of [[100,90],[1000,600],[200,50],[100,20]]) {
+    required = calculate(base,required,gross).ingredients[0].requiredGross
+  }
+  assert.equal(required,13.5)
+  const invalid = calculate(100,500,null)
+  assert(calculate(100,invalid.ingredients[0].requiredGross,90).error)
+})
+test('branch-local cycle detection, mixed ID types and sibling reuse', () => {
+  const root = Object.freeze(['50'])
+  const child = extendRecipePath(root, 60)
+  const grandchild = extendRecipePath(child, 70)
+  assert.equal(extendRecipePath(grandchild, 50), null)
+  assert.equal(extendRecipePath(root, '50'), null)
+  assert.deepEqual(extendRecipePath(root, 60), ['50','60'])
+  assert.deepEqual(extendRecipePath(grandchild, 80), ['50','60','70','80'])
+  assert.deepEqual(root, ['50'])
 })

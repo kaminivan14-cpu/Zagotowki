@@ -114,3 +114,15 @@
   background: #f0fdf4;
 }
 .recipe-ingredient-values dd { overflow-wrap: anywhere; }
+
+/* Numer poziomu pokazuje głębokość bez zwężania kolejnych gałęzi na telefonie. */
+.recipe-depth {
+  display: inline-block;
+  margin: 12px 0 0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 14px;
+  font-weight: 600;
+}

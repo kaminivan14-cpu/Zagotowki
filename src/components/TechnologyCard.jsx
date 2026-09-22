@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from 'react'
 import { loadRecipe } from '../recipeCache'
-import { scaleRecipe } from '../recipeScaling'
+import { scaleRecipe, extendRecipePath } from '../recipeScaling'
 import './TechnologyCard.css'
 
 function useRecipe(externalId) {
@@ -25,7 +25,7 @@ function useRecipe(externalId) {
   }
 }
 
-function IngredientRecipe({ externalId, name, path, requestedGrams }) {
+function IngredientRecipe({ externalId, name, path, requiredQuantity, rootScaleFactor }) {
   const { data, error, retry } = useRecipe(externalId)
   const [expanded, setExpanded] = useState(false)
   const contentId = useId()
@@ -37,7 +37,15 @@ function IngredientRecipe({ externalId, name, path, requestedGrams }) {
     </div>
   )
   if (!data) return <p className="recipe-message" role="status">Sprawdzanie receptury składnika…</p>
-  if (!data.product || data.ingredients.length === 0) return null
+  if (!data.product) return (
+    <p className="recipe-message">Brak osobnej receptury w katalogu dla tego składnika.</p>
+  )
+  if (data.ingredients.length === 0) return (
+    <p className="recipe-message" role="status">Brak składników receptury półproduktu.</p>
+  )
+  if (rootScaleFactor == null) return (
+    <p className="recipe-message" role="status">Nie można przeliczyć kolejnego poziomu: brak poprawnego współczynnika produktu głównego.</p>
+  )
 
   return (
     <div className="recipe-branch">
@@ -52,31 +60,34 @@ function IngredientRecipe({ externalId, name, path, requestedGrams }) {
         {expanded ? '−' : '+'} Półprodukt · {expanded ? 'Zwiń recepturę' : 'Rozwiń recepturę'}
       </button>
       {expanded && (
-        <div id={contentId} className="recipe-nested">
-          <RecipeContent data={data} path={[...path, String(externalId)]} requestedQuantity={requestedGrams} unit="g" nested />
+        <div id={contentId} className="recipe-nested" role="region" aria-label={`Receptura półproduktu: ${name ?? '—'}`}>
+          <RecipeContent data={data} path={path} requestedQuantity={requiredQuantity} rootScaleFactor={rootScaleFactor} nested />
         </div>
       )}
     </div>
   )
 }
 
-function displayGrams(value) {
-  if (value == null || !Number.isFinite(Number(value))) return '—'
+function displayQuantity(value, unit = '') {
+  if (value == null || (typeof value === 'string' && !value.trim()) || !Number.isFinite(Number(value))) return '—'
   const number = Number(value)
-  if (number > 0 && number < 0.001) return '< 0,001 g'
-  return `${new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 3 }).format(number)} g`
+  const suffix = unit ? ` ${unit}` : ''
+  if (number > 0 && number < 0.001) return `< 0,001${suffix}`
+  return `${new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 3 }).format(number)}${suffix}`
 }
 
-function RecipeContent({ data, path, requestedQuantity, unit, nested = false }) {
-  const scaled = scaleRecipe(data.product, data.ingredients, requestedQuantity, unit)
+function RecipeContent({ data, path, requestedQuantity, unit, rootScaleFactor, nested = false }) {
+  const scaled = scaleRecipe(data.product, data.ingredients, requestedQuantity, unit, rootScaleFactor)
   const Heading = nested ? 'h4' : 'h3'
   return (
     <section className="recipe-content">
+      {nested && <p className="recipe-depth">Poziom {path.length} · Receptura półproduktu</p>}
       <div className="recipe-heading">
         <Heading>{data.product.name ?? '—'}</Heading>
-        <p>Gramatura bazowa: <strong>{displayGrams(data.product.gramatura)}</strong></p>
-        {!scaled.error && <p>Do przygotowania: <strong>{displayGrams(scaled.requestedGrams)}</strong></p>}
+        <p>Gramatura bazowa: <strong>{displayQuantity(data.product.gramatura, 'g')}</strong></p>
+        {!scaled.error && <p>Do przygotowania: <strong>{nested ? displayQuantity(requestedQuantity) : displayQuantity(scaled.requestedGrams, 'g')}</strong></p>}
       </div>
+      <p className="recipe-message">Ilości składników podano w jednostkach receptury źródłowej.</p>
       {scaled.error && data.ingredients.length > 0 && <p className="recipe-message" role="status">{scaled.error}</p>}
       {data.ingredients.length === 0 ? (
         <p role="status">Brak składników receptury dla tego produktu.</p>
@@ -84,27 +95,28 @@ function RecipeContent({ data, path, requestedQuantity, unit, nested = false }) 
         <ul className="recipe-ingredients">
           {data.ingredients.map((ingredient, index) => {
             const calculated = scaled.ingredients[index]
-            const cycle = ingredient.ingredient_external_id != null &&
-              path.includes(String(ingredient.ingredient_external_id))
+            const childPath = extendRecipePath(path, ingredient.ingredient_external_id)
+            const cycle = ingredient.ingredient_external_id != null && childPath === null
             return (
               <li key={`${index}:${ingredient.ingredient_external_id ?? 'none'}`}>
                 <div className="recipe-ingredient-values">
                   <strong>{ingredient.ingredient_name ?? '—'}</strong>
                   <dl>
-                    <div><dt>Netto bazowe</dt><dd>{displayGrams(ingredient.netto)}</dd></div>
-                    <div><dt>Brutto bazowe</dt><dd>{displayGrams(ingredient.brutto)}</dd></div>
-                    <div className="recipe-required"><dt>Potrzebne brutto</dt><dd>{displayGrams(calculated?.requiredGross)}</dd></div>
+                    <div><dt>Netto bazowe</dt><dd>{displayQuantity(ingredient.netto)}</dd></div>
+                    <div><dt>Brutto bazowe</dt><dd>{displayQuantity(ingredient.brutto)}</dd></div>
+                    <div className="recipe-required"><dt>Potrzebne brutto</dt><dd>{displayQuantity(calculated?.requiredGross)}</dd></div>
                   </dl>
                 </div>
                 {calculated?.error && <p className="recipe-message" role="status">{calculated.error}</p>}
                 {cycle ? (
-                  <p className="recipe-message" role="status">Nie można rozwinąć składnika: cykl w recepturze.</p>
+                  <p className="recipe-message" role="status">Wykryto cykliczne powiązanie receptury. Rozwijanie tej gałęzi zostało zatrzymane.</p>
                 ) : ingredient.ingredient_external_id != null && (
                   <IngredientRecipe
                     externalId={ingredient.ingredient_external_id}
                     name={ingredient.ingredient_name}
-                    path={path}
-                    requestedGrams={calculated?.requiredGross ?? null}
+                    path={childPath}
+                    requiredQuantity={calculated?.requiredGross ?? null}
+                    rootScaleFactor={scaled.factor}
                   />
                 )}
               </li>
