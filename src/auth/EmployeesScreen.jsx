@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabase'
 import { canManageEmployee } from './session'
+import { invitationFailure } from './inviteResult'
 
 export default function EmployeesScreen({ pracownik, lokale, onPowrot }) {
   const [employees, setEmployees] = useState([])
@@ -10,6 +11,7 @@ export default function EmployeesScreen({ pracownik, lokale, onPowrot }) {
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const [revision, setRevision] = useState(0)
+  const [pendingLinks, setPendingLinks] = useState([])
   useEffect(() => {
     let alive = true
     supabase.rpc('auth_list_employees').then(({ data, error }) => {
@@ -38,7 +40,15 @@ export default function EmployeesScreen({ pracownik, lokale, onPowrot }) {
     setBusy(true); setMessage('')
     try {
       const { data, error } = await supabase.functions.invoke('invite-employee', { body: { employee_id: invite.id, email: email.trim() } })
-      if (error || data?.error) throw new Error('Nie udało się połączyć konta. Sprawdź konfigurację zaproszeń; istniejące konto Auth wymaga powiązania przez administratora bazy.')
+      const failure = await invitationFailure({ data, error })
+      if (failure) {
+        if (failure.partial) {
+          setPendingLinks(ids => [...ids, invite.id])
+          setInvite(null); setEmail('')
+        }
+        setMessage(failure.message)
+        return
+      }
       setInvite(null); setEmail(''); setRevision(x => x + 1)
       setMessage('Wysłano zaproszenie i połączono konto z pracownikiem.')
     } catch (error) { setMessage(error.message) } finally { setBusy(false) }
@@ -67,7 +77,7 @@ export default function EmployeesScreen({ pracownik, lokale, onPowrot }) {
         <strong>{e.name}</strong><p>{e.role} · {lokale.find(l => String(l.id) === String(e.location_id))?.name || (e.role === 'administrator' ? 'Wszystkie lokale' : 'Brak lokalu')}</p>
         <p>{e.active ? 'Aktywny' : 'Nieaktywny'} · {e.auth_user_id ? 'Konto połączone' : 'Brak konta logowania'}</p>
         {canManageEmployee(pracownik, e) && <><button disabled={busy} onClick={() => { setInvite(null); setForm({ ...e }) }}>Edytuj</button>
-          {!e.auth_user_id && e.active && <button disabled={busy} onClick={() => { setForm(null); setEmail(''); setInvite(e) }}>Zaproś do aplikacji</button>}</>}
+          {!e.auth_user_id && e.active && <button disabled={busy || pendingLinks.includes(e.id)} onClick={() => { setForm(null); setEmail(''); setInvite(e) }}>Zaproś do aplikacji</button>}</>}
       </div>)}</div>
     </main></div>
 }
