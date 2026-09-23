@@ -137,6 +137,23 @@ do historii. Prywatny Storage i polityki zdjęć są osobnym PR-em.
 
 ## Weryfikacja
 
+### Sprawdzenie CI przed akceptacją PR
+
+Workflow `.github/workflows/auth-review.yml` („Application checks”) uruchamia się
+po pushu na `feature/auth` i dla Pull Requestów. W PR otwórz zakładkę **Checks**
+i sprawdź zadanie **check** dla najnowszego commita. Wszystkie kroki muszą mieć
+status success: instalacja zależności, lint, testy Node, migracje, build oraz
+testy przeglądarkowe Playwright. Starszy zielony przebieg nie potwierdza późniejszych zmian.
+
+Jeśli krok jest czerwony, otwórz jego log, popraw przyczynę na gałęzi i poczekaj
+na nowy przebieg. Samo istnienie workflow nie ustawia obowiązkowego checka w ochronie
+`main`; właściciel repozytorium powinien sprawdzić tę regułę przed scaleniem.
+Zielone CI nie zastępuje akceptacji code review ani poniższych prób na staging.
+CI używa lokalnego PostgreSQL/PGlite i mockowanego Supabase; nie wdraża bazy,
+Edge Function ani frontendu i nie wymaga sekretów produkcyjnych.
+
+### Sprawdzenia lokalne i staging
+
 - `npm ci`, `npm run lint`, `npm test`, `npm run test:migration`, `npm run build`.
 - `npx playwright install chromium`, `npm run test:browser`: testy izolowane,
   połączenia Supabase są mockowane; nie wysyłają prawdziwych e-maili.
