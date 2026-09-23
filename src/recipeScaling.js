@@ -6,7 +6,16 @@ function numeric(value) {
   return Number.isFinite(result) ? result : null
 }
 
-export function scaleRecipe(product, ingredients, requestedQuantity, unit, rootScaleFactor) {
+export function normalizeRecipeUnit(value) {
+  if (typeof value !== 'string') return null
+  const unit = value.trim().toLowerCase()
+  if (unit === 'szt' || unit === 'szt.') return 'szt.'
+  return unit === 'g' || unit === 'ml' ? unit : null
+}
+
+// Explicit baseUnit opts into source-unit validation. Existing TechnologyCard calls
+// keep their original mass-only contract; the root factor formula is unchanged.
+export function scaleRecipe(product, ingredients, requestedQuantity, unit, rootScaleFactor, baseUnit) {
   const failure = (error) => ({ error, requestedGrams: null, factor: null, ingredients: [] })
   if (!product) return failure('Nie znaleziono produktu w katalogu.')
   let requestedGrams = null
@@ -18,13 +27,27 @@ export function scaleRecipe(product, ingredients, requestedQuantity, unit, rootS
   } else {
     const base = numeric(product.gramatura)
     if (base === null || base <= 0) return failure('Nie można przeliczyć receptury: brak poprawnej gramatury bazowej.')
-    if (unit !== 'g' && unit !== 'kg') return failure('Nie można przeliczyć receptury: wymagana ilość w g lub kg. Brak przelicznika masy dla tej jednostki.')
+    let multiplier = unit === 'kg' ? 1000 : 1
+    let massQuantity = true
+    if (baseUnit !== undefined) {
+      const normalizedBase = normalizeRecipeUnit(baseUnit)
+      if (!normalizedBase) return failure('Brak lub nieobsługiwana jednostka gramatury bazowej półproduktu (dozwolone: g, ml, szt.).')
+      const plannedUnit = typeof unit === 'string' ? unit.trim().toLowerCase() : ''
+      // Preserve the existing kg -> g conversion for plan quantities only.
+      const normalizedPlan = plannedUnit === 'kg' ? 'g' : normalizeRecipeUnit(plannedUnit)
+      if (normalizedPlan !== normalizedBase) return failure('Jednostka ilości w planie jest niezgodna z jednostką bazową półproduktu; brak przelicznika.')
+      multiplier = plannedUnit === 'kg' ? 1000 : 1
+      massQuantity = normalizedBase === 'g'
+    } else if (unit !== 'g' && unit !== 'kg') {
+      return failure('Nie można przeliczyć receptury: wymagana ilość w g lub kg. Brak przelicznika masy dla tej jednostki.')
+    }
     const quantity = numeric(requestedQuantity)
     if (quantity === null || quantity < 0) return failure('Nie można przeliczyć receptury: nieprawidłowa ilość do przygotowania.')
-    requestedGrams = quantity * (unit === 'kg' ? 1000 : 1)
-    factor = requestedGrams / base
-    if (!Number.isFinite(requestedGrams) || !Number.isFinite(factor) ||
-      (quantity > 0 && (requestedGrams === 0 || factor === 0))) {
+    const requestedBaseQuantity = quantity * multiplier
+    requestedGrams = massQuantity ? requestedBaseQuantity : null
+    factor = requestedBaseQuantity / base
+    if (!Number.isFinite(requestedBaseQuantity) || !Number.isFinite(factor) ||
+      (quantity > 0 && (requestedBaseQuantity === 0 || factor === 0))) {
       return failure('Nie można przeliczyć receptury: ilość poza zakresem obliczeń.')
     }
   }

@@ -5,6 +5,7 @@ import PlanItemDetailsFields from './PlanItemDetailsFields'
 import { hasProductionHistory } from '../planItemDetails'
 
 export default function ProductionScreen({
+  onRequirements,
   mozeUsunacPlan,
   usunPlan,
   usuwaniePlanu,
@@ -62,6 +63,7 @@ export default function ProductionScreen({
 
         <main>
           <p style={{ marginBottom: '16px' }}>Plan: {dataPlanu}</p>
+          <button className="powrot" onClick={onRequirements}>📦 Zapotrzebowanie ogólne</button>
           {statusPlanu === 'completed' && <p role="status">✓ Zakończony</p>}
           {tylkoOdczyt && <p role="status">Plan tylko do odczytu.</p>}
           {statusPlanu === 'completed' && ['administrator', 'manager', 'su-chef'].includes(pracownik?.role) && (

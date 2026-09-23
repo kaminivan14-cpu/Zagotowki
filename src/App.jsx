@@ -5,6 +5,7 @@ import LocationSelectScreen from './components/LocationSelectScreen'
 import ScheduledPlansScreen from './components/ScheduledPlansScreen'
 import EmployeesScreen from './components/EmployeesScreen'
 import ProductionScreen from './components/ProductionScreen'
+import RequirementsScreen from './components/RequirementsScreen'
 import HistoryScreen from './components/HistoryScreen'
 import PlanningScreen from './components/PlanningScreen'
 import { supabase } from './supabase'
@@ -1574,6 +1575,11 @@ if (ekran === 'wybor-lokalu') {
   // EKRAN PRODUKCJI
   // -----------------------------------------
 
+  if (ekran === 'zapotrzebowanie') {
+    return <RequirementsScreen planId={planId} pracownik={pracownik}
+      wybranyLokal={wybranyLokal} onBack={() => setEkran('produkcja')} />
+  }
+
   if (ekran === 'produkcja') {
     const pozostalo = plan.filter(
       (produkt) => !produkt.gotowe
@@ -1581,6 +1587,7 @@ if (ekran === 'wybor-lokalu') {
 
     return (
       <ProductionScreen
+        onRequirements={() => setEkran('zapotrzebowanie')}
         wybranyLokal={wybranyLokal}
         mozeUsunacPlan={canDeletePlan(pracownik, otwartyPlan)}
         usunPlan={usunPlan}

@@ -730,3 +730,20 @@ main h2 {
 .item-form-field :is(input, select) { min-width: 0; width: 100%; box-sizing: border-box; }
 @media (max-width: 1024px) { .responsive-form > .item-form-field { margin: 0; } }
 @media (max-width: 600px) { .responsive-form > .item-form-field { grid-column: 1 / -1; } }
+
+.requirements-list {
+  list-style: none;
+  padding: 0;
+}
+.requirements-list > li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12px;
+  overflow-wrap: anywhere;
+}
+.requirements-list small {
+  display: block;
+  margin-top: 4px;
+}
