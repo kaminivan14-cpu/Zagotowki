@@ -25,3 +25,7 @@ dist-ssr
 .env
 playwright-report/
 test-results/
+
+# Local database backups and Supabase CLI state
+backups/
+supabase/.temp/

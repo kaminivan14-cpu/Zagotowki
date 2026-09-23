@@ -14,8 +14,7 @@ export function productionDate(offset = 0) {
 export function employeeCanViewPlan(employee, plan) {
   return employee?.location_id != null &&
     String(employee.location_id) === String(plan.location_id) &&
-    plan.status === 'active' && plan.plan_date >= productionDate() &&
-    plan.plan_date <= productionDate(7)
+    plan.status === 'active' && plan.plan_date === productionDate()
 }
 
 export function canWorkOnPlan(employee, plan) {

@@ -92,8 +92,7 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalo
 AS $$ SELECT EXISTS (SELECT 1 FROM public."Employees" e WHERE e.auth_user_id=auth.uid() AND e.active IS TRUE
   AND (e.role='administrator' OR e.location_id=target_location)
   AND (e.role<>'employee' OR (target_status='active'
-    AND target_date BETWEEN (now() AT TIME ZONE 'Europe/Warsaw')::date
-    AND (now() AT TIME ZONE 'Europe/Warsaw')::date+7))) $$;
+    AND target_date = (now() AT TIME ZONE 'Europe/Warsaw')::date))) $$;
 
 -- Replace public-read policies, rather than OR-ing restrictive policies with them.
 DO $$

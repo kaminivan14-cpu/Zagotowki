@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { PGlite } from '@electric-sql/pglite'
+import { productionDate, employeeCanViewPlan, canWorkOnPlan } from '../src/planAccess.js'
 import { validEmployee, canManageEmployee, employeeContext } from '../src/auth/session.js'
 
 const read = path => readFile(new URL(path, import.meta.url), 'utf8')
@@ -19,6 +20,18 @@ test('session validation never trusts legacy or mismatched employee data', () =>
   assert.equal(canManageEmployee(manager, employee), true)
   assert.equal(canManageEmployee(manager, { ...employee, location_id: 2 }), false)
   assert.equal(canManageEmployee(manager, { ...employee, role: 'manager' }), false)
+})
+
+test('employee UI allows only an active plan today in their own location', () => {
+  const employee = { role: 'employee', location_id: 1 }
+  for (const [location_id, offset, status, allowed] of [
+    [1, 0, 'active', true], [1, 1, 'active', false], [1, -1, 'active', false],
+    [2, 0, 'active', false], [1, 0, 'completed', false], [1, 7, 'active', false],
+  ]) {
+    const plan = { location_id, plan_date: productionDate(offset), status }
+    assert.equal(employeeCanViewPlan(employee, plan), allowed)
+    assert.equal(canWorkOnPlan(employee, plan), allowed)
+  }
 })
 
 test('SQL migration: real PostgreSQL RLS, identity guards and employee permissions', async t => {
@@ -58,9 +71,15 @@ test('SQL migration: real PostgreSQL RLS, identity guards and employee permissio
     INSERT INTO public."Plans"(id,location_id,plan_date,status) VALUES
       (1,1,(now() AT TIME ZONE 'Europe/Warsaw')::date,'active'),
       (2,2,(now() AT TIME ZONE 'Europe/Warsaw')::date,'active'),
-      (3,1,(now() AT TIME ZONE 'Europe/Warsaw')::date-1,'completed'),
-      (4,1,(now() AT TIME ZONE 'Europe/Warsaw')::date+8,'active');
-    INSERT INTO public."Plan_items"(id,plan_id,nazwa,ilosc,jednostka) VALUES(1,1,'A',1,'kg'),(2,2,'B',1,'kg');`)
+      (3,1,(now() AT TIME ZONE 'Europe/Warsaw')::date-2,'completed'),
+      (4,1,(now() AT TIME ZONE 'Europe/Warsaw')::date+8,'active'),
+      (5,1,(now() AT TIME ZONE 'Europe/Warsaw')::date+1,'active'),
+      (6,1,(now() AT TIME ZONE 'Europe/Warsaw')::date-1,'active');
+    INSERT INTO public."Plan_items"(id,plan_id,nazwa,ilosc,jednostka) VALUES(1,1,'A',1,'kg'),(2,2,'B',1,'kg'),
+      (12,2,'Foreign started',1,'kg'),(5,5,'Tomorrow',1,'kg'),(6,6,'Yesterday',1,'kg');
+    UPDATE public."Plan_items" SET started_at=now() WHERE id IN (5,6,12);
+    INSERT INTO public."Plan_items"(id,plan_id,nazwa,ilosc,jednostka)
+      VALUES(15,5,'Tomorrow not started',1,'kg'),(16,6,'Yesterday not started',1,'kg');`)
   const as = async (n, role = 'authenticated') => {
     await db.exec(`RESET ROLE; SELECT set_config('request.jwt.claim.sub','${n ? uid(n) : ''}',false); SET ROLE ${role};`)
   }
@@ -74,6 +93,23 @@ test('SQL migration: real PostgreSQL RLS, identity guards and employee permissio
   await as(1)
   assert.deepEqual((await rows('SELECT id FROM public."Plans" ORDER BY id')).map(x => x.id), [1])
   assert.deepEqual((await rows('SELECT id FROM public."Plan_items" ORDER BY id')).map(x => x.id), [1])
+  assert.deepEqual((await rows('SELECT id FROM public."Locations" ORDER BY id')).map(x => x.id), [1])
+  // Direct reads must be empty even when the caller knows the foreign/date IDs.
+  for (const planId of [2, 3, 4, 5, 6]) {
+    assert.equal((await rows(`SELECT * FROM public."Plans" WHERE id=${planId}`)).length, 0)
+    assert.equal((await rows(`SELECT * FROM public."Plan_items" WHERE plan_id=${planId}`)).length, 0)
+  }
+  // Separate unstarted/started fixtures ensure date/status rejects, not just workflow rejects.
+  for (const itemId of [15, 16]) await denied(`SELECT public.start_plan_item(1,${itemId})`)
+  for (const itemId of [5, 6, 12]) await denied(`SELECT public.complete_plan_item(1,${itemId})`)
+  // One plan per location/day: check today's completed status by changing the fixture.
+  await db.exec("RESET ROLE; UPDATE public.\"Plans\" SET status='completed' WHERE id=1")
+  await as(1)
+  assert.equal((await rows('SELECT * FROM public."Plans" WHERE id=1')).length, 0)
+  assert.equal((await rows('SELECT * FROM public."Plan_items" WHERE plan_id=1')).length, 0)
+  await denied('SELECT public.start_plan_item(1,1)')
+  await db.exec("RESET ROLE; UPDATE public.\"Plans\" SET status='active' WHERE id=1")
+  await as(1)
   await denied('SELECT pin_hash FROM public."Employees"')
   await denied('SELECT app_private.actor()')
   await denied('SELECT public.auth_list_employees()')
@@ -90,6 +126,7 @@ test('SQL migration: real PostgreSQL RLS, identity guards and employee permissio
   assert.equal((await rows('SELECT employee_id FROM public."Plan_items" WHERE id=1'))[0].employee_id,1)
   await denied('SELECT public.complete_plan_item(1,1)')
   await as(2)
+  assert.deepEqual((await rows('SELECT id FROM public."Plans" ORDER BY id')).map(x => x.id), [1,3,4,5,6])
   assert.equal((await rows('SELECT * FROM public.auth_employee_names(2,ARRAY[1,5]::bigint[])')).length,1)
   assert.equal((await rows('SELECT * FROM public.auth_list_employees()')).some(x => x.id === 5), false)
   await denied("SELECT public.auth_save_employee(1,'Promoted','administrator',1,true)")
@@ -98,6 +135,7 @@ test('SQL migration: real PostgreSQL RLS, identity guards and employee permissio
   await rows("SELECT public.auth_save_employee(1,'Employee A','su-chef',1,true)")
   await rows("SELECT public.auth_save_employee(NULL,'New','employee',1,true)")
   await as(3)
+  assert.deepEqual((await rows('SELECT id FROM public."Plans" ORDER BY id')).map(x => x.id), [1,3,4,5,6])
   await denied("SELECT public.auth_save_employee(NULL,'New','employee',1,true)")
   await rows('SELECT public.complete_production_plan(3,1)')
   await as(6)
@@ -107,7 +145,7 @@ test('SQL migration: real PostgreSQL RLS, identity guards and employee permissio
   await as(9) // authenticated but unlinked
   assert.equal((await rows('SELECT * FROM public."Plans"')).length,0)
   await as(4)
-  assert.equal((await rows('SELECT * FROM public."Plans"')).length,4)
+  assert.equal((await rows('SELECT * FROM public."Plans"')).length,6)
   await rows('SELECT public.start_plan_item(4,2)') // global admin, no assigned location
   await rows('SELECT public.complete_plan_item(4,2)')
   await denied("SELECT public.auth_save_employee(4,'Admin','employee',1,false)") // no self-edit

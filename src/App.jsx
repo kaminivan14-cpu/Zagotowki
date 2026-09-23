@@ -961,7 +961,7 @@ const pobierzZaplanowanePlany = async (lokal = wybranyLokal, osoba = pracownik) 
       .order('id', { ascending: false })
 
     if (osoba.role === 'employee') {
-      query = query.eq('status', 'active').gte('plan_date', productionDate()).lte('plan_date', productionDate(7))
+      query = query.eq('status', 'active').eq('plan_date', productionDate())
     }
     const { data, error } = await query
     if (wersja !== kontekst.current) return
