@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import App from '../App'
 import LoginScreen from './LoginScreen'
-import { supabase } from '../supabase'
+import { initialPasswordRedirect, supabase } from '../supabase'
+import { invalidPasswordLink } from './passwordRecovery'
 import { clearProductCatalog } from '../productCatalog'
 import { employeeContext, validEmployee } from './session'
 import './auth.css'
@@ -11,9 +12,17 @@ export default function AuthGate() {
   const [employee, setEmployee] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [passwordMode, setPasswordMode] = useState(() => new URLSearchParams(location.search).get('auth') === 'password')
+  const [passwordMode, setPasswordMode] = useState(initialPasswordRedirect.requested)
+  const [passwordLinkError, setPasswordLinkError] = useState(initialPasswordRedirect.hasError ? invalidPasswordLink : '')
   const generation = useRef(0)
   const refresh = useRef(() => {})
+  useEffect(() => {
+    if (!passwordMode) return
+    // Keep only a routing marker across reloads; leave the hash for the SDK to consume.
+    const url = new URL(location.href)
+    url.searchParams.set('auth', 'password')
+    history.replaceState(null, '', url)
+  }, [passwordMode])
   useEffect(() => {
     const requests = generation
     let alive = true
@@ -46,6 +55,13 @@ export default function AuthGate() {
       clearTimeout(timer)
       timer = setTimeout(() => { if (alive) void loadProfile(nextSession) }, 0)
     })
+    // A rejected callback can coexist with an older stored session. Do not let that
+    // session turn an invalid recovery link into a password change for the wrong account.
+    void supabase.auth.initialize().then(({ error: linkError }) => {
+      if (alive && initialPasswordRedirect.requested && linkError) setPasswordLinkError(invalidPasswordLink)
+    }).catch(() => {
+      if (alive && initialPasswordRedirect.requested) setPasswordLinkError(invalidPasswordLink)
+    })
     refresh.current = () => { if (alive) void loadProfile(currentSession) }
     const interval = setInterval(() => refresh.current(), 60000)
     const onFocus = () => refresh.current()
@@ -62,16 +78,22 @@ export default function AuthGate() {
     setLoading(false)
     if (signOutError) setError('Wylogowanie nie powiodło się. Ponów próbę przed przekazaniem urządzenia.')
     else { setSession(null); setError('') }
+    return !signOutError
   }
   const finishPassword = () => {
     const url = new URL(location.href)
-    url.searchParams.delete('auth'); url.hash = ''
+    for (const key of ['auth', 'type', 'code', 'error', 'error_code', 'error_description']) url.searchParams.delete(key)
+    url.hash = ''
     history.replaceState(null, '', url)
-    setPasswordMode(false); refresh.current()
+    setPasswordMode(false); setPasswordLinkError(''); refresh.current()
   }
-  if (passwordMode) return <LoginScreen passwordMode session={session} loading={loading} onPasswordSaved={finishPassword} onCancel={async () => { await signOut(); finishPassword() }} />
+  if (passwordMode) return <LoginScreen key="password" passwordMode session={session} loading={loading} linkError={passwordLinkError} onPasswordSaved={finishPassword} onCancel={async () => {
+    const success = await signOut()
+    if (success) finishPassword()
+    return success
+  }} />
   if (loading) return <div className="app auth-screen" role="status">Sprawdzanie sesji…</div>
-  if (!session) return <LoginScreen />
+  if (!session) return <LoginScreen key="login" />
   if (!employee) return <div className="app auth-screen"><h1>ZAGOTÓWKI</h1><p role="alert">{error}</p><button onClick={() => refresh.current()}>Sprawdź ponownie</button><button onClick={signOut}>Wyloguj / zmień użytkownika</button></div>
   return <App key={employeeContext(employee)} pracownik={employee} onSignOut={signOut} />
 }

@@ -168,6 +168,27 @@ obejścia problemu z sesją.
 
 ## Zaproszenia i odzyskiwanie po awarii
 
+### Odzyskiwanie hasła w frontendzie
+
+„Nie pamiętam hasła” wywołuje `resetPasswordForEmail` z redirectem na bieżący
+adres aplikacji z `?auth=password`. Ten adres musi być dopuszczony w Auth URL
+Configuration właściwego środowiska. Odpowiedź nie ujawnia, czy e-mail ma konto.
+
+Frontend zapisuje wyłącznie informację o trybie formularza przed utworzeniem
+klienta Supabase: SDK może usunąć hash `type=recovery`, zanim React zasubskrybuje
+zdarzenia. Obsługiwany jest także `PASSWORD_RECOVERY`; marker `?auth=password`
+utrzymuje ekran po odświeżeniu strony. Nie zapisujemy dodatkowej kopii tokenów.
+
+Formularz „Ustaw nowe hasło” wymaga ważnej sesji, co najmniej 12 znaków i zgodnego
+powtórzenia. Zapis używa `updateUser({ password })`. Po sukcesie użytkownik widzi
+potwierdzenie i wybiera przejście do aplikacji (z dotychczasową kontrolą profilu)
+lub wylogowanie. Błąd/wygasły link blokuje zapis, również przy starszej sesji
+w przeglądarce; można wrócić do logowania i poprosić o nowy link.
+
+Regresje są sprawdzane lokalnie w Playwright z prawdziwym SDK i mockowanym API,
+w tym callback przetworzony przed startem Reacta. Dostarczenie wiadomości i
+redirect na prawdziwym UAT nadal wymagają smoke testu tego środowiska.
+
 Najpierw utwórz/edytuj rekord pracownika, potem wybierz „Zaproś do aplikacji”.
 Adres musi należeć do tej osoby. Pracownik ustawia własne hasło z linku.
 Manager nie ustawia i nie poznaje hasła pracownika; odzyskiwanie hasła jest na
