@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import './App.css'
-import LoginScreen from './components/LoginScreen'
 import LocationSelectScreen from './components/LocationSelectScreen'
 import ScheduledPlansScreen from './components/ScheduledPlansScreen'
-import EmployeesScreen from './components/EmployeesScreen'
+import EmployeesScreen from './auth/EmployeesScreen'
 import ProductionScreen from './components/ProductionScreen'
 import RequirementsScreen from './components/RequirementsScreen'
 import HistoryScreen from './components/HistoryScreen'
@@ -15,7 +14,7 @@ import { itemDetails, hasProductionHistory, canDeletePlan } from './planItemDeta
 
 const jednostki = ['g', 'kg', 'ml', 'l', 'szt.']
 
-function App() {
+function App({ pracownik, onSignOut }) {
   const [produkty, setProdukty] = useState([])
   const [ladowanieProduktow, setLadowanieProduktow] = useState(true)
   const [bladProduktow, setBladProduktow] = useState('')
@@ -33,23 +32,14 @@ function App() {
     return () => { aktywny = false }
   }, [probaKatalogu])
 
-const [pracownik, setPracownik] = useState(() => {
-  try {
-    const zapisany = JSON.parse(sessionStorage.getItem('pracownik') || 'null')
-    return zapisany?.id && ['employee', 'manager', 'su-chef', 'administrator'].includes(zapisany.role)
-      ? zapisany : null
-  } catch {
-    return null
-  }
-})
 // Zmiana kontekstu unieważnia odpowiedzi poprzedniego ekranu/sesji.
 const kontekst = useRef(0)
-const blokadaLogowania = useRef(false)
+useEffect(() => {
+  const context = kontekst
+  return () => { context.current += 1 }
+}, [])
 const blokadaZapisu = useRef(false)
 const blokadaDodawania = useRef(false)
-const [pin, setPin] = useState('')
-const [bladLogowania, setBladLogowania] = useState('')
-const [logowanie, setLogowanie] = useState(false)
 
   const [ekran, setEkran] = useState('wybor-lokalu')
 
@@ -91,24 +81,6 @@ const [sprawdzaniePlanu, setSprawdzaniePlanu] = useState(false)
 const [komunikatNowegoPlanu, setKomunikatNowegoPlanu] = useState('')
 const [ladowanieHistorii, setLadowanieHistorii] = useState(false)
 const [otwartyDzien, setOtwartyDzien] = useState(null)
-const [pracownicy, setPracownicy] = useState([])
-const [ladowaniePracownikow, setLadowaniePracownikow] = useState(false)
-const [pokazFormularzPracownika, setPokazFormularzPracownika] = useState(false)
-const [nowyPracownik, setNowyPracownik] = useState({
-  name: '',
-  role: 'employee',
-  location_id: '',
-  pin: '',
-})
-const [zmianaPinId, setZmianaPinId] = useState(null)
-const [nowyPin, setNowyPin] = useState('')
-const [edycjaPracownikaId, setEdycjaPracownikaId] = useState(null)
-
-const [edytowanyPracownik, setEdytowanyPracownik] = useState({
-  name: '',
-  role: 'employee',
-  location_id: '',
-})
 const [pokazDodawaniePozycji, setPokazDodawaniePozycji] = useState(false)
 
 const [nowaPozycja, setNowaPozycja] = useState({
@@ -140,270 +112,12 @@ const [edytowanaPozycja, setEdytowanaPozycja] = useState({
   // -----------------------------------------
   // START APLIKACJI - POBIERAMY LOKALE
   // -----------------------------------------
-const zalogujPracownika = async () => {
-  if (blokadaLogowania.current) return
-  const wersja = kontekst.current
-  if (!pin.trim()) {
-    setBladLogowania('Wpisz PIN')
-    return
-  }
-
-  blokadaLogowania.current = true
-  setLogowanie(true)
-  setBladLogowania('')
-
-  try {
-    const { data, error } = await supabase.rpc(
-      'login_employee',
-      {
-        p_pin: pin.trim(),
-      }
-    )
-
-    if (wersja !== kontekst.current) return
-    if (error) throw error
-
-    if (!data || data.length === 0) {
-      setBladLogowania('Nieprawidłowy PIN')
-      return
-    }
-
-   const zalogowany = data[0]
-
-setPracownik(zalogowany)
-
-sessionStorage.setItem(
-  'pracownik',
-  JSON.stringify(zalogowany)
-)
-
-setPin('')
-if (
-  zalogowany.role !== 'administrator' &&
-  zalogowany.location_id
-) {
-  const lokalPracownika = lokale.find(
-    (lokal) => lokal.id === zalogowany.location_id
-  )
-
-  if (lokalPracownika) {
-    await wybierzLokal(lokalPracownika, zalogowany)
-  }
-}
-
-    console.log(
-      'Zalogowany pracownik:',
-      zalogowany
-    )
-  } catch (error) {
-    if (wersja !== kontekst.current) return
-    console.error('Błąd logowania:', error)
-    setBladLogowania('Nie udało się zalogować')
-  } finally {
-    blokadaLogowania.current = false
-    setLogowanie(false)
-  }
-}
 const wylogujPracownika = () => {
   kontekst.current += 1
-  wyczyscFormularzPozycji()
-  sessionStorage.removeItem('pracownik')
-  setWybrane({})
-  setHistoria([])
-  setZaplanowanePlany([])
-  setPracownicy([])
-  setEdycjaPracownikaId(null)
-  setZmianaPinId(null)
-  setNowyPin('')
-  setPokazFormularzPracownika(false)
-  setNowyPracownik({ name: '', role: 'employee', location_id: '', pin: '' })
-  setPracownik(null)
-  setPin('')
-  setBladLogowania('')
-  setWybranyLokal(null)
-  setPlanId(null)
-  setOtwartyPlan(null)
-  setPlan([])
-  setEkran('wybor-lokalu')
+  void onSignOut()
 }
-const pobierzPracownikow = async () => {
-  const wersja = kontekst.current
-  if (!['administrator', 'manager'].includes(pracownik?.role)) return
-
-  setLadowaniePracownikow(true)
-
-  try {
-const { data, error } = await supabase.rpc('get_employees', {
-  p_requester_id: pracownik.id,
-})
-
-    if (wersja !== kontekst.current) return
-    if (error) throw error
-
-    setPracownicy(data || [])
-    setEkran('pracownicy')
-  } catch (error) {
-    if (wersja !== kontekst.current) return
-    console.error('Błąd pobierania pracowników:', error)
-    alert(`Nie udało się pobrać pracowników: ${error.message}`)
-  } finally {
-    setLadowaniePracownikow(false)
-  }
-}
-const zapiszPracownika = async () => {
-  const wersja = kontekst.current
-  if (!nowyPracownik.name.trim()) {
-    alert('Wpisz imię pracownika')
-    return
-  }
-
-if (
-  ['manager', 'administrator'].includes(nowyPracownik.role)
-) {
-  if (!/^\d{6}$/.test(nowyPracownik.pin)) {
-    alert('PIN managera i administratora musi mieć dokładnie 6 cyfr')
-    return
-  }
-} else {
-  if (!/^\d{4,8}$/.test(nowyPracownik.pin)) {
-    alert('PIN musi mieć od 4 do 8 cyfr')
-    return
-  }
-}
-
-  if (
-    pracownik.role === 'administrator' &&
-    nowyPracownik.role !== 'administrator' &&
-    !nowyPracownik.location_id
-  ) {
-    alert('Wybierz lokal')
-    return
-  }
-
-  try {
-  const { error } = await supabase.rpc('create_employee', {
-  p_requester_id: pracownik.id,
-  p_name: nowyPracownik.name.trim(),
-  p_role: nowyPracownik.role,
-  p_location_id: nowyPracownik.location_id
-    ? Number(nowyPracownik.location_id)
-    : null,
-  p_pin: nowyPracownik.pin,
-})
-
-    if (wersja !== kontekst.current) return
-    if (error) throw error
-
-    setNowyPracownik({
-      name: '',
-      role: 'employee',
-      location_id: '',
-      pin: '',
-    })
-
-    setPokazFormularzPracownika(false)
-
-    await pobierzPracownikow()
-  } catch (error) {
-    if (wersja !== kontekst.current) return
-    console.error('Błąd dodawania pracownika:', error)
-    alert(`Nie udało się dodać pracownika: ${error.message}`)
-  }
-}
-const zmienStatusPracownika = async (osoba) => {
-  const wersja = kontekst.current
-  try {
-    const nowyStatus = !osoba.active
-
-    const { error } = await supabase.rpc('set_employee_active', {
-      p_requester_id: pracownik.id,
-      p_employee_id: osoba.id,
-      p_active: nowyStatus,
-    })
-
-    if (wersja !== kontekst.current) return
-    if (error) throw error
-
-    await pobierzPracownikow()
-  } catch (error) {
-    if (wersja !== kontekst.current) return
-    console.error('Błąd zmiany statusu pracownika:', error)
-    alert(`Nie udało się zmienić statusu: ${error.message}`)
-  }
-}
-const zmienPinPracownika = async (osoba) => {
-  const wersja = kontekst.current
-if (
-  ['manager', 'administrator'].includes(osoba.role)
-) {
-  if (!/^\d{6}$/.test(nowyPin)) {
-    alert('PIN managera i administratora musi mieć dokładnie 6 cyfr')
-    return
-  }
-} else {
-  if (!/^\d{4,8}$/.test(nowyPin)) {
-    alert('PIN musi mieć od 4 do 8 cyfr')
-    return
-  }
-}
-
-  try {
-    const { error } = await supabase.rpc('change_employee_pin', {
-      p_requester_id: pracownik.id,
-      p_employee_id: osoba.id,
-      p_new_pin: nowyPin,
-    })
-
-    if (wersja !== kontekst.current) return
-    if (error) throw error
-
-    setNowyPin('')
-    setZmianaPinId(null)
-
-    alert(`PIN pracownika ${osoba.name} został zmieniony`)
-  } catch (error) {
-    if (wersja !== kontekst.current) return
-    console.error('Błąd zmiany PIN-u:', error)
-    alert(`Nie udało się zmienić PIN-u: ${error.message}`)
-  }
-}
-const zapiszEdycjePracownika = async (osoba) => {
-  const wersja = kontekst.current
-  if (!edytowanyPracownik.name.trim()) {
-    alert('Wpisz imię pracownika')
-    return
-  }
-
-  try {
-    const { error } = await supabase.rpc('update_employee', {
-      p_requester_id: pracownik.id,
-      p_employee_id: osoba.id,
-      p_name: edytowanyPracownik.name.trim(),
-      p_role: edytowanyPracownik.role,
-      p_location_id: edytowanyPracownik.location_id
-        ? Number(edytowanyPracownik.location_id)
-        : null,
-    })
-
-    if (wersja !== kontekst.current) return
-    if (error) throw error
-
-    setEdycjaPracownikaId(null)
-
-    setEdytowanyPracownik({
-      name: '',
-      role: 'employee',
-      location_id: '',
-    })
-
-    await pobierzPracownikow()
-
-    alert('Dane pracownika zostały zapisane')
-  } catch (error) {
-    if (wersja !== kontekst.current) return
-    console.error('Błąd edycji pracownika:', error)
-    alert(`Nie udało się zapisać zmian: ${error.message}`)
-  }
+const pobierzPracownikow = () => {
+  if (['administrator', 'manager'].includes(pracownik.role)) setEkran('pracownicy')
 }
   useEffect(() => {
   const timer = setInterval(() => {
@@ -488,7 +202,7 @@ useEffect(() => {
   // -----------------------------------------
 
  const wybierzLokal = async (lokal, aktualnyPracownik = pracownik) => {
-  if (aktualnyPracownik?.role === 'employee' &&
+  if (aktualnyPracownik?.role !== 'administrator' &&
     String(lokal.id) !== String(aktualnyPracownik.location_id)) return
   kontekst.current += 1
   wyczyscFormularzPozycji()
@@ -1247,7 +961,7 @@ const pobierzZaplanowanePlany = async (lokal = wybranyLokal, osoba = pracownik) 
       .order('id', { ascending: false })
 
     if (osoba.role === 'employee') {
-      query = query.eq('status', 'active').gte('plan_date', productionDate()).lte('plan_date', productionDate(7))
+      query = query.eq('status', 'active').eq('plan_date', productionDate())
     }
     const { data, error } = await query
     if (wersja !== kontekst.current) return
@@ -1305,7 +1019,7 @@ const pobierzHistorie = async () => {
 
     if (employeeIds.length > 0) {
 const { data: osoby, error: employeesError } = await supabase.rpc(
-  'get_employee_names',
+  'auth_employee_names',
   {
     p_requester_id: pracownik.id,
     p_employee_ids: employeeIds,
@@ -1519,18 +1233,6 @@ console.log('GOTOWA HISTORIA:', historiaZPracownikami)
 // EKRAN LOGOWANIA
 // -----------------------------------------
 
-if (!pracownik) {
-  return (
-    <LoginScreen
-      pin={pin}
-      setPin={setPin}
-      bladLogowania={bladLogowania}
-      setBladLogowania={setBladLogowania}
-      logowanie={logowanie}
-      zalogujPracownika={zalogujPracownika}
-    />
-  )
-}
 if (ekran === 'wybor-lokalu') {
   return (
     <LocationSelectScreen
@@ -1547,25 +1249,7 @@ if (ekran === 'wybor-lokalu') {
   return (
     <EmployeesScreen
       pracownik={pracownik}
-      pokazFormularzPracownika={pokazFormularzPracownika}
-      setPokazFormularzPracownika={setPokazFormularzPracownika}
-      nowyPracownik={nowyPracownik}
-      setNowyPracownik={setNowyPracownik}
       lokale={lokale}
-      zapiszPracownika={zapiszPracownika}
-      ladowaniePracownikow={ladowaniePracownikow}
-      pracownicy={pracownicy}
-      zmienStatusPracownika={zmienStatusPracownika}
-      edycjaPracownikaId={edycjaPracownikaId}
-      setEdycjaPracownikaId={setEdycjaPracownikaId}
-      edytowanyPracownik={edytowanyPracownik}
-      setEdytowanyPracownik={setEdytowanyPracownik}
-      zapiszEdycjePracownika={zapiszEdycjePracownika}
-      zmianaPinId={zmianaPinId}
-      setZmianaPinId={setZmianaPinId}
-      nowyPin={nowyPin}
-      setNowyPin={setNowyPin}
-      zmienPinPracownika={zmienPinPracownika}
       onPowrot={() => setEkran('wybor-lokalu')}
     />
   )

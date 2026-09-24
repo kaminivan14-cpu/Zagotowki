@@ -1,0 +1,5 @@
+project_id = "zagotowki"
+
+[functions.invite-employee]
+# The function verifies the user token with Auth getUser, then checks current DB permissions.
+verify_jwt = false

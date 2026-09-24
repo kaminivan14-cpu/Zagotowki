@@ -1,0 +1,6 @@
+.auth-screen { max-width: 640px; margin: 0 auto; padding: 24px; }
+.auth-form { display: grid; gap: 16px; color: #1e293b; }
+.auth-form label { display: grid; gap: 6px; text-align: left; }
+.auth-form input, .auth-form select { width: 100%; box-sizing: border-box; padding: 12px; font: inherit; border: 1px solid #94a3b8; border-radius: 8px; background: white; color: #111827; }
+.auth-form button { min-height: 44px; }
+.auth-form p { overflow-wrap: anywhere; }
