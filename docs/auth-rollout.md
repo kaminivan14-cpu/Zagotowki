@@ -16,7 +16,7 @@ w interfejsie nigdy nie zmienia tożsamości uwierzytelnionej przez backend.
 
 | Rola | Dostęp |
 |---|---|
-| employee | Własny lokal, aktywne plany dziś–dziś+7; START/koniec tylko dziś |
+| employee | Wyłącznie aktywny plan DZISIAJ we własnym lokalu; START/koniec tylko dziś |
 | su-chef | Własny lokal, zarządzanie planami i historia, bez kont pracowników |
 | manager | Własny lokal i produkcja; zarządzanie employee/su-chef w tym lokalu |
 | administrator | Wszystkie lokale i role; START/koniec także bez przypisanego lokalu |
@@ -34,6 +34,58 @@ osobna polityka ograniczająca ją do uzgodnionego zakresu.
 
 ## Architektura i kompatybilność
 
+### Bootstrap pustego projektu i seed UAT
+
+Repozytorium odtwarza schemat aplikacji w kolejności:
+
+1. `supabase/migrations/202609220001_base.sql`
+2. `supabase/migrations/202609230001_auth.sql`
+3. `supabase/migrations/202609230002_auth_production.sql`
+4. Opcjonalnie, wyłącznie na zweryfikowanym UAT: `supabase/seeds/uat.sql`.
+
+Baza musi mieć infrastrukturę Supabase: role `anon`, `authenticated`, `service_role`,
+`auth.users`, `auth.uid()` i publikację `supabase_realtime`. Migracja bazowa nie tworzy
+obiektów zarządzanych przez platformę. Odtwarza sześć tabel, identity, ograniczenia,
+indeksy, triggery i wymagane RPC na podstawie lokalnego snapshotu z 2026-09-23.
+Nie wymaga dostępu do backupów podczas uruchomienia. Nie odtwarza kolumny `pin_hash`,
+starych endpointów kont/PIN, właścicieli ani szerokich ACL ze snapshotu.
+Zachowuje ciała RPC produkcyjnych, ograniczając ich `search_path` do `pg_catalog`;
+odwołania do tabel aplikacji są kwalifikowane schematem. START/koniec są następnie
+zastępowane przez migrację Auth 002.
+
+Już BASE włącza RLS bez polityk klienckich, odbiera dostęp klientom do tabel,
+sekwencji i funkcji, ogranicza default privileges roli wykonującej migracje oraz
+przyznaje uprawnienia serwerowe `service_role`. Auth jawnie ustanawia dostęp
+uwierzytelnionej aplikacji. Wszystkie trzy migracje należy wykonać tą samą zaufaną
+rolą migracyjną. Nie udostępniać aplikacji przed ukończeniem obu migracji Auth.
+
+BASE jest wyłącznie dla pustego schematu aplikacyjnego. Nie uruchamiać go na
+istniejącym PROD ani oznaczać jako wykonanego bez odrębnego planu uzgodnienia
+historii migracji. Po BASE nie wykonywać skryptów historycznych z `docs/`: ich
+efekty są już zawarte w schemacie, a stare granty/RPC mogą naruszyć zabezpieczenia.
+
+Seed jest oddzielny i nie jest automatycznym `supabase/seed.sql`. Wymaga pustych
+tabel aplikacji i odmawia ponownego załadowania. Zawiera 123 produkty i 284 wiersze
+receptur, z zachowanymi wartościami źródłowymi jednostek (także NULL), bez zgadywania
+lub konwersji. Nowe wewnętrzne ID katalogu powstają przez identity; powiązania
+zachowują `external_id`. Pozostałe rekordy są fikcyjne: dwa lokale, dziewięciu
+pracowników (cztery role, oba lokale, konto nieaktywne i niepowiązane), sześć planów
+na wczoraj/dziś/jutro według Europe/Warsaw i 18 pozycji. Plany wczorajsze są
+zakończone, dzisiejsze obejmują pozycje oczekujące/rozpoczęte/gotowe, a jutrzejsze
+oczekują na rozpoczęcie. Seed nie tworzy użytkowników Auth ani ich powiązań.
+Kontrolowane konta testerów i powiązanie pierwszego administratora to osobny etap.
+
+Przed późniejszym uruchomieniem należy jawnie zweryfikować docelowy projekt UAT.
+Nie polegać na zapisanym linku CLI ani lokalnym `.env`, które mogą wskazywać PROD.
+Sam warunek pustych tabel nie identyfikuje środowiska i nie zastępuje tej kontroli.
+
+`npm test` obejmuje `tests/bootstrap.test.mjs`: pusty PGlite z minimalnymi atrapami
+platformy Supabase, następnie dokładnie BASE → Auth 001 → Auth 002 → seed.
+Test sprawdza strukturę, ograniczenia, RLS, ACL, role, zakres lokalu/daty, START/koniec,
+integralność danych i odmowę ponownego seedu. Nie wymaga lokalnych backupów ani sieci.
+Nie potwierdza usług Auth/SMTP, gateway Edge Functions, PostgREST, dostarczania
+Realtime, Storage ani konfiguracji hostowanego projektu.
+
 - `src/auth/AuthGate.jsx`: sesja, profil, odcięcie niezalogowanego użytkownika,
   ekran hasła; przełączenie tożsamości/roli/lokalu ponownie montuje App i czyści stan.
 - `src/auth/EmployeesScreen.jsx`: pracownicy, uprawnienia i zaproszenie na e-mail.
@@ -46,8 +98,9 @@ osobna polityka ograniczająca ją do uzgodnionego zakresu.
 Pozostałe RPC produkcyjne zachowują istniejące ciała i parametry. Migracja
 opakowuje je obowiązkowym sprawdzeniem `p_requester_id == pracownik(auth.uid())`.
 To parametr zgodności z obecnym frontendem, nie dowód tożsamości.
-Obie migracje muszą być wdrożone razem. Stare migracje z `docs/` muszą poprzedzać
-Auth: ich późniejsze uruchomienie może odtworzyć niechronione RPC/publiczne granty.
+Obie migracje Auth muszą być wdrożone razem. Przy aktualizacji istniejącej bazy
+brakujące zmiany historyczne z `docs/` muszą poprzedzać Auth; świeży bootstrap
+z BASE już je zawiera. Ich późniejsze uruchomienie może odtworzyć niechronione RPC/publiczne granty.
 Każda następna migracja produkcyjna musi zachować kontrolę tożsamości i ACL.
 
 Migracja odbiera PUBLIC/anon/authenticated uprawnienia do wszystkich istniejących
@@ -75,7 +128,8 @@ frontendu wymaga skoordynowania z migracją; frontend Auth nie działa na starej
    Sprawdzić wszystkie publiczne widoki, funkcje, tabele i integracje poza sześcioma
    tabelami powyżej. Widoki SECURITY DEFINER nie mogą omijać nowego RLS.
 2. Zweryfikować `Employees`: poprawne cztery role, lokal dla każdego nie-administratora,
-   generowanie ID, nullowalny pin_hash oraz brak kolizji nazw nowych funkcji/kolumn.
+   generowanie ID, nullowalny pin_hash (jeżeli istnieje w starszym schemacie) oraz
+   brak kolizji nazw nowych funkcji/kolumn. Świeży BASE nie tworzy kolumny PIN.
    Migracja odrzuca niespójne dane zamiast przypisywać domyślne role.
 3. W Supabase Auth włączyć e-mail/hasło, wyłączyć publiczne zapisy (Allow new users
    to sign up), skonfigurować SMTP i ograniczenia prób, minimum 12 znaków hasła.
