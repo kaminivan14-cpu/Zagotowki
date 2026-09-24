@@ -153,7 +153,11 @@ frontendu wymaga skoordynowania z migracją; frontend Auth nie działa na starej
    adres aplikacji. SUPABASE_URL i SUPABASE_SERVICE_ROLE_KEY to zmienne serwerowe.
    `verify_jwt=false` w konfiguracji gateway jest celowe: sam handler weryfikuje
    token w Auth, również przy nowych kluczach podpisujących. Nie usuwać `getUser`.
-6. Frontend dostaje wyłącznie VITE_SUPABASE_URL i VITE_SUPABASE_PUBLISHABLE_KEY.
+6. Frontend dostaje VITE_SUPABASE_URL i VITE_SUPABASE_ANON_KEY (publiczny klucz
+   anon lub publishable tego samego projektu). VITE_SUPABASE_ANON_KEY ma pierwszeństwo;
+   dotychczasowe VITE_SUPABASE_PUBLISHABLE_KEY jest fallbackiem tylko przy pustym/brakującym
+   ANON_KEY. Dla Vercel Preview ustawić zmienne w zakresie Preview/właściwego brancha;
+   nie zmieniać zakresu Production. Zmiana wymaga nowego builda frontendu.
    Nie wprowadzać service_role, haseł ani tokenów do Git, VITE_* lub logów.
 7. Przejść poniższe scenariusze na staging, uzyskać review, następnie zaplanować
    krótkie okno przełączenia bazy + frontendu na produkcji. Zaprosić/powiązać
