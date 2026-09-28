@@ -17,6 +17,20 @@ export default function AuthGate() {
   const generation = useRef(0)
   const refresh = useRef(() => {})
   useEffect(() => {
+    const onHashChange = () => {
+      const hash = new URLSearchParams(location.hash.slice(1))
+      if (hash.get('type') === 'recovery' ||
+        ['error', 'error_code', 'error_description'].some(key => hash.has(key))) {
+        // A fragment-only navigation does not reinitialize Supabase. Reload with
+        // the callback intact so the SDK validates it using its normal flow.
+        // The SDK's subsequent empty hash does not trigger another reload.
+        location.reload()
+      }
+    }
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
+  useEffect(() => {
     if (!passwordMode) return
     // Keep only a routing marker across reloads; leave the hash for the SDK to consume.
     const url = new URL(location.href)

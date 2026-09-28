@@ -93,6 +93,26 @@ function recoveryUrl() {
     expires_in: String(saved.expires_in), token_type: 'bearer', type: 'recovery' })
 }
 
+test('recovery callback arriving in an already loaded login page opens password form', async ({ page }) => {
+  await setup(page)
+  await page.goto('/')
+  await expect(page.getByRole('button', { name: 'Zaloguj', exact: true })).toBeVisible()
+  // Same-document navigation does not recreate the Supabase client or React root.
+  await page.evaluate(hash => { window.location.hash = hash }, recoveryUrl().slice(2))
+  await expect(page.getByRole('heading', { name: 'Ustaw nowe hasło' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Zapisz hasło' })).toBeEnabled()
+})
+
+test('expired recovery arriving through hash navigation cannot use an old session', async ({ page }) => {
+  await setup(page, { loggedIn: true })
+  await page.goto('/')
+  await expect(page.getByRole('button', { name: 'Lokal A' })).toBeVisible()
+  await page.evaluate(() => { window.location.hash = 'error=access_denied&error_code=otp_expired' })
+  await expect(page.getByRole('heading', { name: 'Ustaw nowe hasło' })).toBeVisible()
+  await expect(page.getByRole('alert')).toContainText('Link jest nieważny lub wygasł')
+  await expect(page.getByRole('button', { name: 'Zapisz hasło' })).toBeDisabled()
+})
+
 test('real SDK recovery hash without auth query opens password form and survives reload', async ({ page }) => {
   const calls = await setup(page)
   await page.goto(recoveryUrl())
