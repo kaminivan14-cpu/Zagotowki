@@ -16,6 +16,15 @@ export default function AuthGate() {
   const [passwordLinkError, setPasswordLinkError] = useState(initialPasswordRedirect.hasError ? invalidPasswordLink : '')
   const generation = useRef(0)
   const refresh = useRef(() => {})
+  // Temporary diagnostics mirror the render priority without exposing session data.
+  useEffect(() => {
+    console.info('[recovery-diag] AUTH_GATE', {
+      recovery: passwordMode,
+      login: !passwordMode && !loading && !session,
+      loading: !passwordMode && loading,
+      hasSession: Boolean(session),
+    })
+  }, [passwordMode, loading, session])
   useEffect(() => {
     const onHashChange = () => {
       const hash = new URLSearchParams(location.hash.slice(1))

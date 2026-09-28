@@ -93,6 +93,40 @@ function recoveryUrl() {
     expires_in: String(saved.expires_in), token_type: 'bearer', type: 'recovery' })
 }
 
+for (const delay of [0, 200]) {
+  test(`external recovery link redirects into a fresh tab (Auth delay ${delay}ms)`, async ({ page, context }) => {
+    const calls = await setup(context)
+    const saved = session()
+    const callback = new URL('http://127.0.0.1:5173/')
+    callback.hash = new URLSearchParams({ access_token: saved.access_token,
+      refresh_token: saved.refresh_token, expires_in: String(saved.expires_in),
+      expires_at: String(saved.expires_at), token_type: 'bearer', type: 'recovery' }).toString()
+    await context.route('https://mail.example.test/**', route => route.fulfill({
+      contentType: 'text/html', body: '<a target="_blank" rel="noopener" href="https://auth-tests.supabase.co/auth/v1/verify?token=test-only&type=recovery">Reset password</a>',
+    }))
+    await context.route('**/auth/v1/verify?**', route => route.fulfill({ status: 302,
+      headers: { location: callback.href }, body: '',
+    }))
+    await context.route('**/auth/v1/user', async route => {
+      if (route.request().method() !== 'GET') return route.fallback()
+      await new Promise(resolve => setTimeout(resolve, delay))
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(user) })
+    })
+    await page.goto('https://mail.example.test/inbox')
+    const opened = context.waitForEvent('page')
+    await page.getByRole('link', { name: 'Reset password' }).click()
+    const recovery = await opened
+    await expect(recovery.getByRole('heading', { name: 'Ustaw nowe hasło' })).toBeVisible()
+    await expect(recovery.getByRole('button', { name: 'Zapisz hasło' })).toBeEnabled()
+    await expect(recovery.getByRole('button', { name: 'Zaloguj', exact: true })).toHaveCount(0)
+    await recovery.getByLabel('Nowe hasło', { exact: true }).fill('external-password-123')
+    await recovery.getByLabel('Powtórz hasło').fill('external-password-123')
+    await recovery.getByRole('button', { name: 'Zapisz hasło' }).click()
+    await expect(recovery.getByRole('heading', { name: 'Hasło zostało zmienione' })).toBeVisible()
+    expect(calls.some(c => c.path === '/auth/v1/user' && c.method === 'PUT')).toBe(true)
+  })
+}
+
 test('recovery callback arriving in an already loaded login page opens password form', async ({ page }) => {
   await setup(page)
   await page.goto('/')
