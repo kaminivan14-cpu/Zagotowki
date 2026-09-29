@@ -5,7 +5,7 @@ import ManageEmployeePin from './ManageEmployeePin'
 import { invitationFailure } from './inviteResult'
 
 export default function EmployeesScreen({ pracownik, lokale, onPowrot }) {
-  const [filter, setFilter] = useState('active')
+  const [filter, setFilter] = useState('all')
   const [confirmation, setConfirmation] = useState(null)
   const dialogRef = useRef(null)
   useEffect(() => { if (confirmation) dialogRef.current?.showModal() }, [confirmation])
@@ -78,7 +78,7 @@ export default function EmployeesScreen({ pracownik, lokale, onPowrot }) {
       <button disabled={busy} onClick={() => { setInvite(null); setForm({ name: '', role: 'employee', location_id: pracownik.location_id || '', active: true }) }}>Dodaj pracownika</button>
       <p role="status">{message}</p>
       <label>Widok pracowników<select aria-label="Widok pracowników" disabled={busy} value={filter} onChange={e => setFilter(e.target.value)}>
-        <option value="active">Aktywni</option><option value="inactive">Nieaktywni</option>
+        <option value="all">Pracownicy — wszyscy niearchiwalni</option><option value="active">Aktywni</option><option value="inactive">Nieaktywni</option>
         {pracownik.role === 'administrator' && <option value="archived">Archiwalni</option>}
       </select></label>
       {confirmation && <dialog ref={dialogRef} aria-modal="true" aria-labelledby="employee-confirm-title" onCancel={e => { e.preventDefault(); if (!busy) setConfirmation(null) }}>
@@ -107,7 +107,7 @@ export default function EmployeesScreen({ pracownik, lokale, onPowrot }) {
         <p>Sprawdź adres — jego właściciel otrzyma dostęp jako ten pracownik.</p>
         <button disabled={busy}>Wyślij zaproszenie</button><button type="button" disabled={busy} onClick={() => setInvite(null)}>Anuluj</button>
       </form>}
-      <div className="produkty">{employees.filter(e => filter === 'archived' ? Boolean(e.archived_at) : !e.archived_at && (filter === 'active' ? e.active : !e.active)).map(e => <div className="produkt" key={e.id}>
+      <div className="produkty">{employees.filter(e => filter === 'archived' ? Boolean(e.archived_at) : !e.archived_at && (filter === 'all' || (filter === 'active' ? e.active : !e.active))).map(e => <div className="produkt" key={e.id}>
         <strong>{e.name}</strong><p>{e.role} · {lokale.find(l => String(l.id) === String(e.location_id))?.name || (e.role === 'administrator' ? 'Wszystkie lokale' : 'Brak lokalu')}</p>
         <p>{e.active ? 'Aktywny' : 'Nieaktywny'} · {e.auth_user_id ? 'Konto połączone' : 'Brak konta logowania'}</p>
         {pracownik.role === 'administrator' && !e.archived_at && ['manager', 'su-chef', 'employee'].includes(e.role) && <><button disabled={busy || !e.active} onClick={() => { setInvite(null); setForm(null); setPinEmployee(e) }}>Nadaj / resetuj PIN</button>{!e.active && <p>Nadanie PIN-u wymaga aktywnego konta.</p>}</>}
