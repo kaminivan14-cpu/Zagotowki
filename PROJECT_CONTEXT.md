@@ -60,9 +60,14 @@ Nie przechowywać tutaj sekretów, adresu e-mail administratora ani jego Auth UI
 - Manager: własny lokal, produkcja i zarządzanie employee/su-chef tego lokalu.
 - Administrator: dostęp między lokalami zgodnie z RLS/RPC.
 - Logowanie: Supabase Auth, e-mail + hasło; powiązanie przez `Employees.auth_user_id`.
-- Stary system PIN jest zastępowany przez Auth. **Auth nie jest jeszcze zakończony.**
-- Pozostało: frontend UAT na Vercel, Auth URL/redirect, Edge Function `invite-employee`,
-  test zaproszeń/resetu hasła, czterech ról oraz RLS i produkcji w prawdziwym frontendzie UAT.
+- Operator potwierdził e-mail/hasło i password recovery end-to-end na UAT.
+- POC PIN (2026-09-29): manager/su-chef/employee otrzymują tę samą sesję Supabase Auth
+  po weryfikacji dokładnie 4 cyfr. Administrator zachowuje e-mail/hasło.
+- Implementacja PIN jest lokalna, jeszcze niewdrożona; migracja UAT i realny test
+  generateLink → verifyOtp → setSession pozostają do wykonania.
+- Konta PIN używają wyłącznie `<UUID>@pin.uat.invalid`; własna domena i sekret domeny nie są potrzebne. Akceptacja adresów przez hostowany Auth: do potwierdzenia na UAT.
+- Nie przywracamy starego publicznego login_employee. PIN-only nie jest jeszcze
+  gwarantowane na poziomie wszystkich API Auth. Plan uruchomienia: docs/pin-auth-uat.md.
 
 ## 6. Bootstrap bazy
 
@@ -108,10 +113,9 @@ Szczegóły przyszłych modułów pozostają do zaprojektowania / potwierdzenia.
 
 # 11. NEXT STEP
 
-**Aktualnie: dokończyć Auth na UAT.**
+**Aktualnie: przegląd lokalnego POC 4-cyfrowego PIN Auth.**
 
-**Najbliższy krok: utworzyć osobny deployment frontendu UAT na Vercel dla
-`feature/auth`, podłączony WYŁĄCZNIE do Supabase UAT `meuzkduxttjcuiynsnaa`.**
-
-Następnie: Auth settings/redirect → logowanie administratora → `invite-employee`
-→ test pozostałych ról → pełny smoke test UAT → dopiero później decyzja o rollout PROD.
+Po zatwierdzeniu: konfiguracja wyłącznie UAT/Preview, migracja
+`202609290001_employee_pin.sql`, wdrożenie funkcji i proxy, provisioning fikcyjnych
+pracowników oraz realny test sesji i izolacji lokali. Szczegóły i bramki bezpieczeństwa:
+`docs/pin-auth-uat.md`. Bez rollout Production przed osobną decyzją.

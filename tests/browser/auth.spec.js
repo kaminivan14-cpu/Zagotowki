@@ -230,3 +230,54 @@ test('recovery email network error is actionable', async ({ page }) => {
   await expect(page.getByRole('status')).toContainText('Nie udało się wysłać prośby')
   await expect(page.getByRole('button', { name: 'Wyślij link' })).toBeEnabled()
 })
+
+for (const role of ['manager', 'su-chef', 'employee']) {
+  test(`PIN ${role}: leading zero, real SDK setSession, reload, refresh and logout`, async ({ page }) => {
+    const calls = await setup(page)
+    let active = true
+    await page.route('**/rest/v1/rpc/auth_employee_profile', route => route.fulfill({
+      contentType: 'application/json', body: JSON.stringify(active ? [{ id: 1, auth_user_id: user.id, name: 'Pracownik PIN', role, location_id: 1, active: true }] : []),
+    }))
+    await page.route('**/api/pin-login', async route => {
+      expect(route.request().postDataJSON()).toEqual({ pin: '0001' })
+      const saved = session()
+      await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ access_token: saved.access_token, refresh_token: saved.refresh_token }) })
+    })
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Pracownik — logowanie PIN' }).click()
+    await page.getByLabel('PIN', { exact: true }).fill('0001')
+    await page.getByRole('button', { name: 'Zaloguj', exact: true }).click()
+    await expect(page.getByRole('button', { name: /Wyloguj/ })).toBeVisible()
+    const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('sb-auth-tests-auth-token')))
+    expect(stored.user.id).toBe(user.id)
+    expect(stored.pin).toBeUndefined()
+    // Force expiration in the stored SDK session; reload must use the normal refresh endpoint.
+    await page.evaluate(() => {
+      const key='sb-auth-tests-auth-token', saved=JSON.parse(localStorage.getItem(key))
+      saved.expires_at=1
+      localStorage.setItem(key,JSON.stringify(saved))
+    })
+    await page.reload()
+    await expect(page.getByRole('button', { name: /Wyloguj/ })).toBeVisible()
+    expect(calls.some(c => c.path === '/auth/v1/token')).toBe(true)
+    active = false
+    await page.reload()
+    await expect(page.getByRole('alert')).toContainText('Brak dostępu')
+    await page.getByRole('button', { name: /Wyloguj/ }).click()
+    await expect(page.getByLabel('E-mail', { exact: true })).toBeVisible()
+    expect(await page.evaluate(() => localStorage.getItem('sb-auth-tests-auth-token'))).toBeNull()
+  })
+}
+
+test('PIN denial clears input and never creates a parallel employee session', async ({ page }) => {
+  await setup(page)
+  await page.route('**/api/pin-login', route => route.fulfill({ status: 401, contentType: 'application/json', body: '{}' }))
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Pracownik — logowanie PIN' }).click()
+  await page.getByLabel('PIN', { exact: true }).fill('0001')
+  await page.getByRole('button', { name: 'Zaloguj', exact: true }).click()
+  await expect(page.getByRole('status')).toContainText('Nieprawidłowy PIN')
+  await expect(page.getByLabel('PIN', { exact: true })).toHaveValue('')
+  expect(await page.evaluate(() => sessionStorage.getItem('pracownik'))).toBeNull()
+  expect(await page.evaluate(() => localStorage.getItem('sb-auth-tests-auth-token'))).toBeNull()
+})

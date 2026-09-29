@@ -52,7 +52,7 @@ export default function AuthGate() {
         const { data, error: profileError } = await supabase.rpc('auth_employee_profile')
         if (!alive || request !== generation.current) return
         if (profileError || !validEmployee(data?.[0], nextSession.user.id)) {
-          setEmployee(null)
+          setEmployee(null); clearProductCatalog()
           setError('Brak dostępu. Konto musi być połączone z aktywnym pracownikiem. Skontaktuj się z managerem.')
         } else { setError(''); setEmployee(data[0]) }
       } catch {

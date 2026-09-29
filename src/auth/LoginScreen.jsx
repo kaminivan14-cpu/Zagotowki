@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { supabase } from '../supabase'
+import PinLoginScreen from './PinLoginScreen'
 import { invalidPasswordLink } from './passwordRecovery'
 export default function LoginScreen({ passwordMode = false, session, loading, linkError, onPasswordSaved, onCancel }) {
+  const [pinMode, setPinMode] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmation, setConfirmation] = useState('')
@@ -42,6 +44,7 @@ export default function LoginScreen({ passwordMode = false, session, loading, li
     } catch { setMessage('Wylogowanie nie powiodło się. Spróbuj ponownie.') }
     finally { setBusy(false) }
   }
+  if (pinMode && !passwordMode) return <PinLoginScreen onBack={() => setPinMode(false)} />
   if (passwordMode && saved) return <div className="app auth-screen"><h1>Hasło zostało zmienione</h1>
     <p role="status">Nowe hasło zostało zapisane. Możesz przejść dalej lub wrócić do logowania.</p>
     {message && <p role="alert">{message}</p>}
@@ -49,7 +52,7 @@ export default function LoginScreen({ passwordMode = false, session, loading, li
     <button disabled={busy} onClick={cancelPassword}>Wróć do logowania</button>
   </div>
   return <div className="app auth-screen"><header><h1>ZAGOTÓWKI</h1><h2>{passwordMode ? 'Ustaw nowe hasło' : reset ? 'Odzyskaj dostęp' : 'Logowanie pracownika'}</h2></header>
-    <main><form className="produkt auth-form" onSubmit={submit}>
+    <main>{!passwordMode && !reset && <button type="button" onClick={() => { setPassword(''); setPinMode(true) }}>Pracownik — logowanie PIN</button>}<form className="produkt auth-form" onSubmit={submit}>
       {!passwordMode && <label>E-mail<input type="email" autoComplete="username" required value={email} onChange={e => setEmail(e.target.value)} /></label>}
       {!reset && <label>{passwordMode ? 'Nowe hasło' : 'Hasło'}<input type="password" autoComplete={passwordMode ? 'new-password' : 'current-password'} required minLength={passwordMode ? 12 : undefined} value={password} onChange={e => setPassword(e.target.value)} /></label>}
       {passwordMode && <><p>Użyj co najmniej 12 znaków.</p><label>Powtórz hasło<input type="password" autoComplete="new-password" required minLength={12} value={confirmation} onChange={e => setConfirmation(e.target.value)} /></label></>}

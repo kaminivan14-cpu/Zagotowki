@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabase'
 import { canManageEmployee } from './session'
+import ManageEmployeePin from './ManageEmployeePin'
 import { invitationFailure } from './inviteResult'
 
 export default function EmployeesScreen({ pracownik, lokale, onPowrot }) {
+  const [pinEmployee, setPinEmployee] = useState(null)
   const [employees, setEmployees] = useState([])
   const [form, setForm] = useState(null)
   const [invite, setInvite] = useState(null)
@@ -57,6 +59,7 @@ export default function EmployeesScreen({ pracownik, lokale, onPowrot }) {
     <main>
       <button disabled={busy} onClick={() => { setInvite(null); setForm({ name: '', role: 'employee', location_id: pracownik.location_id || '', active: true }) }}>Dodaj pracownika</button>
       <p role="status">{message}</p>
+      {pinEmployee && <ManageEmployeePin key={pinEmployee.id} employee={pinEmployee} onClose={() => setPinEmployee(null)} onSaved={() => { setPinEmployee(null); setRevision(x => x + 1); setMessage('PIN został nadany.') }} />}
       {form && <form className="produkt auth-form" onSubmit={save}>
         <label>Imię<input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></label>
         <label>Rola<select value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
@@ -76,6 +79,7 @@ export default function EmployeesScreen({ pracownik, lokale, onPowrot }) {
       <div className="produkty">{employees.map(e => <div className="produkt" key={e.id}>
         <strong>{e.name}</strong><p>{e.role} · {lokale.find(l => String(l.id) === String(e.location_id))?.name || (e.role === 'administrator' ? 'Wszystkie lokale' : 'Brak lokalu')}</p>
         <p>{e.active ? 'Aktywny' : 'Nieaktywny'} · {e.auth_user_id ? 'Konto połączone' : 'Brak konta logowania'}</p>
+        {pracownik.role === 'administrator' && e.active && ['manager', 'su-chef', 'employee'].includes(e.role) && <button onClick={() => { setInvite(null); setForm(null); setPinEmployee(e) }}>Nadaj / resetuj PIN</button>}
         {canManageEmployee(pracownik, e) && <><button disabled={busy} onClick={() => { setInvite(null); setForm({ ...e }) }}>Edytuj</button>
           {!e.auth_user_id && e.active && <button disabled={busy || pendingLinks.includes(e.id)} onClick={() => { setForm(null); setEmail(''); setInvite(e) }}>Zaproś do aplikacji</button>}</>}
       </div>)}</div>
