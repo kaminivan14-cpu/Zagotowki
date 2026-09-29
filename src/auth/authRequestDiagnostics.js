@@ -11,44 +11,60 @@ function sanitizedErrorBody(body) {
     .map(key => [key, safeErrorText.has(body[key]) ? body[key] : '[REDACTED]']))
 }
 
+// Logging itself must not interfere with transport, even if Console is unavailable.
+function log(stage, fields = {}) {
+  try { console.info('[auth-request-diag]', { stage, ...fields }) } catch { /* Ignore Console failures. */ }
+}
+
 export function createAuthDiagnosticFetch(fetchImpl = globalThis.fetch.bind(globalThis)) {
   return async (input, options) => {
-    // Snapshot effective headers without consuming or replacing a Request body.
+    log('FETCH_ENTER')
     let metadata
+    let key
     try {
       const request = input instanceof Request ? input : null
       const url = new URL(request ? request.url : input, globalThis.location?.href)
       if (url.pathname === '/auth/v1/user') {
-        const headers = new Headers(options?.headers !== undefined ? options.headers : request?.headers)
-        metadata = {
-          hostname: url.hostname,
-          pathname: url.pathname,
-          method: (options?.method ?? request?.method ?? 'GET').toUpperCase(),
-          key: headers.get('apikey'),
-        }
+        metadata = { hostname: url.hostname, pathname: url.pathname,
+          method: (options?.method ?? request?.method ?? 'GET').toUpperCase() }
+        try {
+          const headers = new Headers(options?.headers !== undefined ? options.headers : request?.headers)
+          key = headers.get('apikey')
+          Object.assign(metadata, { apikeyExists: key !== null, apikeyLength: key?.length ?? 0,
+            authorizationExists: headers.has('Authorization') })
+        } catch { log('HEADERS_FAILED', metadata) }
+        log('REQUEST', metadata)
       }
-    } catch { /* Diagnostics must never prevent the original fetch. */ }
+    } catch { log('METADATA_FAILED') }
 
-    const response = await fetchImpl(input, options)
+    let response
+    try { response = await fetchImpl(input, options) }
+    catch (error) {
+      if (metadata) log('FETCH_FAILED', metadata)
+      throw error
+    }
     if (metadata) {
-      try {
-        const copy = response.ok ? null : response.clone()
-        // Do not delay SDK processing or consume its response body.
+      const fields = { ...metadata, status: response.status }
+      log('RESPONSE', fields)
+      // Independent tasks: fingerprint failure cannot hide the response body (or vice versa).
+      if (typeof key === 'string') {
         void (async () => {
-          const { key, ...fields } = metadata
-          const record = { ...fields, status: response.status,
-            apikeyExists: key !== null, apikeyLength: key?.length ?? 0 }
-          if (key !== null) {
+          try {
             const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(key))
-            record.apikeySha256 = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')
-          }
-          if (copy) {
-            try { record.responseBody = sanitizedErrorBody(await copy.json()) }
-            catch { record.responseBody = '[REDACTED: unreadable or non-JSON body]' }
-          }
-          console.info('[auth-request-diag]', record)
-        })().catch(() => {})
-      } catch { /* Diagnostics must never change the SDK response. */ }
+            const apikeySha256 = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')
+            log('SHA256_OK', { ...fields, apikeySha256 })
+          } catch { log('SHA256_FAILED', fields) }
+        })()
+      }
+      if (!response.ok) {
+        try {
+          const copy = response.clone()
+          void (async () => {
+            try { log('ERROR_BODY', { ...fields, responseBody: sanitizedErrorBody(await copy.json()) }) }
+            catch { log('BODY_FAILED', fields) }
+          })()
+        } catch { log('BODY_FAILED', fields) }
+      }
     }
     return response
   }
