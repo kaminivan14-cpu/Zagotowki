@@ -32,7 +32,7 @@ try {
  GRANT USAGE ON SCHEMA auth TO anon,authenticated,service_role;
  GRANT EXECUTE ON FUNCTION auth.uid() TO anon,authenticated,service_role;
  CREATE PUBLICATION supabase_realtime;`)
- for(const name of ['202609220001_base.sql','202609230001_auth.sql','202609230002_auth_production.sql','202609290001_employee_pin.sql']) {
+ for(const name of ['202609220001_base.sql','202609230001_auth.sql','202609230002_auth_production.sql','202609290001_employee_pin.sql','202609300001_employee_archive.sql']) {
   await sql(await readFile(new URL(`../supabase/migrations/${name}`,import.meta.url),'utf8'))
  }
  await sql(`INSERT INTO public."Locations"(id,name,active) VALUES(1,'A',true),(2,'B',true);
@@ -57,6 +57,20 @@ try {
   return sql(`SELECT auth_user_id FROM public.pin_verify('${attempt}','${source(n)}','${pin}')`)
  }
  for(let n=2;n<=4;n++) equal(await login(String(n-1).padStart(4,'0'),n),uid(n))
+ // Archive keeps the real bcrypt credential and Auth identity, but denies PIN and existing-token reads.
+ const lifecycle=action=>sql(`SET ROLE authenticated; SELECT set_config('request.jwt.claim.sub','${actor}',false); SELECT public.auth_employee_lifecycle(4,'${action}')`)
+ const before=await sql('SELECT pin_hash FROM public."Employees" WHERE id=4')
+ await lifecycle('archive')
+ equal(await login('0003',70),'')
+ equal(await sql(`SELECT public.pin_confirm(4,'${uid(4)}')`),'f')
+ equal(await sql(`SET ROLE authenticated; SELECT set_config('request.jwt.claim.sub','${uid(4)}',false); SELECT count(*) FROM public."Plans"`),`${uid(4)}\n0`)
+ await denied(`SELECT public.pin_prepare('${actor}',4)`)
+ await lifecycle('restore')
+ equal(await login('0003',71),'')
+ await lifecycle('activate')
+ // Do not expose either hash in assertion failure output.
+ equal((await sql('SELECT pin_hash FROM public."Employees" WHERE id=4'))===before,true)
+ equal(await login('0003',72),uid(4))
  equal(await login('9999',6),'')
  for(const [i,pin] of ['123','12345','abcd'].entries()) equal(await login(pin,10+i),'')
  await sql('UPDATE public."Employees" SET active=false WHERE id=4')

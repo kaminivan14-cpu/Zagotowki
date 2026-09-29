@@ -237,7 +237,7 @@ useEffect(() => {
         )
       `)
       .eq('location_id', lokal.id)
-      .order('plan_date', { ascending: true })
+      .order('plan_date', { ascending: false })
       .order('created_at', { ascending: false, nullsFirst: false })
       .order('id', { ascending: false })
 
@@ -956,7 +956,7 @@ const pobierzZaplanowanePlany = async (lokal = wybranyLokal, osoba = pracownik) 
         )
       `)
       .eq('location_id', osoba.role === 'employee' ? osoba.location_id : lokal.id)
-      .order('plan_date', { ascending: true })
+      .order('plan_date', { ascending: false })
       .order('created_at', { ascending: false, nullsFirst: false })
       .order('id', { ascending: false })
 
@@ -1000,6 +1000,8 @@ const pobierzHistorie = async () => {
       .eq('location_id', wybranyLokal.id)
       .eq('Plan_items.gotowe', true)
       .order('plan_date', { ascending: false })
+      .order('created_at', { ascending: false, nullsFirst: false })
+      .order('id', { ascending: false })
 
     if (wersja !== kontekst.current) return
     if (historiaError) throw historiaError
