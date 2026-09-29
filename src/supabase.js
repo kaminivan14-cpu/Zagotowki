@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { passwordRedirect } from './auth/passwordRecovery'
+import { createAuthDiagnosticFetch } from './auth/authRequestDiagnostics'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 // Prefer the deployment variable; retain the previous name for existing environments.
@@ -15,6 +16,7 @@ console.info('[recovery-diag] BEFORE_CREATE_CLIENT', {
 })
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {
+  global: { fetch: createAuthDiagnosticFetch() },
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
 })
 
