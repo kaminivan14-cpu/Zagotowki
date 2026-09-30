@@ -153,3 +153,40 @@ Manager monitoruje wszystkie etapy własnego lokalu, w tym krojenie i wydane poz
 Korekta permissions Managera przed UAT: PostgreSQL 154/154 PASS (w tym bezpośrednie odmowy claim/ready/start_cutting/complete_cutting/issue i odczyt CUTTING/COMPLETED); browser Orders 5/5 PASS; unit Orders 4/4 PASS; lint i diff-check PASS. Manager nie widzi finansów. Pozostałe role bez zmiany zakresu.
 
 Finalna regresja przed commitem: npm test 65/65, pełny browser 32/32, Orders PostgreSQL154/154, PIN PostgreSQL70/70, lokalny upgrade fixture126/126, migration tests/lint/build/diff-check PASS. Build: ostrzeżenie chunk >500kB.
+
+## Tryb produkcyjny na tablecie (feature/orders)
+
+Tryb pracy w module Zamówienia, niezależny od roli i uprawnień. Dostępny przy
+orders.work, orders.cut lub orders.issue: sushi master wykonuje pozycje, su chef
+kroi i wydaje. Wejście przyciskiem „Tryb produkcyjny” w nagłówku; powrót przez
+„Widok standardowy”. Bez zmiany innych modułów, Auth, RPC, ról lub schematu bazy.
+
+UX i stany:
+- Brak zmiany: podgląd zadań i duży przycisk rozpoczęcia zmiany.
+- Moje aktywne: zawsze pierwsza sekcja, tylko własna niezakończona praca.
+- Do wzięcia: dostępne porcje, pogrupowane według zamówienia. Karty przewijają się
+  poziomo, strona pionowo; nowe i zakończone zamówienia nie trafiają do kolejki.
+- Weź całość: jedno dotknięcie bierze pozostałą ilość konkretnej karty, nie całe
+  zamówienie. Podziel + 1/2/5/10/Całość: dwa dotknięcia. Inna otwiera duży keypad.
+- Gotowe: jeden tap kończy wykonanie/krojenie. Wydane: osobna istniejąca akcja
+  su chefa, bez zmiany semantyki backendu ani scalania etapów.
+- Oddaj zadanie: potwierdzenie inline; możliwość pozostawienia zadania u siebie.
+  Backend nie obsługuje oddania krojenia, więc tryb nie oferuje fikcyjnej akcji.
+- Zapisywanie: blokada przycisków. Niepewny wynik: blokada kolejnych operacji
+  i ponowienie z tym samym UUID; konflikt ilości rozstrzyga istniejący backend.
+- Puste listy i błędy połączenia: tekstowy stan i istniejące odświeżanie co 5 s.
+
+Przyciski minimum 64 px, odstępy 10–20 px, nazwy 26 px i ilości 44 px.
+Brak małych inputów liczbowych, modali dla zwykłych działań, stawek i historii
+w widoku operatora. Pełne narzędzia nadal są w widoku standardowym.
+
+Weryfikacja: testy Node sprawdzają dostęp, rozdział maker/cutter/issuer, własność,
+pominięcie wydanych/oddanych zadań i walidację ilości. Dodano scenariusze Playwright
+podziału, potwierdzenia oddania i rozmiarów na tablecie; nie uruchamiano przeglądarki
+z uwagi na obowiązujący zakaz użytkownika. Ręczny test UAT: sushi master przejmuje
+całość/część, kończy/oddaje; su chef kroi, kończy krojenie i wydaje; dwie osoby
+próbują wziąć tę samą porcję; po zerwaniu sieci ponawiają ten sam zapis. Na tablecie
+w rękawicach sprawdzić poziomy swipe, czytelność i brak poziomego scrolla strony.
+
+Wdrożenie wymaga tylko nowego frontendu Vercel Preview dla feature/orders.
+Nie wymaga deployu Supabase, migracji ani zmian sekretów. Production nietknięty.

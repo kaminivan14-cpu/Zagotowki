@@ -118,3 +118,32 @@ for (const viewport of [{width:1024,height:768},{width:768,height:1024},{width:1
   await expect(page.getByRole('heading',{name:'Co robisz?'})).toBeVisible()
  })
 }
+
+test('glove mode: split in two taps, own work first, release requires explicit confirmation', async ({page}) => {
+ const s=state()
+ s.orders=[{id:1,display_number:'UAT-GLOVES',location_id:1,status:'TO_DO',items:[{id:1,name:'Philadelphia Salmon',quantity:10,available:10,issued:0,assignments:[]}]}]
+ await setup(page,s,4,'sushi-master');await enter(page)
+ await page.getByRole('button',{name:'Tryb produkcyjny',exact:true}).click()
+ await page.getByRole('button',{name:'Rozpocznij zmianę',exact:true}).click()
+ await page.getByRole('button',{name:'Podziel',exact:true}).click()
+ await page.getByRole('button',{name:'5',exact:true}).click()
+ await expect(page.getByRole('heading',{name:'Moje aktywne · 1',exact:true})).toBeVisible()
+ expect(s.calls.find(c=>c.p_action==='claim').p_args.items).toEqual([{item_id:1,quantity:5}])
+ await page.getByRole('button',{name:'Oddaj zadanie',exact:true}).click()
+ expect(s.calls.filter(c=>c.p_action==='release')).toHaveLength(0)
+ await page.getByRole('button',{name:'Zostaw u mnie',exact:true}).click()
+ await page.getByRole('button',{name:'Gotowe',exact:true}).click()
+ await expect(page.getByRole('heading',{name:'Moje aktywne · 0',exact:true})).toBeVisible()
+ expect(s.calls.filter(c=>c.p_action==='ready')).toHaveLength(1)
+})
+test('glove mode keeps horizontal cards and 64px touch targets on a tablet', async ({page}) => {
+ await page.setViewportSize({width:1024,height:768})
+ const s=state()
+ s.orders=[{id:1,display_number:'UAT-TABLET',location_id:1,status:'TO_DO',items:[1,2,3,4].map(id=>({id,name:`Item ${id}`,quantity:10,available:10,issued:0,assignments:[]}))}]
+ await setup(page,s,4,'sushi-master');await enter(page)
+ await page.getByRole('button',{name:'Tryb produkcyjny',exact:true}).click()
+ const region=page.getByRole('region',{name:'Do wzięcia — UAT-TABLET'})
+ expect(await region.evaluate(el=>el.scrollWidth>el.clientWidth)).toBe(true)
+ expect(await page.locator('.production-mode button').evaluateAll(buttons=>buttons.every(b=>b.getBoundingClientRect().height>=64))).toBe(true)
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true)
+})

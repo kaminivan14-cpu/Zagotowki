@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../supabase'
+import ProductionMode from './ProductionMode'
+import { canUseProductionMode } from './production'
 import EmployeesScreen from '../auth/EmployeesScreen'
 import { pendingOperation, operationKey, orderError, formatTime, money, rateText, parseRate, orderStatus } from './client'
 
 export default function OrdersApp({ employee, capabilities, onSignOut, onModules }) {
+  const [productionMode, setProductionMode] = useState(false)
   const has = name => capabilities.includes(name)
   const [location, setLocation] = useState(employee.location_id || ''), [locations, setLocations] = useState([])
   const [orders, setOrders] = useState([]), [catalog, setCatalog] = useState([]), [shifts, setShifts] = useState([])
@@ -50,7 +53,7 @@ export default function OrdersApp({ employee, capabilities, onSignOut, onModules
         throw error
       }
       sessionStorage.removeItem(operationKey(employee.id)); if (!alive.current) return
-      setPending(null); setSelection({}); setMessage('Zapisano.'); await load()
+      setPending(null); setSelection({}); setMessage('Zapisano.'); await load(); return true
     } catch (error) { console.error('orders-command', { action, code: /^[A-Z0-9]{5}$/.test(error?.code) ? error.code : 'UNCONFIRMED' }); if (alive.current) setMessage(orderError(error)) }
     finally { locked.current = false; if (alive.current) setBusy(false) }
   }
@@ -68,7 +71,8 @@ export default function OrdersApp({ employee, capabilities, onSignOut, onModules
     } catch { console.error('orders-history', { code: 'READ_FAILED' }); if (alive.current && n === historyRequest.current) setMessage('Podsumowanie niedostępne. Sprawdź zakończenie zmiany i uprawnienia.') }
   }
   if (employeesOpen && has('employees.manage')) return <EmployeesScreen pracownik={employee} lokale={locations} onPowrot={() => setEmployeesOpen(false)} />
-  return <div className="app orders-app"><header className="orders-header"><div><h1>Zamówienia</h1><p>{employee.name}</p></div><div className="header-actions"><button disabled={busy} onClick={onModules}>← Wybór modułów</button>{has('employees.manage') && <button disabled={busy} onClick={() => setEmployeesOpen(true)}>Pracownicy</button>}<button disabled={busy} onClick={onSignOut}>Wyloguj</button></div></header>
+  if (productionMode && canUseProductionMode(capabilities)) return <ProductionMode employee={employee} capabilities={capabilities} orders={orders} shift={shift} location={location} locations={locations} onLocation={value => { setOrders([]); setLocation(value) }} busy={busy} pending={pending} message={message} run={run} onExit={() => setProductionMode(false)} />
+  return <div className="app orders-app"><header className="orders-header"><div><h1>Zamówienia</h1><p>{employee.name}</p></div><div className="header-actions">{canUseProductionMode(capabilities) && <button disabled={busy} onClick={() => setProductionMode(true)}>Tryb produkcyjny</button>}<button disabled={busy} onClick={onModules}>← Wybór modułów</button>{has('employees.manage') && <button disabled={busy} onClick={() => setEmployeesOpen(true)}>Pracownicy</button>}<button disabled={busy} onClick={onSignOut}>Wyloguj</button></div></header>
     <label>Lokal<select value={location} disabled={busy} onChange={e => { ++historyRequest.current; setSelection({}); setOrders([]); setSummary(null); setHistory(null); setEvents(null); setLocation(e.target.value) }}><option value="">Wybierz lokal</option>{locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}</select></label>
     <nav aria-label="Widoki zamówień">{[['board','Live board'],['all','Wszystkie'],...(has('orders.dispatch') ? [['new','Nowe']] : []),...(has('orders.work') ? [['mine','Moje zadania']] : []),['shifts','Zmiany / historia'],...(has('orders.test.generate') ? [['generator','Generator UAT']] : []),...(has('orders.rates.manage') ? [['rates','Katalog i stawki']] : [])].map(([key,label]) => <button key={key} aria-pressed={tab === key} onClick={() => setTab(key)}>{label}</button>)}</nav>
     <p role="status">{message}</p>{pending && <aside>Operacja oczekuje na potwierdzenie. {action('Ponów tę samą operację',pending.action,pending.args)}</aside>}
