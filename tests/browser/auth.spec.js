@@ -231,21 +231,21 @@ test('recovery email network error is actionable', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Wyślij link' })).toBeEnabled()
 })
 
-for (const role of ['manager', 'su-chef', 'employee']) {
-  test(`PIN ${role}: leading zero, real SDK setSession, reload, refresh and logout`, async ({ page }) => {
+for (const [role, pin] of [['manager','0001'],['su-chef','0001'],['employee','0001'],['manager','000001'],['su-chef','00000001']]) {
+  test(`PIN ${role} (${pin.length} digits): leading zero, real SDK setSession, reload, refresh and logout`, async ({ page }) => {
     const calls = await setup(page)
     let active = true
     await page.route('**/rest/v1/rpc/auth_employee_profile', route => route.fulfill({
       contentType: 'application/json', body: JSON.stringify(active ? [{ id: 1, auth_user_id: user.id, name: 'Pracownik PIN', role, location_id: 1, active: true }] : []),
     }))
     await page.route('**/api/pin-login', async route => {
-      expect(route.request().postDataJSON()).toEqual({ pin: '0001' })
+      expect(route.request().postDataJSON()).toEqual({ pin })
       const saved = session()
       await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ access_token: saved.access_token, refresh_token: saved.refresh_token }) })
     })
     await page.goto('/')
     await page.getByRole('button', { name: 'Pracownik — logowanie PIN' }).click()
-    await page.getByLabel('PIN', { exact: true }).fill('0001')
+    await page.getByLabel('PIN', { exact: true }).fill(pin)
     await page.getByRole('button', { name: 'Zaloguj', exact: true }).click()
     await expect(page.getByRole('button', { name: /Wyloguj/ })).toBeVisible()
     const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('sb-auth-tests-auth-token')))

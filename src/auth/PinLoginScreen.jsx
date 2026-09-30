@@ -10,7 +10,7 @@ export default function PinLoginScreen({ onBack }) {
     if (busy) return
     const submitted = pin
     setPin(''); setMessage('')
-    if (!/^[0-9]{4}$/.test(submitted)) { setMessage('PIN musi mieć dokładnie 4 cyfry.'); return }
+    if (!/^[0-9]{4,8}$/.test(submitted)) { setMessage('PIN musi mieć od 4 do 8 cyfr. Nowe PIN-y mają 4 cyfry.'); return }
     setBusy(true)
     try {
       const response = await fetch('/api/pin-login', { method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -28,7 +28,7 @@ export default function PinLoginScreen({ onBack }) {
   }
   return <div className="app auth-screen"><h1>ZAGOTÓWKI</h1><h2>Logowanie PIN</h2>
     <form className="produkt auth-form" onSubmit={submit}>
-      <label>PIN<input type="password" inputMode="numeric" autoComplete="off" required minLength={4} maxLength={4} pattern="[0-9]{4}" value={pin} onChange={e => setPin(e.target.value)} /></label>
+      <label>PIN<input type="password" inputMode="numeric" autoComplete="off" required minLength={4} maxLength={8} pattern="[0-9]{4,8}" value={pin} onChange={e => setPin(e.target.value)} /></label>
       {message && <p role="status">{message}</p>}
       <button disabled={busy}>Zaloguj</button>
       <button type="button" disabled={busy} onClick={() => { setPin(''); onBack() }}>Administrator — e-mail i hasło</button>

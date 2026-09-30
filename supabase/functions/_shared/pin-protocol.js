@@ -1,5 +1,17 @@
-export const validPinEmail = value => typeof value === 'string' && /^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}@pin\.uat\.invalid$/.test(value)
+export const validPinEmail = (value, environment = 'uat') => typeof value === 'string' && new RegExp(`^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}@pin\\.${environment === 'production' ? 'prod' : 'uat'}\\.invalid$`).test(value)
 export const UAT_URL = 'https://meuzkduxttjcuiynsnaa.supabase.co'
+export const PROD_URL = 'https://ssheqxdgsmndiutthxvd.supabase.co'
+export const projectUrl = environment => ({ uat: UAT_URL, production: PROD_URL })[environment]
+export function trustedEnvironment(environment, url, appUrl) {
+  if (!projectUrl(environment) || url !== projectUrl(environment)) return null
+  try {
+    const app = new URL(appUrl)
+    if (app.protocol !== 'https:' || app.username || app.password || app.search || app.hash || app.pathname !== '/') return null
+    return { url, origin: app.origin, environment }
+  } catch { return null }
+}
+// Login may verify grandfathered credentials. Assignment/reset remains exactly four digits.
+export const validLoginPin = value => typeof value === 'string' && /^[0-9]{4,8}$/.test(value)
 export const PIN_ERROR = 'Nieprawidłowy PIN lub konto niedostępne.'
 export const validPin = value => typeof value === 'string' && /^[0-9]{4}$/.test(value)
 export const exactKeys = (value, keys) => value !== null && typeof value === 'object' && !Array.isArray(value) &&

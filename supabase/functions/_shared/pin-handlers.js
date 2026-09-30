@@ -1,4 +1,4 @@
-import { UAT_URL, PIN_ERROR, validPin, validPinEmail, exactKeys, signedMessage, validSignature, readBody } from './pin-protocol.js'
+import { trustedEnvironment, PIN_ERROR, validPin, validLoginPin, validPinEmail, exactKeys, signedMessage, validSignature, readBody } from './pin-protocol.js'
 const authOptions = { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
 const uuid = value => typeof value === 'string' && /^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(value)
 const checked = async promise => {
@@ -12,7 +12,8 @@ const audit = (requestId, operation, code, start) => console.info('pin-auth', {
 export function pinHandler(operation, { createClient, env }) {
   return async req => {
     const start = Date.now(), requestId = crypto.randomUUID()
-    const origin = env('APP_URL') ? new URL(env('APP_URL')).origin : ''
+    const config = trustedEnvironment(env('APP_ENV'), env('SUPABASE_URL'), env('APP_URL'))
+    const origin = config?.origin || ''
     const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Vary': 'Origin',
       'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Headers': 'authorization,apikey,content-type,x-client-info',
       'Access-Control-Allow-Methods': 'POST, OPTIONS' }
@@ -20,8 +21,8 @@ export function pinHandler(operation, { createClient, env }) {
       audit(requestId, operation, code, start)
       return new Response(JSON.stringify(body), { status, headers })
     }
-    // Hard stop for any accidental non-UAT configuration. No remote calls before this guard.
-    if (env('SUPABASE_URL') !== UAT_URL || !origin || !env('SUPABASE_SERVICE_ROLE_KEY')) return reply(503, { error: 'POC niedostępny.' }, 'CONFIG')
+    // Explicit environment/project/origin binding. No remote calls before this guard.
+    if (!config || !env('SUPABASE_SERVICE_ROLE_KEY')) return reply(503, { error: 'POC niedostępny.' }, 'CONFIG')
     if (req.headers.get('origin') && req.headers.get('origin') !== origin) return reply(403, { error: 'Brak dostępu.' }, 'ORIGIN')
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers })
     if (req.method !== 'POST') return reply(405, { error: 'Wymagany POST.' }, 'METHOD')
@@ -29,7 +30,7 @@ export function pinHandler(operation, { createClient, env }) {
       const raw = await readBody(req)
       let body
       try { body = JSON.parse(raw) } catch { return reply(400, { error: PIN_ERROR }, 'INPUT') }
-      const admin = createClient(UAT_URL, env('SUPABASE_SERVICE_ROLE_KEY'), authOptions)
+      const admin = createClient(config.url, env('SUPABASE_SERVICE_ROLE_KEY'), authOptions)
       if (operation === 'login') {
         const secret = env('PIN_PROXY_SECRET')
         if (!secret || secret.length < 32 || !env('SUPABASE_ANON_KEY')) return reply(503, { error: 'POC niedostępny.' }, 'CONFIG')
@@ -38,13 +39,13 @@ export function pinHandler(operation, { createClient, env }) {
           !await validSignature(secret, signedMessage(time, id, source, raw), req.headers.get('x-pin-signature'))) {
           return reply(403, { error: PIN_ERROR }, 'PROXY')
         }
-        if (!exactKeys(body, ['pin']) || !validPin(body.pin)) return reply(400, { error: PIN_ERROR }, 'INPUT')
+        if (!exactKeys(body, ['pin']) || !validLoginPin(body.pin)) return reply(400, { error: PIN_ERROR }, 'INPUT')
         const allowed = await checked(admin.rpc('pin_reserve', { p_source: source, p_attempt: id }))
         if (allowed !== true) return reply(429, { error: 'Zbyt wiele prób. Spróbuj później.' }, 'RATE_LIMIT')
         const rows = await checked(admin.rpc('pin_verify', { p_attempt: id, p_source: source, p_pin: body.pin }))
         if (!Array.isArray(rows) || rows.length !== 1) return reply(401, { error: PIN_ERROR }, 'DENIED')
         const e = rows[0]
-        if (!validPinEmail(e.email)) return reply(401, { error: PIN_ERROR }, 'IDENTITY')
+        if (!validPinEmail(e.email, config.environment)) return reply(401, { error: PIN_ERROR }, 'IDENTITY')
         const account = await checked(admin.auth.admin.getUserById(e.auth_user_id))
         if (account.user?.id !== e.auth_user_id || account.user?.email !== e.email || String(account.user?.app_metadata?.pin_employee_id) !== String(e.employee_id)) {
           return reply(401, { error: PIN_ERROR }, 'IDENTITY')
@@ -52,7 +53,7 @@ export function pinHandler(operation, { createClient, env }) {
         const link = await checked(admin.auth.admin.generateLink({ type: 'magiclink', email: e.email }))
         if (link.user?.id !== e.auth_user_id || !link.properties?.hashed_token) return reply(401, { error: PIN_ERROR }, 'IDENTITY')
         // Per-request client; never sign the service client into an employee session.
-        const auth = createClient(UAT_URL, env('SUPABASE_ANON_KEY'), authOptions)
+        const auth = createClient(config.url, env('SUPABASE_ANON_KEY'), authOptions)
         const verified = await checked(auth.auth.verifyOtp({ token_hash: link.properties.hashed_token, type: 'email' }))
         const session = verified.session
         if (!session || session.user?.id !== e.auth_user_id || !session.access_token || !session.refresh_token) return reply(401, { error: PIN_ERROR }, 'IDENTITY')
@@ -73,7 +74,7 @@ export function pinHandler(operation, { createClient, env }) {
       const prepared = await checked(admin.rpc('pin_prepare', args))
       if (!prepared?.[0]) return reply(403, { error: 'Brak dostępu do operacji.' }, 'DENIED')
       const target = prepared[0]
-      if (!validPinEmail(target.email)) return reply(409, { error: 'Niezgodna tożsamość techniczna.' }, 'IDENTITY')
+      if (!validPinEmail(target.email, config.environment)) return reply(409, { error: 'Niezgodna tożsamość techniczna.' }, 'IDENTITY')
       let userId = target.auth_user_id
       if (!userId) {
         const created = await admin.auth.admin.createUser({ email: target.email, email_confirm: true,

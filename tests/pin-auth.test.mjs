@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { pinHandler } from '../supabase/functions/_shared/pin-handlers.js'
-import { UAT_URL, PIN_ERROR, hmac, signedMessage, validPin, validPinEmail, validSignature } from '../supabase/functions/_shared/pin-protocol.js'
+import { UAT_URL, PROD_URL, PIN_ERROR, hmac, signedMessage, validPin, validPinEmail, validSignature } from '../supabase/functions/_shared/pin-protocol.js'
 
 const secret = 'test-only-proxy-secret-not-a-deployed-credential'
 const uid = '11111111-1111-4111-8111-111111111111'
@@ -18,9 +18,9 @@ async function request(body = { pin: '0001' }, overrides = {}) {
 function fixture(t, settings = {}) {
   const calls = [], logs = []
   t.mock.method(console, 'info', (...args) => logs.push(args))
-  const env = name => ({ SUPABASE_URL: UAT_URL, SUPABASE_SERVICE_ROLE_KEY: 'server-test-key', SUPABASE_ANON_KEY: 'public-test-key',
-    PIN_PROXY_SECRET: secret, APP_URL: 'https://preview.test' })[name]
-  const targetRow = { ...row, email: settings.email ?? row.email }
+  const env = name => ({ SUPABASE_URL: settings.url ?? (settings.environment === 'production' ? PROD_URL : UAT_URL), SUPABASE_SERVICE_ROLE_KEY: 'server-test-key', SUPABASE_ANON_KEY: 'public-test-key',
+    PIN_PROXY_SECRET: secret, APP_ENV: settings.environment ?? 'uat', APP_URL: settings.origin ?? 'https://preview.test' })[name]
+  const targetRow = { ...row, email: settings.email ?? (settings.environment === 'production' ? `${uid}@pin.prod.invalid` : row.email) }
   const account = { id: uid, email: targetRow.email, app_metadata: { pin_employee_id: '2' } }
   const admin = {
     rpc: async (name, args) => {
@@ -174,4 +174,24 @@ test('migration email constraint accepts only UUID@pin.uat.invalid (isolated tab
   }
   assert.doesNotMatch(sql, /p_domain|pin_prepare\(uuid,bigint,text\)/)
   assert.match(sql, /gen_random_uuid\(\)::text\|\|'@pin\.uat\.invalid'/)
+})
+
+for (const pin of ['0001','000001','00000001']) test(`production handler accepts legacy login length ${pin.length} with explicit project binding`, async t => {
+  const f=fixture(t,{environment:'production',origin:'https://production.test'})
+  assert.equal((await pinHandler('login',f.deps)(await request({pin}))).status,200)
+  assert.ok(f.calls.filter(([name])=>name==='client').every(([,c])=>c.url===PROD_URL))
+  assert.equal(f.calls.find(([name])=>name==='pin_verify')[1].p_pin,pin)
+})
+for (const settings of [{environment:'production',url:UAT_URL},{environment:'uat',url:PROD_URL},{environment:'bad'},{origin:'http://production.test'}]) {
+ test('Edge refuses invalid environment before creating any SDK client',async t=>{
+  const f=fixture(t,settings)
+  assert.equal((await pinHandler('login',f.deps)(await request())).status,503)
+  assert.equal(f.calls.length,0)
+ })
+}
+test('management rejects six-digit NEW PIN even in production',async t=>{
+ const f=fixture(t,{environment:'production'})
+ const response=await pinHandler('manage',f.deps)(new Request('https://edge.test',{method:'POST',headers:{authorization:'Bearer test'},body:JSON.stringify({employee_id:2,pin:'000001',operation_id:id})}))
+ assert.equal(response.status,400)
+ assert.equal(f.calls.some(([name])=>name==='pin_finish'||name==='pin_prepare'),false)
 })
