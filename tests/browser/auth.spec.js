@@ -25,6 +25,7 @@ async function setup(page, { loggedIn = false, legacy = false, active = true } =
     else if (url.pathname === '/auth/v1/user') body = user
     else if (['/auth/v1/logout', '/auth/v1/recover'].includes(url.pathname)) body = {}
     else if (url.pathname === '/rest/v1/rpc/auth_employee_profile') body = active ? [{ id: 1, auth_user_id: user.id, name: 'Kucharz testowy', role: 'employee', location_id: 1, active: true }] : []
+    else if (url.pathname === '/rest/v1/rpc/auth_capabilities') body = ['production.access']
     else if (url.pathname === '/rest/v1/Locations') body = [{ id: 1, name: 'Lokal A', active: true }]
     else if (url.pathname === '/rest/v1/Products') body = []
     else throw new Error(`Unexpected request: ${url.pathname}`)
@@ -231,7 +232,7 @@ test('recovery email network error is actionable', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Wyślij link' })).toBeEnabled()
 })
 
-for (const [role, pin] of [['manager','0001'],['su-chef','0001'],['employee','0001'],['manager','000001'],['su-chef','00000001']]) {
+for (const [role, pin] of [['manager','0001'],['su-chef','0001'],['employee','0001'],['crafter','0001'],['sushi-master','0001'],['shift-manager','0001'],['manager','000001'],['su-chef','00000001']]) {
   test(`PIN ${role} (${pin.length} digits): leading zero, real SDK setSession, reload, refresh and logout`, async ({ page }) => {
     const calls = await setup(page)
     let active = true

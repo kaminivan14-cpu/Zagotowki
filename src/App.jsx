@@ -8,7 +8,7 @@ import RequirementsScreen from './components/RequirementsScreen'
 import HistoryScreen from './components/HistoryScreen'
 import PlanningScreen from './components/PlanningScreen'
 import { supabase } from './supabase'
-import { managementRoles, productionDate, employeeCanViewPlan, canWorkOnPlan } from './planAccess'
+import { isProductionWorker, managementRoles, productionDate, employeeCanViewPlan, canWorkOnPlan } from './planAccess'
 import { pobierzKatalogProduktow } from './productCatalog'
 import { itemDetails, hasProductionHistory, canDeletePlan } from './planItemDetails'
 
@@ -58,7 +58,7 @@ const blokadaDodawania = useRef(false)
   // Włączyć dopiero po audycie i wdrożeniu opisanego kontraktu RPC.
   const wznowienieDostepne = import.meta.env.VITE_PLAN_REOPEN_ENABLED === 'true'
   const tylkoOdczyt = otwartyPlan?.status !== 'active' ||
-    (pracownik?.role === 'employee' && !canWorkOnPlan(pracownik, otwartyPlan))
+    (isProductionWorker(pracownik) && !canWorkOnPlan(pracownik, otwartyPlan))
   const mozeEdytowac = managementRoles.includes(pracownik?.role) && !tylkoOdczyt
   const [dataPlanu, setDataPlanu] = useState(() => {
   const jutro = new Date()
@@ -214,8 +214,8 @@ useEffect(() => {
   setOtwartyPlan(null)
   setWybrane({})
 
-  // Pracownik wybiera plan na dziś lub jeden z kolejnych siedmiu dni.
-  if (aktualnyPracownik?.role === 'employee') {
+  // Role wykonawcze widzą wyłącznie aktywny plan na dziś.
+  if (isProductionWorker(aktualnyPracownik)) {
     await pobierzZaplanowanePlany(lokal, aktualnyPracownik)
     return
   }
@@ -899,11 +899,11 @@ const otworzZaplanowanyPlan = async (planZaplanowany) => {
     const { data: aktualnyPlan, error: planError } = await supabase
       .from('Plans').select('id, plan_date, status, location_id')
       .eq('id', planZaplanowany.id)
-      .eq('location_id', pracownik.role === 'employee' ? pracownik.location_id : wybranyLokal.id)
+      .eq('location_id', isProductionWorker(pracownik) ? pracownik.location_id : wybranyLokal.id)
       .single()
     if (wersja !== kontekst.current) return
     if (planError) throw planError
-    if (pracownik.role === 'employee' && !employeeCanViewPlan(pracownik, aktualnyPlan)) {
+    if (isProductionWorker(pracownik) && !employeeCanViewPlan(pracownik, aktualnyPlan)) {
       throw new Error('Ten plan nie jest dostępny w Twoim zakresie dat i lokalu.')
     }
     const { data: items, error } = await supabase
@@ -955,19 +955,19 @@ const pobierzZaplanowanePlany = async (lokal = wybranyLokal, osoba = pracownik) 
           id
         )
       `)
-      .eq('location_id', osoba.role === 'employee' ? osoba.location_id : lokal.id)
+      .eq('location_id', isProductionWorker(osoba) ? osoba.location_id : lokal.id)
       .order('plan_date', { ascending: false })
       .order('created_at', { ascending: false, nullsFirst: false })
       .order('id', { ascending: false })
 
-    if (osoba.role === 'employee') {
+    if (isProductionWorker(osoba)) {
       query = query.eq('status', 'active').eq('plan_date', productionDate())
     }
     const { data, error } = await query
     if (wersja !== kontekst.current) return
     if (error) throw error
 
-    setZaplanowanePlany(osoba.role === 'employee' ? (data || []).filter((p) => employeeCanViewPlan(osoba, p)) : data || [])
+    setZaplanowanePlany(isProductionWorker(osoba) ? (data || []).filter((p) => employeeCanViewPlan(osoba, p)) : data || [])
     setEkran('zaplanowane')
   } catch (error) {
     if (wersja !== kontekst.current) return
@@ -1415,7 +1415,7 @@ if (ekran === 'historia') {
       formatujGodzine={formatujGodzine}
       obliczCzas={obliczCzas}
       onPowrot={() => setEkran(
-        planId ? 'produkcja' : pracownik.role === 'employee' ? 'zaplanowane' : 'planowanie'
+        planId ? 'produkcja' : isProductionWorker(pracownik) ? 'zaplanowane' : 'planowanie'
       )}
     />
   )

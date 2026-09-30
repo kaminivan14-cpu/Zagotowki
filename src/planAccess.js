@@ -1,4 +1,6 @@
-export const managementRoles = ['administrator', 'manager', 'su-chef']
+// UI projection only; database capabilities/RLS remain authoritative.
+export const isProductionWorker = employee => ['employee', 'crafter', 'sushi-master'].includes(employee?.role)
+export const managementRoles = ['administrator', 'manager', 'su-chef', 'shift-manager']
 
 // Dzień produkcji według czasu lokalu, również gdy przeglądarka jest w innej strefie.
 export function productionDate(offset = 0) {
@@ -19,7 +21,7 @@ export function employeeCanViewPlan(employee, plan) {
 
 export function canWorkOnPlan(employee, plan) {
   if (!plan || plan.status !== 'active' || plan.plan_date !== productionDate()) return false
-  if (employee?.role === 'employee') {
+  if (isProductionWorker(employee)) {
     return employeeCanViewPlan(employee, plan) && plan.plan_date === productionDate()
   }
   return managementRoles.includes(employee?.role)

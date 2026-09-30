@@ -75,7 +75,7 @@ export default function EmployeesScreen({ pracownik, lokale, onPowrot }) {
   }
   return <div className="app employees-screen"><header><h1>Pracownicy</h1><p>Zalogowany jako: {pracownik.name} · {pracownik.role}</p><button disabled={busy} onClick={onPowrot}>← Powrót</button></header>
     <main>
-      <button disabled={busy} onClick={() => { setInvite(null); setForm({ name: '', role: 'employee', location_id: pracownik.location_id || '', active: true }) }}>Dodaj pracownika</button>
+      <button disabled={busy} onClick={() => { setInvite(null); setForm({ name: '', role: 'crafter', location_id: pracownik.location_id || '', active: true }) }}>Dodaj pracownika</button>
       <p role="status">{message}</p>
       <label>Widok pracowników<select aria-label="Widok pracowników" disabled={busy} value={filter} onChange={e => setFilter(e.target.value)}>
         <option value="all">Pracownicy — wszyscy niearchiwalni</option><option value="active">Aktywni</option><option value="inactive">Nieaktywni</option>
@@ -94,7 +94,7 @@ export default function EmployeesScreen({ pracownik, lokale, onPowrot }) {
       {form && <form className="produkt auth-form" onSubmit={save}>
         <label>Imię<input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></label>
         <label>Rola<select value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
-          {(pracownik.role === 'administrator' ? ['employee', 'su-chef', 'manager', 'administrator'] : ['employee', 'su-chef']).map(role => <option key={role}>{role}</option>)}
+          {(pracownik.role === 'administrator' ? ['crafter', 'sushi-master', 'shift-manager', 'su-chef', 'manager', 'administrator'] : ['crafter', 'sushi-master', 'shift-manager', 'su-chef']).map(role => <option key={role}>{role}</option>)}
         </select></label>
         <label>Lokal<select required={form.role !== 'administrator'} disabled={pracownik.role !== 'administrator'} value={form.location_id ?? ''} onChange={e => setForm({ ...form, location_id: e.target.value })}>
           <option value="">Wszystkie lokale (administrator)</option>{lokale.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
@@ -110,7 +110,7 @@ export default function EmployeesScreen({ pracownik, lokale, onPowrot }) {
       <div className="produkty">{employees.filter(e => filter === 'archived' ? Boolean(e.archived_at) : !e.archived_at && (filter === 'all' || (filter === 'active' ? e.active : !e.active))).map(e => <div className="produkt" key={e.id}>
         <strong>{e.name}</strong><p>{e.role} · {lokale.find(l => String(l.id) === String(e.location_id))?.name || (e.role === 'administrator' ? 'Wszystkie lokale' : 'Brak lokalu')}</p>
         <p>{e.active ? 'Aktywny' : 'Nieaktywny'} · {e.auth_user_id ? 'Konto połączone' : 'Brak konta logowania'}</p>
-        {pracownik.role === 'administrator' && !e.archived_at && ['manager', 'su-chef', 'employee'].includes(e.role) && <><button disabled={busy || !e.active} onClick={() => { setInvite(null); setForm(null); setPinEmployee(e) }}>Nadaj / resetuj PIN</button>{!e.active && <p>Nadanie PIN-u wymaga aktywnego konta.</p>}</>}
+        {pracownik.role === 'administrator' && !e.archived_at && ['manager', 'su-chef', 'shift-manager', 'sushi-master', 'crafter', 'employee'].includes(e.role) && <><button disabled={busy || !e.active} onClick={() => { setInvite(null); setForm(null); setPinEmployee(e) }}>Nadaj / resetuj PIN</button>{!e.active && <p>Nadanie PIN-u wymaga aktywnego konta.</p>}</>}
         {!e.archived_at && canManageEmployee(pracownik, e) && <><button disabled={busy} onClick={() => { setInvite(null); setForm({ ...e }) }}>Edytuj</button>
           {!e.auth_user_id && e.active && <button disabled={busy || pendingLinks.includes(e.id)} onClick={() => { setForm(null); setEmail(''); setInvite(e) }}>Zaproś do aplikacji</button>}</>}
         {pracownik.role === 'administrator' && canManageEmployee(pracownik, e) && (e.archived_at

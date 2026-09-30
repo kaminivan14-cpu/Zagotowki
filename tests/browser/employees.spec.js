@@ -18,7 +18,8 @@ async function setup(page) {
     if (url.hostname !== 'auth-tests.supabase.co') return route.abort()
     let data = []
     const path = url.pathname
-    if (path.endsWith('/auth_employee_profile')) data = [employees[0]]
+    if (path.endsWith('/auth_capabilities')) data = ['production.access']
+    else if (path.endsWith('/auth_employee_profile')) data = [employees[0]]
     else if (path.endsWith('/Locations')) data = [{id:1,name:'Lokal A',active:true}]
     else if (path.endsWith('/auth_list_employees')) data = employees
     else if (path.endsWith('/auth_employee_lifecycle')) {

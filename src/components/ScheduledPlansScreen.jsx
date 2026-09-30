@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { isProductionWorker } from '../planAccess'
 
 export default function ScheduledPlansScreen({
   pracownik,
@@ -19,7 +20,7 @@ export default function ScheduledPlansScreen({
   // Data nowego planu nie zmienia daty aktualnie otwartego planu.
   const [dataNowegoPlanu, setDataNowegoPlanu] = useState(dataPlanu)
 
-  const employee = pracownik?.role === 'employee'
+  const employee = isProductionWorker(pracownik)
   const grupy = employee ? [
     { tytul: 'DZISIAJ', plany: zaplanowanePlany.filter((plan) => plan.plan_date === dzisiaj) },
     { tytul: 'NADCHODZĄCE PLANY', plany: zaplanowanePlany.filter((plan) => plan.plan_date > dzisiaj) },
