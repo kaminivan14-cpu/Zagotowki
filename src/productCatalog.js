@@ -19,3 +19,5 @@ export function pobierzKatalogProduktow() {
   }
   return katalogPromise
 }
+
+export function clearProductCatalog() { katalogPromise = null }

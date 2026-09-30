@@ -1,0 +1,2 @@
+# SQL migrations compare audited function bodies; CRLF changes their hashes.
+*.sql text eol=lf

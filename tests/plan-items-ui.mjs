@@ -15,15 +15,22 @@ async function setup(role='manager',otherLocation=false) {
  let items=[{id:10,plan_id:1,nazwa:'Ryż',product_external_id:100,ilosc:2,jednostka:'kg',priorytet:'normalny',gotowe:false,note:null,ready_time:null}]
  page.on('pageerror',e=>errors.push(e.message))
  page.on('dialog',async d=>{dialogs.push(d.message()); if(confirm) await d.accept(); else await d.dismiss()})
- await context.addInitScript(role=>sessionStorage.setItem('pracownik',JSON.stringify({id:role==='employee'?4:2,name:'Tester',role,location_id:1})),role)
+ // Start Vite with VITE_SUPABASE_URL=https://auth-tests.supabase.co and a dummy public key.
+ const authId='00000000-0000-0000-0000-000000000001'
+ const employee={id:role==='employee'?4:2,name:'Tester',role,location_id:1,active:true,auth_user_id:authId}
+ await context.addInitScript(authId=>localStorage.setItem('sb-auth-tests-auth-token',JSON.stringify({
+   access_token:'test-token',refresh_token:'test-refresh',expires_at:Math.floor(Date.now()/1000)+3600,
+   token_type:'bearer',user:{id:authId,aud:'authenticated',role:'authenticated'},
+ })),authId)
  await context.route('**/*',async route=>{
   const req=route.request(),u=new URL(req.url())
   if(u.hostname==='127.0.0.1')return route.continue()
   if(!u.pathname.startsWith('/rest/v1/'))return route.abort()
   const name=u.pathname.split('/').pop();let data=[]
   if(u.pathname.includes('/rpc/')) {
-   const b=req.postDataJSON();calls.push({name,body:b})
-   if(name==='add_plan_item') {data=100+items.length;items.push({id:data,plan_id:b.p_plan_id,nazwa:b.p_nazwa,product_external_id:b.p_product_external_id,ilosc:b.p_ilosc,jednostka:b.p_jednostka,priorytet:b.p_priorytet,note:b.p_note,ready_time:b.p_ready_time,gotowe:false})}
+   const b=req.postDataJSON();if(name!=='auth_employee_profile')calls.push({name,body:b})
+   if(name==='auth_employee_profile') data=[employee]
+   else if(name==='add_plan_item') {data=100+items.length;items.push({id:data,plan_id:b.p_plan_id,nazwa:b.p_nazwa,product_external_id:b.p_product_external_id,ilosc:b.p_ilosc,jednostka:b.p_jednostka,priorytet:b.p_priorytet,note:b.p_note,ready_time:b.p_ready_time,gotowe:false})}
    else if(name==='update_plan_item') Object.assign(items.find(i=>i.id===b.p_item_id),{nazwa:b.p_nazwa,product_external_id:b.p_product_external_id,ilosc:b.p_ilosc,jednostka:b.p_jednostka,priorytet:b.p_priorytet,note:b.p_note,ready_time:b.p_ready_time})
    else if(name==='update_production_plan') items=b.p_items.map((i,n)=>({...i,id:20+n,plan_id:1,gotowe:false}))
    else if(name==='create_production_plan') {data=2;plans.push({id:2,plan_date:b.p_plan_date,location_id:b.p_location_id,status:'active'});items=b.p_items.map((i,n)=>({...i,id:30+n,plan_id:2,gotowe:false}))}

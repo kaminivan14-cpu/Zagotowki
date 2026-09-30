@@ -1,0 +1,13 @@
+project_id = "zagotowki"
+
+[functions.invite-employee]
+# The function verifies the user token with Auth getUser, then checks current DB permissions.
+verify_jwt = false
+
+[functions.pin-login]
+# Authenticated gateway HMAC is checked inside; browsers cannot call this directly.
+verify_jwt = false
+
+[functions.manage-employee-pin]
+# getUser validates the bearer; SQL rechecks the current active administrator.
+verify_jwt = false
