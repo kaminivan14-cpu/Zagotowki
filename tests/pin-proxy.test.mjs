@@ -45,3 +45,56 @@ test('production gateway uses only PROD, accepts legacy strings and refuses fore
  req.headers.origin='https://production.test';await handler(req,res);assert.equal(res.code,200);assert.equal(calls,1)
  process.env.VITE_SUPABASE_URL=UAT_URL;await handler(req,res);assert.equal(res.code,503);assert.equal(calls,1)
 })
+
+test('temporary config diagnostics expose only booleans and preserve fail-closed response', async t => {
+  const { PROD_URL } = await import('../supabase/functions/_shared/pin-protocol.js')
+  const baseline = { VERCEL_ENV: 'production', VITE_SUPABASE_URL: PROD_URL,
+    APP_URL: 'https://zagotowki.vercel.app', PIN_PROXY_SECRET: 'synthetic-secret-not-for-output-64'.repeat(2) }
+  const old = Object.fromEntries(Object.keys(baseline).map(n => [n, process.env[n]]))
+  t.after(() => Object.keys(old).forEach(n => {
+    if (old[n] === undefined) delete process.env[n]; else process.env[n] = old[n]
+  }))
+  const logs = []
+  t.mock.method(console, 'info', (...args) => logs.push(args))
+  let calls = 0
+  t.mock.method(globalThis, 'fetch', async () => { calls++; throw new Error('Unexpected fetch') })
+  const req = { method: 'GET', headers: {}, body: { pin: 'never-log-body' } }
+  const res = { setHeader() {}, status(n) { this.code = n; return this }, json(v) { this.body = v } }
+  const cases = [
+    ['VERCEL_ENV', undefined, 'VERCEL_ENV_PRESENT'],
+    ['VERCEL_ENV', 'unknown', 'VERCEL_ENV_SUPPORTED'],
+    ['VITE_SUPABASE_URL', undefined, 'SUPABASE_URL_PRESENT'],
+    ['VITE_SUPABASE_URL', UAT_URL, 'PROD_REF_MATCH'],
+    ['APP_URL', undefined, 'APP_URL_PRESENT'],
+    ['APP_URL', 'invalid', 'APP_URL_PARSE_OK'],
+    ['APP_URL', 'http://zagotowki.vercel.app', 'APP_URL_HTTPS'],
+    ['APP_URL', 'https://user:password@zagotowki.vercel.app', 'APP_URL_NO_CREDENTIALS'],
+    ['APP_URL', 'https://zagotowki.vercel.app/?secret=hidden', 'APP_URL_NO_QUERY_HASH'],
+    ['APP_URL', 'https://zagotowki.vercel.app/path', 'APP_URL_ROOT_PATH'],
+    ['PIN_PROXY_SECRET', undefined, 'PIN_PROXY_SECRET_PRESENT'],
+    ['PIN_PROXY_SECRET', 'short-secret', 'PIN_PROXY_SECRET_LENGTH_OK'],
+  ]
+  for (const [name, value, check] of cases) {
+    Object.assign(process.env, baseline)
+    if (value === undefined) delete process.env[name]; else process.env[name] = value
+    logs.length = 0
+    await handler(req, res)
+    assert.equal(res.code, 503)
+    assert.deepEqual(res.body, { error: 'Logowanie PIN niedostępne.' })
+    assert.equal(logs.length, 1)
+    assert.equal(logs[0][0], '[pin-config-diag]')
+    assert.equal(logs[0][1][check], false)
+    assert.ok(Object.values(logs[0][1]).every(v => typeof v === 'boolean'))
+    assert.equal(logs[0].length, 2)
+  }
+  Object.assign(process.env, baseline)
+  logs.length = 0
+  await handler(req, res)
+  assert.equal(res.code, 405)
+  assert.equal(logs.length, 0)
+  delete process.env.PIN_PROXY_SECRET
+  t.mock.method(console, 'info', () => { throw new Error('Logger unavailable') })
+  await handler(req, res)
+  assert.equal(res.code, 503)
+  assert.equal(calls, 0)
+})
