@@ -1,5 +1,5 @@
 import { isIP } from 'node:net'
-import { trustedEnvironment, PROD_URL, PIN_ERROR, validLoginPin, exactKeys, hmac, signedMessage } from '../supabase/functions/_shared/pin-protocol.js'
+import { trustedEnvironment, managementOrigin, PROD_URL, PIN_ERROR, validLoginPin, exactKeys, hmac, signedMessage } from '../supabase/functions/_shared/pin-protocol.js'
 
 // Temporary: server logs only; remove after the runtime configuration is verified.
 function logInvalidConfiguration(config, secret) {
@@ -38,7 +38,9 @@ export default async function handler(req, res) {
     logInvalidConfiguration(config, secret)
     return reply(503, 'Logowanie PIN niedostępne.')
   }
-  if (req.headers.origin && req.headers.origin !== config.origin) return reply(403, PIN_ERROR)
+  // Preview uses the same explicit UAT allowlist as PIN management. Production ignores it.
+  const origin = managementOrigin(config, req.headers.origin, process.env.PIN_MANAGEMENT_ORIGINS)
+  if (req.headers.origin && req.headers.origin !== origin) return reply(403, PIN_ERROR)
   if (req.method !== 'POST') return reply(405, 'Wymagany POST.')
   const ip = req.headers['x-vercel-forwarded-for']
   if (typeof ip !== 'string' || !isIP(ip)) return reply(403, PIN_ERROR)

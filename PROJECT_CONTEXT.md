@@ -119,3 +119,12 @@ Po zatwierdzeniu: konfiguracja wyłącznie UAT/Preview, migracja
 `202609290001_employee_pin.sql`, wdrożenie funkcji i proxy, provisioning fikcyjnych
 pracowników oraz realny test sesji i izolacji lokali. Szczegóły i bramki bezpieczeństwa:
 `docs/pin-auth-uat.md`. Bez rollout Production przed osobną decyzją.
+
+## 12. Checkpoint Orders/PIN — 2026-10-01 (nadrzędny wobec starszych checkpointów)
+
+- Branch `feature/orders`, baza `066f924`; poprawki Orders/Pracownicy/PIN przygotowane lokalnie.
+- Potwierdzona blokada PIN UAT: CORS dopuszczał tylko Preview `feature/auth`, żądanie z podanego Preview Orders otrzymało 403 przed Auth/RPC.
+- Przed ograniczeniem przez operatora pracy do lokalnej ustawiono na UAT `APP_ENV=uat` i `PIN_MANAGEMENT_ORIGINS` z dokładnym istniejącym originem Orders. Funkcji/frontendów nie wdrożono, push nie wykonano. Sam zapis konfiguracji nie usuwa blokady w starej funkcji.
+- Production nietknięty. Brak migracji SQL i zapisów kont/PIN/danych biznesowych.
+- Od instrukcji operatora: zakaz przeglądarki/Computer Use, zalogowanych sesji Maca i dalszych operacji Vercel/Supabase; wdrożenie i hosted testy wykonuje operator.
+- Instrukcja, wyniki i checklisty: `docs/orders-pin-uat-fix.md`.

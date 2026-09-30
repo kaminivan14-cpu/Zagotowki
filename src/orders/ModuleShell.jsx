@@ -18,9 +18,9 @@ export default function ModuleShell({ pracownik, onSignOut }) {
   if (error) return <div className="app"><p role="alert">Nie udało się sprawdzić uprawnień modułów.</p><button onClick={() => setRevision(x => x + 1)}>Ponów</button><button onClick={onSignOut}>Wyloguj</button></div>
   if (!caps) return <p role="status">Sprawdzanie modułów…</p>
   const production = caps.includes('production.access'), orders = caps.includes('orders.access')
-  return <>{production && orders && module && <nav className="module-nav"><button onClick={() => setModule(null)}>Zmień moduł</button></nav>}
+  return <>{production && orders && module === 'production' && <nav className="module-nav"><button onClick={() => setModule(null)}>← Wybór modułów</button></nav>}
     {module === 'production' && production ? <App pracownik={pracownik} onSignOut={onSignOut} /> : module === 'orders' && orders ?
-      <OrdersApp employee={pracownik} capabilities={caps} onSignOut={onSignOut} /> :
+      <OrdersApp employee={pracownik} capabilities={caps} onSignOut={onSignOut} onModules={() => setModule(null)} /> :
       <div className="app module-selector"><h1>Co robisz?</h1>
         {orders && <button onClick={() => setModule('orders')}>🍣 ZAMÓWIENIA<small>Realizacja bieżących zamówień</small></button>}
         {production && <button onClick={() => setModule('production')}>🥣 ZAGOTÓWKI<small>Produkcja / przygotowanie</small></button>}

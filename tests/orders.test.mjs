@@ -33,3 +33,14 @@ test('errors never disclose arbitrary SQL details',()=>{
  assert.equal(orderError({message:'secret SQL text'}).includes('secret'),false)
  assert.match(orderError({message:'CLAIM_CONFLICT'}),/przejęta/)
 })
+
+test('PLN display and decimal input preserve exact grosz amounts', async () => {
+  const { money, parseRate } = await import('../src/orders/client.js')
+  assert.equal(money(1250),'12,50 zł')
+  assert.equal(money('100000000'),'1000000,00 zł')
+  assert.equal(money(1),'0,01 zł')
+  assert.equal(parseRate('12,50'),1250)
+  assert.equal(parseRate('0.29'),29)
+  assert.equal(parseRate('1000000,00'),100000000)
+  for (const value of ['1,001','-1','1e3','1000000,01','NaN','']) assert.equal(parseRate(value),null)
+})
