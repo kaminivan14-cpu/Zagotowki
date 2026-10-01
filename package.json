@@ -10,6 +10,7 @@
     "test:migration": "node tests/plan-items-migration.mjs",
     "dev": "vite",
     "build": "vite build",
+    "build:uat": "vite build --mode uat",
     "lint": "oxlint",
     "preview": "vite preview",
     "test:tasks:db": "node tests/tasks-database.mjs",
