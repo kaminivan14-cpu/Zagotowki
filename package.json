@@ -11,7 +11,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:tasks:db": "node tests/tasks-database.mjs",
+    "test:tasks:browser": "playwright test tests/browser/tasks.spec.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
