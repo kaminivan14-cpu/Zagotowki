@@ -1,6 +1,6 @@
 // UI projection only; database capabilities/RLS remain authoritative.
 export const isProductionWorker = employee => ['employee', 'crafter', 'sushi-master'].includes(employee?.role)
-export const managementRoles = ['administrator', 'manager', 'su-chef', 'shift-manager']
+export const managementRoles = ['owner', 'administrator', 'manager', 'su-chef', 'shift-manager']
 
 // Dzień produkcji według czasu lokalu, również gdy przeglądarka jest w innej strefie.
 export function productionDate(offset = 0) {

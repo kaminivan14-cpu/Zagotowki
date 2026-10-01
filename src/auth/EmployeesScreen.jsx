@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../supabase'
-import { canManageEmployee } from './session'
+import { canManageEmployee, roleLabels } from './session'
 import ManageEmployeePin from './ManageEmployeePin'
 import { invitationFailure } from './inviteResult'
 
@@ -83,7 +83,7 @@ export default function EmployeesScreen({ pracownik, lokale, onPowrot }) {
       <p role="status">{message}</p>
       <label>Widok pracowników<select aria-label="Widok pracowników" disabled={busy} value={filter} onChange={e => setFilter(e.target.value)}>
         <option value="all">Pracownicy — wszyscy niearchiwalni</option><option value="active">Aktywni</option><option value="inactive">Nieaktywni</option>
-        {pracownik.role === 'administrator' && <option value="archived">Archiwalni</option>}
+        {['owner', 'administrator'].includes(pracownik.role) && <option value="archived">Archiwalni</option>}
       </select></label>
       {confirmation && <dialog ref={dialogRef} aria-modal="true" aria-labelledby="employee-confirm-title" onCancel={e => { e.preventDefault(); if (!busy) setConfirmation(null) }}>
         <h2 id="employee-confirm-title">{confirmation.action === 'archive' ? 'Usunąć pracownika?' : 'Dezaktywować pracownika?'}</h2>
@@ -98,9 +98,9 @@ export default function EmployeesScreen({ pracownik, lokale, onPowrot }) {
         <h2>{form.id ? `Edytuj: ${form.name}` : 'Nowy pracownik'}</h2>
         <label>Imię<input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></label>
         <label>Rola<select value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
-          {(pracownik.role === 'administrator' ? ['crafter', 'sushi-master', 'shift-manager', 'su-chef', 'manager', 'administrator'] : ['crafter', 'sushi-master', 'shift-manager', 'su-chef']).map(role => <option key={role}>{role}</option>)}
+          {(['owner', 'administrator'].includes(pracownik.role) ? ['crafter', 'sushi-master', 'shift-manager', 'su-chef', 'manager', 'administrator', 'owner', 'director', 'expert', 'specialist'] : ['crafter', 'sushi-master', 'shift-manager', 'su-chef']).map(role => <option key={role} value={role}>{roleLabels[role] || role}</option>)}
         </select></label>
-        <label>Lokal<select required={form.role !== 'administrator'} disabled={pracownik.role !== 'administrator'} value={form.location_id ?? ''} onChange={e => setForm({ ...form, location_id: e.target.value })}>
+        <label>Lokal<select required={!['owner','administrator','director','expert','specialist'].includes(form.role)} disabled={!['owner', 'administrator'].includes(pracownik.role)} value={form.location_id ?? ''} onChange={e => setForm({ ...form, location_id: e.target.value })}>
           <option value="">Wszystkie lokale (administrator)</option>{lokale.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
         </select></label>
         <label><span>Aktywny</span><input type="checkbox" checked={form.active} onChange={e => setForm({ ...form, active: e.target.checked })} /></label>
@@ -112,12 +112,12 @@ export default function EmployeesScreen({ pracownik, lokale, onPowrot }) {
         <button disabled={busy}>Wyślij zaproszenie</button><button type="button" disabled={busy} onClick={() => setInvite(null)}>Anuluj</button>
       </form>}
       <div className="produkty">{employees.filter(e => filter === 'archived' ? Boolean(e.archived_at) : !e.archived_at && (filter === 'all' || (filter === 'active' ? e.active : !e.active))).map(e => <div className="produkt employee-card" key={e.id}>
-        <h2>{e.name}</h2><p>{e.role} · {lokale.find(l => String(l.id) === String(e.location_id))?.name || (e.role === 'administrator' ? 'Wszystkie lokale' : 'Brak lokalu')}</p>
+        <h2>{e.name}</h2><p>{e.role} · {lokale.find(l => String(l.id) === String(e.location_id))?.name || (['owner', 'administrator'].includes(e.role) ? 'Wszystkie lokale' : 'Brak lokalu')}</p>
         <p className={`employee-state ${e.active ? 'is-active' : 'is-inactive'}`}>{e.archived_at ? 'Archiwalny' : e.active ? 'Aktywny' : 'Nieaktywny'} · {e.auth_user_id ? 'Konto połączone' : 'Brak konta logowania'}</p>
-        <div className="employee-actions">{pracownik.role === 'administrator' && !e.archived_at && ['manager', 'su-chef', 'shift-manager', 'sushi-master', 'crafter', 'employee'].includes(e.role) && <><button className="primary-action" aria-expanded={pinEmployee?.id === e.id} disabled={busy || !e.active} onClick={() => { setInvite(null); setForm(null); setPinEmployee(e) }}>Nadaj / resetuj PIN</button>{!e.active && <p>Nadanie PIN-u wymaga aktywnego konta.</p>}</>}
+        <div className="employee-actions">{['owner', 'administrator'].includes(pracownik.role) && !e.archived_at && ['manager', 'su-chef', 'shift-manager', 'sushi-master', 'crafter', 'employee'].includes(e.role) && <><button className="primary-action" aria-expanded={pinEmployee?.id === e.id} disabled={busy || !e.active} onClick={() => { setInvite(null); setForm(null); setPinEmployee(e) }}>Nadaj / resetuj PIN</button>{!e.active && <p>Nadanie PIN-u wymaga aktywnego konta.</p>}</>}
         {!e.archived_at && canManageEmployee(pracownik, e) && <><button disabled={busy} onClick={() => { setPinEmployee(null); setInvite(null); setForm({ ...e }) }}>Edytuj</button>
           {!e.auth_user_id && e.active && <button disabled={busy || pendingLinks.includes(e.id)} onClick={() => { setPinEmployee(null); setForm(null); setEmail(''); setInvite(e) }}>Zaproś do aplikacji</button>}</>}
-        {pracownik.role === 'administrator' && canManageEmployee(pracownik, e) && (e.archived_at
+        {['owner', 'administrator'].includes(pracownik.role) && canManageEmployee(pracownik, e) && (e.archived_at
           ? <button disabled={busy} onClick={() => lifecycle(e, 'restore')}>Przywróć</button>
           : <><button disabled={busy} onClick={() => e.active ? setConfirmation({ employee: e, action: 'deactivate' }) : lifecycle(e, 'activate')}>{e.active ? 'Dezaktywuj' : 'Aktywuj'}</button>
             <button className="danger-action" disabled={busy} onClick={() => setConfirmation({ employee: e, action: 'archive' })}>Usuń</button></>)}

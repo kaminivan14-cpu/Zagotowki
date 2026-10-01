@@ -117,7 +117,7 @@ const wylogujPracownika = () => {
   void onSignOut()
 }
 const pobierzPracownikow = () => {
-  if (['administrator', 'manager'].includes(pracownik.role)) setEkran('pracownicy')
+  if (['owner', 'administrator', 'manager'].includes(pracownik.role)) setEkran('pracownicy')
 }
   useEffect(() => {
   const timer = setInterval(() => {
@@ -202,7 +202,7 @@ useEffect(() => {
   // -----------------------------------------
 
  const wybierzLokal = async (lokal, aktualnyPracownik = pracownik) => {
-  if (aktualnyPracownik?.role !== 'administrator' &&
+  if (!['owner', 'administrator'].includes(aktualnyPracownik?.role) &&
     String(lokal.id) !== String(aktualnyPracownik.location_id)) return
   kontekst.current += 1
   wyczyscFormularzPozycji()

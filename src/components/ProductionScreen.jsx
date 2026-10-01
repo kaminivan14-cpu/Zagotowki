@@ -66,7 +66,7 @@ export default function ProductionScreen({
           <button className="powrot" onClick={onRequirements}>📦 Zapotrzebowanie ogólne</button>
           {statusPlanu === 'completed' && <p role="status">✓ Zakończony</p>}
           {tylkoOdczyt && <p role="status">Plan tylko do odczytu.</p>}
-          {statusPlanu === 'completed' && ['administrator', 'manager', 'su-chef'].includes(pracownik?.role) && (
+          {statusPlanu === 'completed' && ['owner', 'administrator', 'manager', 'su-chef'].includes(pracownik?.role) && (
             <div style={{ margin: '16px 0' }}>
               <button className="powrot" onClick={wznowPlan} disabled={!wznowienieDostepne || wznawianie}>
                 {wznawianie ? 'Wznawianie…' : 'Wznów plan'}
@@ -200,7 +200,7 @@ export default function ProductionScreen({
       </button>
     </div>
 )}
-          {pracownik?.role === 'administrator' && (
+          {['owner', 'administrator'].includes(pracownik?.role) && (
   <button
     className="powrot"
     onClick={zmienLokal}
@@ -212,7 +212,7 @@ export default function ProductionScreen({
   </button>
 )}
 
-{['administrator', 'manager'].includes(pracownik?.role) && (
+{['owner', 'administrator', 'manager'].includes(pracownik?.role) && (
   <button
     className="powrot"
     onClick={pobierzPracownikow}

@@ -17,7 +17,7 @@ export default function RequirementsScreen({ planId, pracownik, wybranyLokal, on
         .select('id, location_id, plan_date, status').eq('id', planId).single()
       if (planError) throw planError
       const allowed = isProductionWorker(pracownik) ? employeeCanViewPlan(pracownik, plan)
-        : managementRoles.includes(pracownik.role) && (pracownik.role === 'administrator' ||
+        : managementRoles.includes(pracownik.role) && (['owner', 'administrator'].includes(pracownik.role) ||
           (pracownik.location_id != null && String(pracownik.location_id) === String(plan.location_id)))
       if (!allowed || String(plan.location_id) !== String(wybranyLokal.id)) {
         throw new Error('Plan nie jest dostępny w tym lokalu lub dla tego pracownika.')

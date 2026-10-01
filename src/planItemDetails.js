@@ -11,7 +11,7 @@ export function hasProductionHistory(item) {
 }
 
 export function canDeletePlan(employee, plan) {
-  return Boolean(plan && ['administrator', 'manager', 'su-chef', 'shift-manager'].includes(employee?.role) &&
-    (employee.role === 'administrator' || (employee.location_id != null &&
+  return Boolean(plan && ['owner', 'administrator', 'manager', 'su-chef', 'shift-manager'].includes(employee?.role) &&
+    (['owner', 'administrator'].includes(employee.role) || (employee.location_id != null &&
       String(employee.location_id) === String(plan.location_id))))
 }
