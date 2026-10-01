@@ -20,7 +20,7 @@ export default function LocationSelectScreen({
         >
           Wyloguj
         </button>
-      {['administrator', 'manager'].includes(pracownik.role) && (
+      {['owner', 'administrator', 'manager'].includes(pracownik.role) && (
   <button
     className="wyloguj-button"
    onClick={pobierzPracownikow}
@@ -40,7 +40,7 @@ export default function LocationSelectScreen({
           <div className="produkty">
            {lokale
   .filter((lokal) => {
-    if (pracownik.role === 'administrator') {
+    if (['owner', 'administrator'].includes(pracownik.role)) {
       return true
     }
 

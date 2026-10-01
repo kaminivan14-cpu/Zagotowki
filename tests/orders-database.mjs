@@ -1,8 +1,8 @@
 import { spawn } from 'node:child_process'
-import { readFile } from 'node:fs/promises'
+import { readFile, readdir } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import assert from 'node:assert/strict'
-const container='zagotowki-orders-test',db=`orders_${Date.now()}`
+const container=process.env.TEST_PG_CONTAINER || 'zagotowki-orders-test',db=`orders_${Date.now()}`
 function sql(query,database=db){return new Promise((resolve,reject)=>{const p=spawn('docker',['exec','-i',container,'psql','-U','postgres','-d',database,'-X','-qAt','-v','ON_ERROR_STOP=1']);let out='',err='';p.stdout.on('data',b=>out+=b);p.stderr.on('data',b=>err+=b);p.on('error',reject);p.on('close',c=>c?reject(new Error(err)):resolve(out.trim()));p.stdin.end(query)})}
 const uid=n=>`10000000-0000-4000-8000-${String(n).padStart(12,'0')}`
 const as=n=>`SET ROLE authenticated; SET request.jwt.claim.sub='${uid(n)}'; SET request.jwt.claims='{"iss":"https://meuzkduxttjcuiynsnaa.supabase.co/auth/v1"}';`
@@ -47,6 +47,7 @@ try{
  eq(await sql(`${as(7)} SELECT app_private.has_permission('production.plan.manage')`),'t')
  eq(await sql(`SELECT count(*) FROM public."Employees" e JOIN test_before b ON e.id=(b.original->>'id')::bigint WHERE e.pin_hash IS DISTINCT FROM b.original->>'pin_hash'`),'0')
  await sql(await readFile('supabase/migrations/202610010003_orders.sql','utf8'))
+ if(process.env.TEST_TASKS_UPGRADE==='1') for(const f of (await readdir('supabase/migrations')).filter(f=>f.startsWith('20261002')).sort()) await sql(await readFile(`supabase/migrations/${f}`,'utf8'))
  const seed=await readFile('supabase/seeds/orders-uat.sql','utf8')
  await denied(sql(seed),/UAT target/)
  await sql("SET app.orders_seed_project_ref='meuzkduxttjcuiynsnaa';"+seed)

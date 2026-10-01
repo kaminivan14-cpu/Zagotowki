@@ -1,30 +1,22 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import App from '../App'
 import { supabase } from '../supabase'
 import OrdersApp from './OrdersApp'
+const TasksApp = lazy(() => import('../tasks/TasksApp'))
 import './orders.css'
+const modules = [
+ { id: 'orders', permission: 'orders.access', label: '🍣 ZAMÓWIENIA', description: 'Realizacja bieżących zamówień' },
+ { id: 'production', permission: 'production.access', label: '🥣 ZAGOTÓWKI', description: 'Produkcja / przygotowanie' },
+ { id: 'tasks', permission: 'tasks.access', label: 'Робота', description: 'Завдання, планування та графік' },
+]
 export default function ModuleShell({ pracownik, onSignOut }) {
-  const [caps, setCaps] = useState(null), [module, setModule] = useState(null), [error, setError] = useState(false), [revision, setRevision] = useState(0)
-  useEffect(() => {
-    let alive = true
-    supabase.rpc('auth_capabilities').then(({ data, error }) => {
-      if (!alive) return
-      if (error || !Array.isArray(data)) { setCaps(null); setError(true); return }
-      setError(false); setCaps(data)
-      if (!data.includes('orders.access') && data.includes('production.access')) setModule('production')
-    }).catch(() => { if (alive) { setCaps(null); setError(true) } })
-    return () => { alive = false }
-  }, [pracownik, revision])
-  if (error) return <div className="app"><p role="alert">Nie udało się sprawdzić uprawnień modułów.</p><button onClick={() => setRevision(x => x + 1)}>Ponów</button><button onClick={onSignOut}>Wyloguj</button></div>
-  if (!caps) return <p role="status">Sprawdzanie modułów…</p>
-  const production = caps.includes('production.access'), orders = caps.includes('orders.access')
-  return <>{production && orders && module === 'production' && <nav className="module-nav"><button onClick={() => setModule(null)}>← Wybór modułów</button></nav>}
-    {module === 'production' && production ? <App pracownik={pracownik} onSignOut={onSignOut} /> : module === 'orders' && orders ?
-      <OrdersApp employee={pracownik} capabilities={caps} onSignOut={onSignOut} onModules={() => setModule(null)} /> :
-      <div className="app module-selector"><h1>Co robisz?</h1>
-        {orders && <button onClick={() => setModule('orders')}>🍣 ZAMÓWIENIA<small>Realizacja bieżących zamówień</small></button>}
-        {production && <button onClick={() => setModule('production')}>🥣 ZAGOTÓWKI<small>Produkcja / przygotowanie</small></button>}
-        <button onClick={onSignOut}>Wyloguj</button>
-      </div>}
-  </>
+ const [caps,setCaps]=useState(null),[module,setModule]=useState(null),[error,setError]=useState(false),[revision,setRevision]=useState(0)
+ useEffect(()=>{let alive=true;supabase.rpc('auth_capabilities').then(({data,error})=>{if(!alive)return;if(error || !Array.isArray(data)){setCaps(null);setError(true);return}setError(false);setCaps(data);const available=modules.filter(m=>data.includes(m.permission));if(available.length===1)setModule(available[0].id)}).catch(()=>{if(alive){setCaps(null);setError(true)}});return()=>{alive=false}},[pracownik,revision])
+ if(error)return <div className="app"><p role="alert">Nie udało się sprawdzić uprawnień modułów.</p><button onClick={()=>setRevision(x=>x+1)}>Ponów</button><button onClick={onSignOut}>Wyloguj</button></div>
+ if(!caps)return <p role="status">Sprawdzanie modułów…</p>
+ const available=modules.filter(m=>caps.includes(m.permission)),back=()=>setModule(null)
+ if(module==='production' && caps.includes('production.access'))return <>{available.length>1 && <nav className="module-nav"><button onClick={back}>← Wybór modułów</button></nav>}<App pracownik={pracownik} onSignOut={onSignOut}/></>
+ if(module==='orders' && caps.includes('orders.access'))return <OrdersApp employee={pracownik} capabilities={caps} onSignOut={onSignOut} onModules={back}/>
+ if(module==='tasks' && caps.includes('tasks.access'))return <Suspense fallback={<p role="status">Завантаження роботи…</p>}><TasksApp employee={pracownik} onSignOut={onSignOut} onModules={back}/></Suspense>
+ return <div className="app module-selector"><h1>Co robisz?</h1>{available.map(m=><button key={m.id} onClick={()=>setModule(m.id)}>{m.label}<small>{m.description}</small></button>)}{!available.length && <p>Brak dostępnych modułów.</p>}<button onClick={onSignOut}>Wyloguj</button></div>
 }
