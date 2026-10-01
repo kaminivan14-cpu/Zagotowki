@@ -4,7 +4,7 @@ import { spawn } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import assert from 'node:assert/strict'
-const container = 'zagotowki-pin-test', database = `pin_test_${Date.now()}`
+const container =process.env.TEST_PG_CONTAINER || 'zagotowki-pin-test', database = `pin_test_${Date.now()}`
 function sql(query, db = database) {
   return new Promise((resolve, reject) => {
     const p = spawn('docker', ['exec','-i',container,'psql','-U','postgres','-d',db,'-X','-qAt','-v','ON_ERROR_STOP=1'])

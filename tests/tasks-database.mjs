@@ -20,8 +20,8 @@ try {
  GRANT USAGE ON SCHEMA auth TO anon,authenticated,service_role; GRANT EXECUTE ON FUNCTION auth.uid() TO anon,authenticated,service_role; CREATE PUBLICATION supabase_realtime;`)
  for(const f of (await readdir('supabase/migrations')).filter(f=>f.endsWith('.sql')).sort()) await sql(await readFile(`supabase/migrations/${f}`,'utf8'))
  await sql(`INSERT INTO public."Locations"(id,name,active) VALUES(1,'Synthetic A',true),(2,'Synthetic B',true);
- INSERT INTO auth.users(id,email) SELECT ('20000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,'tasks-'||n||'@example.invalid' FROM generate_series(1,9)n;
- INSERT INTO public."Employees"(id,name,role,location_id,active,auth_user_id) SELECT n,'Synthetic '||n,(ARRAY['owner','administrator','director','manager','expert','specialist','crafter','specialist','specialist'])[n],CASE WHEN n IN (4,7) THEN 1 ELSE NULL END,n<>9,('20000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid FROM generate_series(1,9)n;
+ INSERT INTO auth.users(id,email) SELECT ('20000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,'tasks-'||n||'@example.invalid' FROM generate_series(1,11)n;
+ INSERT INTO public."Employees"(id,name,role,location_id,active,auth_user_id) SELECT n,'Synthetic '||n,(ARRAY['owner','administrator','director','manager','expert','specialist','crafter','specialist','specialist','specialist','specialist'])[n],CASE WHEN n IN (4,7) THEN 1 ELSE NULL END,n<>9,('20000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid FROM generate_series(1,11)n;
  SELECT setval('public."Employees_id_seq"',100);
  INSERT INTO public."Plans"(id,location_id,plan_date,status) VALUES(1,1,(now() AT TIME ZONE 'Europe/Warsaw')::date,'active'); INSERT INTO public."Plan_items"(id,plan_id,nazwa,ilosc,jednostka) VALUES(1,1,'Synthetic',1,'g');`)
  for(const n of [1,2,3,4,5,6]) eq((await rpc(n,'tasks_context')).employee_id,n)
@@ -74,7 +74,7 @@ try {
  await command(6,'checklist_toggle',{task_id:task.id,version:3,item_id:detail.checklist[0].id,completed:true})
  const today=(await rpc(6,'tasks_context')).today
  const dayAdd=(day,n)=>new Date(Date.parse(day+'T12:00:00Z')+n*86400000).toISOString().slice(0,10)
- for(const n of [4,6,8]) await command(1,'schedule_save',{employee_id:n,type:'work',starts_at:dayAdd(today,-1)+'T00:00:00Z',ends_at:dayAdd(today,5)+'T23:59:00Z'})
+ for(const n of [4,6,8,10,11]) await command(1,'schedule_save',{employee_id:n,type:'work',starts_at:dayAdd(today,-1)+'T00:00:00Z',ends_at:dayAdd(today,5)+'T23:59:00Z'})
  await command(1,'capacity_save',{employee_id:6,effective_from:today,daily_task_capacity_minutes:360})
  let planned=await command(6,'plan',{task_id:task.id,version:4,planned_date:today})
  eq(planned.status,'planned')
@@ -93,18 +93,18 @@ try {
  eq(await sql('SELECT count(*) FROM public."Task_work_sessions" WHERE employee_id=6 AND ended_at IS NULL'),'1')
  eq((await rpc(6,'tasks_work_state')).current.id,task.id)
  const critical=await command(6,'create',{title:'Негайно',urgency:'critical_now',estimated_minutes:2})
- const interrupt=await command(6,'critical_start',{task_id:critical.id,version:1})
+ const interrupt=await command(6,'critical_start',{task_id:critical.id,version:critical.version})
  eq(interrupt.status,'in_progress')
  eq((await rpc(6,'tasks_details',task.id)).task.status,'paused')
  const nested=await command(6,'create',{title:'Ще критичніше',urgency:'critical_now',estimated_minutes:1})
- await command(6,'critical_start',{task_id:nested.id,version:1})
- let back=await command(6,'complete',{task_id:nested.id,version:2})
+ await command(6,'critical_start',{task_id:nested.id,version:nested.version})
+ let back=await command(6,'complete',{task_id:nested.id,version:nested.version+1})
  eq(back.id,critical.id)
  back=await command(6,'complete',{task_id:critical.id,version:back.version})
  eq(back.id,task.id)
  const declined=await command(6,'create',{title:'Зачекає',urgency:'critical_now',estimated_minutes:2})
- await denied(command(6,'critical_decline',{task_id:declined.id,version:1,reason:''}),/REASON_REQUIRED/)
- await command(6,'critical_decline',{task_id:declined.id,version:1,reason:'Зустріч'})
+ await denied(command(6,'critical_decline',{task_id:declined.id,version:declined.version,reason:''}),/REASON_REQUIRED/)
+ await command(6,'critical_decline',{task_id:declined.id,version:declined.version,reason:'Зустріч'})
  eq((await rpc(6,'tasks_work_state')).critical.find(t=>t.id===declined.id).acknowledged,true)
  const beforeCompletion=await rpc(6,'tasks_details',task.id)
  await command(6,'complete',{task_id:task.id,version:beforeCompletion.task.version})
@@ -132,5 +132,107 @@ try {
  await command(1,'recurring_generate',{template_id:template.id})
  eq(await sql(`SELECT count(*) FROM public."Tasks" WHERE source_namespace='recurring:${template.id}'`),generated)
  eq(await sql('SELECT count(*) FROM public."Tasks" t WHERE version<>(SELECT max(task_version) FROM public."Task_events" WHERE task_id=t.id)'),'0')
+
+ // Separate assignment, reading, and approval scopes; unknown duration is explicit.
+ await denied(command(7,'create',{title:'Недоступно'}),/TASKS_DENIED/)
+ await denied(command(9,'create',{title:'Неактивний'}),/Brak aktywnego/)
+ await denied(command(1,'create',{title:'Без модуля',assigned_to_employee_id:7}),/INVALID_ASSIGNEE/)
+ await denied(command(6,'create',{title:'Підміна',created_by_employee_id:1}),/INVALID_ARGUMENTS/)
+ await denied(command(6,'create',{title:'Підміна джерела',source_type:'manager'}),/INVALID_ARGUMENTS/)
+ const unknown=await command(10,'create',{title:'Без оцінки',planned_date:today})
+ const unknownPlan=await rpc(10,'tasks_planning',`10,'${today}','${today}'`)
+ eq(unknownPlan.days[0].unknown_count,1)
+ eq(unknownPlan.tasks[0].estimated_minutes,null)
+ eq(await command(10,'next',{}),null)
+ const assignable=await rpc(6,'tasks_assignable_people')
+ eq(assignable.length,1)
+ const managed=await command(4,'create',{title:'Від керівника',assigned_to_employee_id:6,estimated_minutes:20,planned_date:today})
+ eq(managed.requires_reschedule_approval,true)
+ const requestMove=await command(6,'plan',{task_id:managed.id,version:managed.version,planned_date:dayAdd(today,1),reason:'Інші пріоритети'})
+ eq(requestMove.planned_date,today)
+ const moveApproval=(await rpc(4,'tasks_approvals')).find(r=>r.task_id===managed.id)
+ await denied(command(5,'resolve_reschedule',{request_id:moveApproval.id,decision:'approved'}),/TASKS_DENIED/)
+ const approvedMove=await command(4,'resolve_reschedule',{request_id:moveApproval.id,decision:'approved'})
+ eq(approvedMove.planned_date,dayAdd(today,1))
+ // Unknown duration and blocked dependencies never enter the queue.
+ const precursor=await command(10,'create',{title:'Передумова',estimated_minutes:10})
+ const dependent=await command(10,'create',{title:'Залежить',urgency:'critical_now',estimated_minutes:2})
+ await command(10,'dependency',{task_id:dependent.id,version:dependent.version,depends_on_task_id:precursor.id})
+ const ordinary=await command(10,'create',{title:'Звичайне',estimated_minutes:20,planned_date:today})
+ const urgent=await command(10,'create',{title:'Сьогодні',urgency:'critical_today',estimated_minutes:10})
+ eq((await command(10,'next',{})).id,urgent.id)
+ let nowTask=(await rpc(10,'tasks_work_state')).current
+ const afterUrgent=await command(10,'complete',{task_id:nowTask.id,version:nowTask.version})
+ eq(afterUrgent.id,ordinary.id)
+ const endDay=await command(10,'end_of_day',{task_id:afterUrgent.id,version:afterUrgent.version})
+ eq(endDay,null)
+ assert.ok((await rpc(10,'tasks_details',ordinary.id)).task.not_before_at);checks++
+ // A meeting creates a short current window: long work is not started.
+ const nowMs=Date.now(),meetingStart=new Date(nowMs+15*60000).toISOString(),meetingEnd=new Date(nowMs+120*60000).toISOString()
+ await command(1,'schedule_save',{employee_id:11,type:'meeting',starts_at:meetingStart,ends_at:meetingEnd})
+ const long=await command(11,'create',{title:'Довге',estimated_minutes:120,priority:'high',planned_date:today})
+ const short=await command(11,'create',{title:'Коротке',estimated_minutes:5,priority:'low',planned_date:today})
+ eq((await command(11,'next',{})).id,short.id)
+ eq((await rpc(11,'tasks_details',long.id)).task.status,'planned')
+ const running=(await rpc(11,'tasks_work_state')).current
+ await command(11,'complete',{task_id:running.id,version:running.version})
+ // Hard deadline outranks business priority when both fit the current window.
+ const deadline=await command(11,'create',{title:'Дедлайн',estimated_minutes:2,deadline_is_hard:true,deadline_at:new Date(nowMs+10*60000).toISOString(),planned_date:today})
+ const priority=await command(11,'create',{title:'Пріоритет',estimated_minutes:2,priority:'critical',planned_date:today})
+ eq((await command(11,'next',{})).id,deadline.id)
+ const rd=(await rpc(11,'tasks_work_state')).current
+ await command(11,'complete',{task_id:rd.id,version:rd.version})
+ const rp=(await rpc(11,'tasks_work_state')).current
+ eq(rp.id,priority.id)
+ await command(11,'complete',{task_id:rp.id,version:rp.version})
+ // Dependency graph and category hierarchy reject cycles in the real database.
+ const cat=await command(1,'category_save',{name:'Тестова категорія'})
+ const child=await command(1,'category_save',{name:'Підкатегорія',parent_id:cat.id})
+ await denied(command(1,'category_save',{id:cat.id,name:'Тестова категорія',parent_id:child.id}),/PARENT_CYCLE/)
+ await denied(sql(`UPDATE public."Task_events" SET event_type='changed' WHERE task_id=${unknown.id}`),/APPEND_ONLY/)
+ // Disallowed auto-moves become recommendations, not silent changes.
+ const restricted=await command(4,'create',{title:'Не переносити мовчки',assigned_to_employee_id:6,estimated_minutes:400,planned_date:today})
+ await command(6,'balance',{date:today})
+ eq((await rpc(6,'tasks_details',restricted.id)).task.planned_date,today)
+ // No task can be scheduled after a hard deadline even by the owner.
+ const hard=await command(8,'create',{title:'Жорстко',estimated_minutes:10,deadline_is_hard:true,deadline_at:today+'T23:00:00Z'})
+ await denied(command(8,'plan',{task_id:hard.id,version:hard.version,planned_date:dayAdd(today,2)}),/DEADLINE_CONFLICT/)
+ const cancel=await command(8,'cancel',{task_id:hard.id,version:hard.version});eq(cancel.status,'cancelled')
+ // Concurrent complete uses optimistic versioning, with exactly one winner.
+ const work=(await rpc(10,'tasks_details',ordinary.id)).task
+ await command(10,'update',{task_id:work.id,version:work.version,title:'Змінено'})
+ const race=await Promise.allSettled([command(8,'update',{task_id:high.id,version:2,title:'Перша'}),command(8,'update',{task_id:high.id,version:2,title:'Друга'})])
+ eq(race.filter(r=>r.status==='fulfilled').length,1)
+ eq(race.filter(r=>r.status==='rejected').length,1)
+ eq(await sql('SELECT count(*) FROM public."Tasks" t WHERE version<>(SELECT max(task_version) FROM public."Task_events" WHERE task_id=t.id)'),'0')
+
+ const smallRestricted=await command(4,'create',{title:'Потребує погодження',assigned_to_employee_id:6,estimated_minutes:60,planned_date:today})
+ await command(6,'balance',{date:today})
+ const recommendation=(await rpc(6,'tasks_recommendations',6)).find(r=>r.task_id===smallRestricted.id)
+ assert.ok(recommendation);checks++
+ eq((await rpc(6,'tasks_details',smallRestricted.id)).task.planned_date,today)
+ await command(6,'recommendation_resolve',{id:recommendation.id,decision:'approved'})
+ const fromRecommendation=(await rpc(4,'tasks_approvals')).find(r=>r.task_id===smallRestricted.id)
+ assert.ok(fromRecommendation);checks++
+ await command(4,'resolve_reschedule',{request_id:fromRecommendation.id,decision:'rejected'})
+ eq((await rpc(6,'tasks_details',smallRestricted.id)).task.planned_date,today)
+ // Filling an underloaded day proposes work but does not silently plan it.
+ await command(10,'balance',{date:dayAdd(today,1)})
+ eq((await rpc(10,'tasks_details',precursor.id)).task.planned_date,null)
+ assert.ok((await rpc(10,'tasks_recommendations',10)).some(r=>r.recommendation_type==='add_unplanned'));checks++
+ // A period page never drops older unplanned records between planned records.
+ const countBefore=Number(await sql('SELECT count(*) FROM public."Tasks" WHERE assigned_to_employee_id=8'))
+ await sql(`INSERT INTO public."Tasks"(title,assigned_to_employee_id,created_by_employee_id) SELECT 'Synthetic pagination '||n,8,8 FROM generate_series(1,105)n;`)
+ const page1=await rpc(8,'tasks_planning',`8,'${today}','${dayAdd(today,10)}'`)
+ assert.ok(page1.next_cursor);checks++
+ const page2=await rpc(8,'tasks_planning',`8,'${today}','${dayAdd(today,10)}',${page1.next_cursor}`)
+ eq(new Set([...page1.tasks,...page1.unplanned,...page2.tasks,...page2.unplanned].map(t=>t.id)).size,[...page1.tasks,...page1.unplanned,...page2.tasks,...page2.unplanned].length)
+ assert.ok([...page1.unplanned,...page2.unplanned].length>=105);checks++
+ eq(Number(await sql('SELECT count(*) FROM public."Tasks" WHERE assigned_to_employee_id=8')),countBefore+105)
+
+ const teamSchedule=await rpc(4,'tasks_team_schedule',`'${today}','${dayAdd(today,4)}'`)
+ assert.ok(teamSchedule.length>0);checks++
+ eq(teamSchedule.every(e=>[4,6].includes(e.employee_id)),true)
+ await denied(rpc(6,'tasks_team_schedule',`'${today}','${today}'`),/TASKS_DENIED/)
  console.log(`Tasks PostgreSQL PASS (${checks} checks)`)
 } finally {await sql(`DROP DATABASE ${database} WITH (FORCE)`,'postgres')}

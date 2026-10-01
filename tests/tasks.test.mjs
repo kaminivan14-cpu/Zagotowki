@@ -16,3 +16,12 @@ test('company timezone resolves independently of browser and rejects ambiguous/m
  assert.throws(()=>localToInstant('2026-10-25T02:30','Europe/Warsaw'),/INVALID_LOCAL_TIME/)
  assert.equal(localToInstant('','Europe/Warsaw'),null)
 })
+
+test('uncertain task mutations preserve operation identity and refuse replacing a pending intent',async()=>{
+ const {prepareOperation}=await import('../src/tasks/operations.js')
+ const data=new Map(),storage={getItem:k=>data.get(k),setItem:(k,v)=>data.set(k,v)}
+ const op=prepareOperation(storage,6,'create',{title:'Звіт'})
+ assert.deepEqual(prepareOperation(storage,6,'create',{title:'Звіт'}),op)
+ assert.throws(()=>prepareOperation(storage,6,'create',{title:'Інше'}),/PENDING_OPERATION/)
+ assert.notEqual(prepareOperation(storage,8,'create',{title:'Звіт'}).id,op.id)
+})
