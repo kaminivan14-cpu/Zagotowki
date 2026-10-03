@@ -14,7 +14,7 @@ import { itemDetails, hasProductionHistory, canDeletePlan } from './planItemDeta
 
 const jednostki = ['g', 'kg', 'ml', 'l', 'szt.']
 
-function App({ pracownik, onSignOut }) {
+function App({ pracownik, onSignOut, onStartWork }) {
   const [produkty, setProdukty] = useState([])
   const [ladowanieProduktow, setLadowanieProduktow] = useState(true)
   const [bladProduktow, setBladProduktow] = useState('')
@@ -113,7 +113,6 @@ const [edytowanaPozycja, setEdytowanaPozycja] = useState({
   // START APLIKACJI - POBIERAMY LOKALE
   // -----------------------------------------
 const wylogujPracownika = () => {
-  kontekst.current += 1
   void onSignOut()
 }
 const pobierzPracownikow = () => {
@@ -685,6 +684,7 @@ const rozpocznijPrace = async (id) => {
   if (!canWorkOnPlan(pracownik, otwartyPlan)) return
   const wersja = kontekst.current
   try {
+    if (onStartWork) await onStartWork(otwartyPlan?.location_id || wybranyLokal?.id)
     const { error } = await supabase.rpc(
       'start_plan_item',
       {
