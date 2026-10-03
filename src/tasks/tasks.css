@@ -29,3 +29,5 @@
 @media(max-width:900px){.tasks-app .task-calendar { grid-template-columns: repeat(2,minmax(0,1fr)); }}
 @media(max-width:600px){.tasks-app{padding:10px}.tasks-app .tasks-header{flex-wrap:wrap}.tasks-app nav button{flex:1 1 40%}.tasks-app .task-actions button{flex:1 1 auto}.tasks-app label{align-items:stretch;flex-direction:column}.tasks-app input,.tasks-app select{width:100%}.tasks-app input[type=checkbox]{width:24px}}
 .tasks-app button[aria-pressed=true]:hover:not(:disabled) { background: #163f34; color: white; }
+.tasks-app .task-datetime-field {display:flex;flex-direction:column;gap:4px;min-width:0;max-width:100%}
+.tasks-app .task-datetime-preview {display:block;color:#43576e;font-size:13px;line-height:1.4;font-variant-numeric:tabular-nums}

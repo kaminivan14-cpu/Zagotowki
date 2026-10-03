@@ -30,4 +30,4 @@ export function categoryTotals(tasks,categories) {
  return [...totals.values()]
 }
 export const shortDay = day => new Intl.DateTimeFormat('uk-UA',{weekday:'short',timeZone:'UTC'}).format(new Date(day+'T12:00:00Z'))
-export const dateLabel = day => new Intl.DateTimeFormat('uk-UA',{day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(day+'T12:00:00Z'))
+export {dateLabel} from './dateTime.js'

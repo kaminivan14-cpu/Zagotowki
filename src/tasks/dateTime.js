@@ -5,8 +5,12 @@ export function planningRange(today, mode = 'week') {
  const from = mode === 'month' ? monday : addDays(monday, weekday >= 5 ? 7 : 0)
  return { from, to: addDays(from, mode === 'month' ? 27 : 6) }
 }
-export const dayLabel = day => new Intl.DateTimeFormat('uk-UA', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(`${day}T12:00:00Z`))
-export const instantLabel = (value, zone) => value ? new Intl.DateTimeFormat('uk-UA', { dateStyle: 'short', timeStyle: 'short', timeZone: zone }).format(new Date(value)) : '—'
+export const dateLabel = day => /^\d{4}-\d{2}-\d{2}$/.test(day || '') ? day.split('-').reverse().join('.') : '—'
+export const dayLabel = day => dateLabel(day)
+function instantParts(value,zone){return Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(value)).map(p=>[p.type,p.value]))}
+export function timeLabel(value,zone){if(!value)return '—';const p=instantParts(value,zone);return `${p.hour}:${p.minute}`}
+export function instantLabel(value,zone){if(!value)return '—';const p=instantParts(value,zone);return `${p.day}.${p.month}.${p.year} ${p.hour}:${p.minute}`}
+export function inputDateTimeLabel(value,type){if(!value)return type==='date'?'ДД.ММ.РРРР':type==='time'?'ГГ:хх':'ДД.ММ.РРРР ГГ:хх';if(type==='date')return dateLabel(value);if(type==='time')return value.slice(0,5);const [date,time]=value.split('T');return `${dateLabel(date)} ${time?.slice(0,5)||''}`}
 // Resolve wall-clock input against the company zone, never the browser zone.
 // Ambiguous/nonexistent DST times require a different explicit time instead of guessing.
 export function localToInstant(value, zone) {

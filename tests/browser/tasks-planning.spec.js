@@ -38,7 +38,7 @@ async function setup(page,{today='2026-10-02',paged=false}={}) {
   await route.fulfill({json:data})
  })
  await page.goto('/');await page.getByRole('button',{name:'Планування',exact:true}).click();await page.getByRole('button',{name:'Запланувати тиждень',exact:true}).click()
- await expect(page.locator('.planning-day')).toHaveCount(7)
+ await expect(page.locator('.planning-day')).toHaveCount(7);await expect(page.locator('.planning-day time').first()).toHaveText(today>='2026-10-02'?'05.10.2026':'28.09.2026')
  return state
 }
 for(const width of [375,768,1024,1440])test(`weekly planning layout, data and existing create dialog ${width}`,async({page})=>{
