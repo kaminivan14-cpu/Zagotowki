@@ -156,7 +156,8 @@ Finalna regresja przed commitem: npm test 65/65, pełny browser 32/32, Orders Po
 
 ## Poziomy board Orders — 2026-10-03
 
-Zastępuje wcześniejszy widok dużych kart produktu i osobny Tryb produkcyjny.
+Tryb ogólny zastępuje wcześniejszy widok dużych kart produktu poziomym boardem.
+Tryb operacyjny zachowuje wcześniejszy uproszczony workflow pracy w rękawicach.
 Istniejący shell i moduły Tasks/Robota/Zagotówki pozostają bez zmian. Widok Orders
 ma polski słownik labels.js, filtry cyklu new/partial/in_progress/done i zachowuje
 etapy operacyjne NEW/TO_DO/IN_PROGRESS/READY_FOR_CUTTING/CUTTING/COMPLETED dla
@@ -249,3 +250,17 @@ Importer UAT porównano z migracją 001: zgodny. Skrypt wdrożenia ma dodatkowy
 warunek MD5 funkcji bezpośrednio przed zmianą i zapis historii w tej samej transakcji.
 Wdrażać tylko 002 na meuzkduxttjcuiynsnaa, nie używać ogólnego db push.
 Edge Functions, sekrety, Auth, Production i main pozostają bez zmian.
+
+
+### Regresja przełącznika trybów Orders
+
+Nagłówek zawiera „Tryb ogólny | Tryb operacyjny” dla użytkowników z co najmniej
+jednym z orders.work / orders.cut / orders.issue, zgodnie z wcześniejszą regułą.
+Rola monitorująca nadal widzi wyłącznie tryb ogólny. Board pozostaje w trybie ogólnym.
+Tryb operacyjny przywraca Moje aktywne, Do wzięcia, podział ilości, oddawanie,
+krojenie i wydanie. Nagłówki zestawów i napoje nie stają się zadaniami; komponenty
+i dodatki pozostają operacyjne.
+
+Przełącznik zmienia jedynie widoczność widoków. Wspólny stan Orders, zmiany,
+pending operation UUID oraz lokalny formularz podziału są zachowane przy przełączaniu.
+Nie ma nowego backendu, RPC ani migracji.

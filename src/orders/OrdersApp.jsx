@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../supabase'
+import ProductionMode from './ProductionMode'
+import { canUseProductionMode } from './production'
 import OrdersBoard from './OrdersBoard'
 import OrderGenerator from './OrderGenerator'
 import OrderNotices from './OrderNotices'
@@ -9,6 +11,10 @@ import EmployeesScreen from '../auth/EmployeesScreen'
 import { pendingOperation, operationKey, orderError, formatTime, money, rateText, parseRate } from './client'
 
 export default function OrdersApp({ employee, capabilities, onSignOut, onModules }) {
+  // Keep both views mounted after first use so switching preserves in-progress form state.
+  const [mode,setMode]=useState('general'), [operatorMounted,setOperatorMounted]=useState(false)
+  const operatorAllowed=canUseProductionMode(capabilities)
+  const operatorActive=operatorAllowed && mode==='operational'
   const [notices, setNotices] = useState([]), [noticeError, setNoticeError] = useState(false), [now, setNow] = useState(() => Date.now())
   const [focusOrder,setFocusOrder]=useState(null),[ackBusy,setAckBusy]=useState(false)
   const acknowledged=useRef(new Set())
@@ -81,8 +87,9 @@ export default function OrdersApp({ employee, capabilities, onSignOut, onModules
     } catch { console.error('orders-history', { code: 'READ_FAILED' }); if (alive.current && n === historyRequest.current) setMessage('Podsumowanie niedostępne. Sprawdź zakończenie zmiany i uprawnienia.') }
   }
   if (employeesOpen && has('employees.manage')) return <EmployeesScreen pracownik={employee} lokale={locations} onPowrot={() => setEmployeesOpen(false)} />
-  return <div className="app orders-app"><header className="orders-header"><div><h1>Zamówienia</h1><p>{employee.name}</p></div><div className="header-actions"><button disabled={busy} onClick={onModules}>← Wybór modułów</button>{has('employees.manage') && <button disabled={busy} onClick={() => setEmployeesOpen(true)}>Pracownicy</button>}<button disabled={busy} onClick={onSignOut}>Wyloguj</button></div></header>
+  return <div className="app orders-app"><header className="orders-header"><div><h1>Zamówienia</h1><p>{employee.name}</p></div><div className="header-actions">{operatorAllowed && <div className="orders-mode-switch" role="group" aria-label={L.workMode}>{[['general',L.generalMode],['operational',L.operationalMode]].map(([key,label])=><button key={key} aria-pressed={operatorActive ? key==='operational' : key==='general'} onClick={()=>{setMode(key);if(key==='operational')setOperatorMounted(true)}}>{label}</button>)}</div>}<button disabled={busy} onClick={onModules}>← Wybór modułów</button>{has('employees.manage') && <button disabled={busy} onClick={() => setEmployeesOpen(true)}>Pracownicy</button>}<button disabled={busy} onClick={onSignOut}>Wyloguj</button></div></header>
     <label>Lokal<select value={location} disabled={busy} onChange={e => { ++historyRequest.current; setSelection({}); setOrders([]); setNotices([]); setNoticeError(false); setSummary(null); setHistory(null); setEvents(null); setLocation(e.target.value) }}><option value="">Wybierz lokal</option>{locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}</select></label>
+    <div hidden={operatorActive}>
     <nav aria-label="Widoki zamówień">{[['all',L.all],['new',L.waiting],['board',L.working],['done',L.done],...(has('orders.work') ? [['mine','Moje zadania']] : []),['shifts','Zmiany / historia'],...(has('orders.test.generate') ? [['generator','Generator UAT']] : []),...(has('orders.rates.manage') ? [['rates','Katalog i stawki']] : [])].map(([key,label]) => <button key={key} aria-pressed={tab === key} onClick={() => setTab(key)}>{label}{['all','new','board','done'].includes(key) ? ` (${orders.filter(o=>key==='all' || (key==='new' ? lifecycle(o)==='new' : key==='done' ? lifecycle(o)==='done' : ['partial','in_progress'].includes(lifecycle(o)))).length})` : ''}</button>)}</nav>
     {chef && <OrderNotices notices={notices} error={noticeError} busy={ackBusy} onView={id=>{setTab('all');setFocusOrder({id,nonce:Date.now()})}} onRead={async id=>{
       if(ackBusy)return;setAckBusy(true)
@@ -108,6 +115,8 @@ export default function OrdersApp({ employee, capabilities, onSignOut, onModules
       } : null}/>
     </>}
     {tab === 'all' && events && <section><h2>Historia {events.number}</h2>{events.rows.length === 0 && <p>Brak zdarzeń.</p>}{events.rows.map((e,n)=><p key={n}>{formatTime(e.at)} · {e.event} · {e.actor}</p>)}</section>}
+    </div>
+    {operatorAllowed && operatorMounted && <div hidden={!operatorActive}><ProductionMode employee={employee} capabilities={capabilities} orders={orders} shift={shift} location={location} busy={busy} pending={pending} message={message} run={run}/></div>}
   </div>
 }
 function RateEditor({product,busy,save}) {
