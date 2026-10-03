@@ -1,3 +1,4 @@
+import TaskActions from './TaskActions'
 import DateTimeInput from './DateTimeInput'
 import { useEffect, useState } from 'react'
 import Dialog from './Dialog'
@@ -9,6 +10,7 @@ export default function TaskDetailsDialog({ task, context, run, busy, onClose, r
  useEffect(() => { let alive=true; read('tasks_details',{p_task:task.id}).then(d=>{if(alive)setData(d)}).catch(e=>{if(alive)setError(errorText(e))});return()=>{alive=false} },[task.id,revision])
  const t=data?.task
  return <Dialog title={t?.title || task.title} onClose={onClose} busy={busy}><p role="alert">{error}</p>{t && <>
+ <TaskActions task={t} context={context} run={run} busy={busy} onCompleted={onClose}/>
  <p className="task-description">{t.description || 'Опис не додано'}</p><p>Орієнтовно: {duration(t.estimated_minutes)} · Фактично: {duration(t.actual_minutes)}</p>
  {data.checklist.map(c=><label key={c.id}><input type="checkbox" checked={c.completed} disabled={busy} onChange={e=>run('checklist_toggle',{task_id:t.id,version:t.version,item_id:c.id,completed:e.target.checked})}/>{c.text}</label>)}
  <form onSubmit={async e=>{e.preventDefault();const f=e.currentTarget;if(await run('comment',{task_id:t.id,version:t.version,text:new FormData(f).get('text')}))f.reset()}}><label>Додати коментар<textarea name="text" required maxLength={10000}/></label><button disabled={busy}>Додати коментар</button></form>

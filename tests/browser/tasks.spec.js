@@ -17,7 +17,8 @@ async function setup(page,{role='specialist',critical=false,denied=false}={}){
   else if(name==='tasks_context'){
    if(denied)return route.fulfill({status:403,contentType:'application/json',body:JSON.stringify({code:'42501',message:'TASKS_DENIED'})})
    body={employee_id:6,today,capabilities:caps,categories:[{id:1,name:'Операційні'}],departments:[],manager_id:4,settings:{company_timezone:'Europe/Warsaw',default_daily_task_capacity_minutes:360,planning_horizon_days:60,load_balancer_enabled:false}}
-  }else if(name==='tasks_assignable_people')body=[{id:6,name:'Олена'}]
+  }else if(name==='tasks_list')body=tasks
+  else if(name==='tasks_assignable_people')body=[{id:6,name:'Олена'}]
   else if(name==='tasks_work_state')body={current:tasks.find(t=>t.id===current)||null,started,critical:tasks.filter(t=>t.urgency==='critical_now' && t.status!=='completed' && t.status!=='in_progress'),task_count:tasks.length,planned_minutes:20,capacity_minutes:360}
   else if(name==='tasks_approvals')body=approvals
   else if(name==='tasks_recommendations'||name==='tasks_schedule')body=[]
@@ -46,7 +47,7 @@ test('specialist and director enter only the task module and restore session on 
 })
 test('create, plan, work, complete and report use Ukrainian screens',async({page})=>{
  const {calls}=await setup(page);await page.goto('/');await page.getByRole('button',{name:'Створити завдання'}).click();await page.getByLabel('Назва',{exact:true}).fill('Закрити місяць');await page.getByLabel('Орієнтовний час, хв').fill('30');await page.getByRole('button',{name:'Створити',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0)
- await page.getByRole('button',{name:'Планування',exact:true}).click();await page.getByRole('button',{name:'Запланувати тиждень'}).click();await expect(page.getByText('Незаплановані завдання',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Закрити місяць'}).click();await page.getByLabel('Дата',{exact:true}).fill('2026-10-05');await page.getByRole('button',{name:'Зберегти дату'}).click();await page.getByRole('button',{name:'Закрити',exact:true}).click()
+ await page.getByRole('button',{name:'Планування',exact:true}).click();await page.getByRole('button',{name:'Запланувати тиждень'}).click();await expect(page.getByText('Незаплановані завдання',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Закрити місяць'}).click();await page.getByLabel('Дата',{exact:true}).fill('05.10.2026');await page.getByRole('button',{name:'Зберегти дату'}).click();await page.getByRole('button',{name:'Закрити',exact:true}).click()
  await page.getByRole('button',{name:'Запланувати місяць'}).click();await expect(page.locator('.task-week')).toHaveCount(4);expect(calls.filter(c=>c.name==='tasks_planning').at(-1).args.p_to).toBe('2026-10-25')
  await page.getByRole('button',{name:'Робота',exact:true}).click();await page.getByRole('button',{name:'Розпочати роботу'}).click();await expect(page.getByRole('button',{name:'Зроблено',exact:true})).toBeVisible();await expect(page.locator('.task-work .task-card')).toHaveCount(1);await page.getByRole('button',{name:'Зроблено',exact:true}).click();await page.getByRole('button',{name:'Звіти',exact:true}).click();await expect(page.getByRole('heading',{name:'Загальний час'})).toBeVisible();await page.getByRole('button',{name:'Графік',exact:true}).click();await expect(page.locator('.schedule-calendar article')).toHaveCount(28)
 })

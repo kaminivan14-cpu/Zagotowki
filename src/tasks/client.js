@@ -18,6 +18,9 @@ export async function mutate(employee, action, args, storage = sessionStorage) {
  }
 }
 export const errors = {
+ ACTIVE_TASK_EXISTS: 'Спочатку завершіть або призупиніть поточне завдання.',
+ DEPENDENCY_INCOMPLETE: 'Спочатку виконайте залежні попередні завдання.',
+ COMPLETION_CONFIRMATION_REQUIRED: 'Підтвердьте, що завдання виконано.',
  TIMEZONE_IN_USE: 'Зміна часового поясу потребує окремого перенесення наявних планів.',
  TASKS_DENIED: 'Немає дозволу на цю дію або дані.', TASK_VERSION_CONFLICT: 'Завдання вже змінено. Оновіть дані та повторіть дію.',
  NO_APPROVER: 'Не призначено керівника для погодження. Зверніться до адміністратора.', NO_AVAILABILITY: 'На цей день немає робочої зміни або вільного часу.',

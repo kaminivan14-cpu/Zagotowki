@@ -1,0 +1,5 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {parseInput,displayInput,inputError} from '../src/tasks/inputDateTime.js'
+test('edit DD.MM.YYYY and HH:mm, submit unambiguous ISO',()=>{assert.equal(parseInput('04.10.2026','date'),'2026-10-04');assert.equal(parseInput('01.10.2026','date'),'2026-10-01');assert.equal(parseInput('23:45','time'),'23:45');assert.equal(parseInput('04.10.2026 00:15','datetime-local'),'2026-10-04T00:15');assert.equal(displayInput('2026-10-04T18:30','datetime-local'),'04.10.2026 18:30')})
+test('reject impossible dates, AM/PM, ambiguous order and out-of-range times',()=>{for(const x of ['31.02.2026','29.02.2025','00.10.2026','10/04/2026','2026-10-04','04.00.2026'])assert.equal(parseInput(x,'date'),null);assert.equal(parseInput('29.02.2024','date'),'2024-02-29');for(const x of ['12:30 PM','24:00','12:60','1:30'])assert.equal(parseInput(x,'time'),null);assert.equal(parseInput('','date'),'');assert.notEqual(inputError('03.10.2026','date','2026-10-04'),'');assert.equal(inputError('04.10.2026','date','2026-10-04'),'')})
