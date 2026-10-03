@@ -1,0 +1,21 @@
+// Polish Orders dictionary; all new board copy lives here for a future locale.
+export const labels = {
+ all: 'Wszystkie', waiting: 'Oczekujące', working: 'W realizacji', done: 'Zakończone',
+ wholeOrder: 'Weź całe zamówienie', selected: n => `Weź zaznaczone (${n})`,
+ dispatch: 'Przekaż na kuchnię', start: 'Start', part: 'Weź część', allQuantity: 'Całość', other: 'Inna', take: 'Weź',
+ wholeSet: 'Weź cały zestaw', setPart: (n,total) => `Weź ${n}/${total} zestawów`,
+ left: 'Pozostało', issued: 'Wydane', units: 'szt.', visible: n => `Widoczne pozycje: ${n}`,
+ readyAt: time => `Wydać o ${time}`, prep: n => `Czas przygotowania ~${n} min`,
+ overdue: n => `Po czasie · ${n} min`, warning: 'Do wydania ≤ 30 min', urgent: 'Pilne · do wydania ≤ 10 min',
+ normal: 'Standardowo', empty: 'Brak zamówień w tym widoku.', expand: 'Rozwiń zestaw', collapse: 'Zwiń zestaw',
+ select: name => `Zaznacz ${name}`, quantity: name => `Ilość — ${name}`,
+ stages: { NEW:'Nowe', TO_DO:'Do zrobienia', IN_PROGRESS:'W trakcie', READY_FOR_CUTTING:'Do krojenia', CUTTING:'Krojenie', COMPLETED:'Wydane' },
+ lifecycle: {new:'Oczekujące',partial:'Częściowo przejęte',in_progress:'W realizacji',done:'Zakończone'},
+ ready: 'Gotowe', release: 'Oddaj zadanie', confirmRelease: 'Potwierdź oddanie', keep: 'Zostaw u mnie',
+ cut: n => `Rozpocznij krojenie ×${n}`, cutDone: 'Zakończ krojenie', issue: 'Wydane',
+ active: 'W TRAKCIE', cutting: 'KROJENIE', readyCut: 'DO KROJENIA', history:'Historia zamówienia',
+ shiftNeeded: 'Rozpocznij zmianę, aby przejąć zadania.', board: 'Tablica zamówień', noticeTitle:'Uwaga dla su-chefa', dismiss:'Przeczytane',
+ notice: (type,number) => type==='DEADLINE_OVERDUE' ? `Zamówienie ${number} jest po czasie.` : type==='DEADLINE_10' ? `Pilne: zamówienie ${number} do wydania za 10 min.` : `Uwaga: zamówienie ${number} do wydania za 30 min.`,
+ noticesFailed: 'Nie udało się odświeżyć powiadomień. Ponowimy automatycznie.',
+ readyInput:'Czas wydania (opcjonalnie)', prepInput:'Czas przygotowania w minutach (opcjonalnie)',
+}

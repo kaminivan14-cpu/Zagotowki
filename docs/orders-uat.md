@@ -154,39 +154,69 @@ Korekta permissions Managera przed UAT: PostgreSQL 154/154 PASS (w tym bezpośre
 
 Finalna regresja przed commitem: npm test 65/65, pełny browser 32/32, Orders PostgreSQL154/154, PIN PostgreSQL70/70, lokalny upgrade fixture126/126, migration tests/lint/build/diff-check PASS. Build: ostrzeżenie chunk >500kB.
 
-## Tryb produkcyjny na tablecie (feature/orders)
+## Poziomy board Orders — 2026-10-03
 
-Tryb pracy w module Zamówienia, niezależny od roli i uprawnień. Dostępny przy
-orders.work, orders.cut lub orders.issue: sushi master wykonuje pozycje, su chef
-kroi i wydaje. Wejście przyciskiem „Tryb produkcyjny” w nagłówku; powrót przez
-„Widok standardowy”. Bez zmiany innych modułów, Auth, RPC, ról lub schematu bazy.
+Zastępuje wcześniejszy widok dużych kart produktu i osobny Tryb produkcyjny.
+Istniejący shell i moduły Tasks/Robota/Zagotówki pozostają bez zmian. Widok Orders
+ma polski słownik labels.js, filtry cyklu new/partial/in_progress/done i zachowuje
+etapy operacyjne NEW/TO_DO/IN_PROGRESS/READY_FOR_CUTTING/CUTTING/COMPLETED dla
+kompatybilności istniejących klientów/RPC. Kolumny zamówień 380 px przewijają się
+poziomo, na telefonie zajmują niemal całą szerokość. Pozycje są pionowymi wierszami.
 
-UX i stany:
-- Brak zmiany: podgląd zadań i duży przycisk rozpoczęcia zmiany.
-- Moje aktywne: zawsze pierwsza sekcja, tylko własna niezakończona praca.
-- Do wzięcia: dostępne porcje, pogrupowane według zamówienia. Karty przewijają się
-  poziomo, strona pionowo; nowe i zakończone zamówienia nie trafiają do kolejki.
-- Weź całość: jedno dotknięcie bierze pozostałą ilość konkretnej karty, nie całe
-  zamówienie. Podziel + 1/2/5/10/Całość: dwa dotknięcia. Inna otwiera duży keypad.
-- Gotowe: jeden tap kończy wykonanie/krojenie. Wydane: osobna istniejąca akcja
-  su chefa, bez zmiany semantyki backendu ani scalania etapów.
-- Oddaj zadanie: potwierdzenie inline; możliwość pozostawienia zadania u siebie.
-  Backend nie obsługuje oddania krojenia, więc tryb nie oferuje fikcyjnej akcji.
-- Zapisywanie: blokada przycisków. Niepewny wynik: blokada kolejnych operacji
-  i ponowienie z tym samym UUID; konflikt ilości rozstrzyga istniejący backend.
-- Puste listy i błędy połączenia: tekstowy stan i istniejące odświeżanie co 5 s.
+Migracja: `202610030001_orders_board.sql` (wyłącznie Orders, stare migracje niezmienione).
+- Orders.ready_at timestamptz i estimated_prep_minutes integer 1–1440, oba nullable.
+- Order_products.item_type: product/addon/drink. Kategorie Drink/Drinks/Napój/Napoje/
+  Beverage/Beverages i Addon/Addons/Dodatek/Dodatki są migrowane jawnie; brak nazw produktów.
+- Order_items.item_type: product/set/addon/drink; parent_item_id, FK do tego samego
+  zamówienia, brak zagnieżdżonych zestawów, ilość komponentu podzielna przez ilość setu.
+- Istniejące pozycje kategorii Set pozostają starymi produktami: brak definicji
+  komponentów w źródle nie pozwala uczciwie odtworzyć składu.
+- Zestaw jest tylko grupą. W importowanym children.quantity jest ilością na JEDEN
+  zestaw; baza zapisuje child.quantity * parent.quantity. Przykład set x2 i roll x2
+  na zestaw daje 4 rolki. Claim_set quantity=1 pobiera 2 rolki, nie 1 ani 4.
+- Istniejący orders_command ma nową akcję claim_set {order_id,set_id,quantity}.
+  Zachowuje blokadę order/employee/operation, aktualne autoryzacje i dziennik UUID.
+  Claim_all pomija grupy i napoje; claim odrzuca ich bezpośrednie przejęcie.
+- Status kuchni pomija napoje bez usuwania danych lub automatycznego oznaczania ich
+  jako wydane. Dodatki mają osobne przypisania tak jak zwykłe produkty.
+- Jeśli część komponentów została już przejęta, dostępne pełne zestawy to minimum
+  pozostałych wielokrotności komponentów. Resztę można brać jako pojedyncze komponenty.
 
-Przyciski minimum 64 px, odstępy 10–20 px, nazwy 26 px i ilości 44 px.
-Brak małych inputów liczbowych, modali dla zwykłych działań, stawek i historii
-w widoku operatora. Pełne narzędzia nadal są w widoku standardowym.
+Źródła terminów: jawne ready_at/estimated_prep_minutes w neutralnym kontrakcie
+normalizeOrder → orders_import; generator UAT przyjmuje je opcjonalnie przez
+orders_command(create_test). Brak integracji z konkretnym zewnętrznym dostawcą:
+nie ma w repo prawdziwego source payload ani algorytmu szacowania. Nie wymyślono ich.
+ready_at w imporcie wymaga strefy czasowej. UI wyświetla czas w strefie przeglądarki.
+Istniejące zamówienia bez tych pól nie pokazują placeholderów.
 
-Weryfikacja: testy Node sprawdzają dostęp, rozdział maker/cutter/issuer, własność,
-pominięcie wydanych/oddanych zadań i walidację ilości. Dodano scenariusze Playwright
-podziału, potwierdzenia oddania i rozmiarów na tablecie; nie uruchamiano przeglądarki
-z uwagi na obowiązujący zakaz użytkownika. Ręczny test UAT: sushi master przejmuje
-całość/część, kończy/oddaje; su chef kroi, kończy krojenie i wydaje; dwie osoby
-próbują wziąć tę samą porcję; po zerwaniu sieci ponawiają ten sam zapis. Na tablecie
-w rękawicach sprawdzić poziomy swipe, czytelność i brak poziomego scrolla strony.
+Alerty: >30 min normal, <=30 warning, <=10 urgent, po terminie overdue. Spokojne
+obramowania i badge, bez zalewania tła. Zdarzenia DEADLINE_30/10/OVERDUE w istniejącym
+Order_events, unikalne (order_id,event_type), tworzone przy polling RPC
+orders_notifications. Wymaga orders.cut ORAZ orders.issue oraz dostępu do lokalu.
+Badge jest trwały do potwierdzenia przez użytkownika (order_notice_ack); reload
+nie odtwarza potwierdzonego alertu. Przy spóźnionym wejściu pokazuje się tylko
+najpilniejszy próg. Nie ma crona: gdy widok su-chefa jest zamknięty, alert pojawi
+się dopiero przy kolejnym odczycie; nie ma gwarancji dostarczenia w tle. Próg jest
+jednorazowy dla zamówienia, brak osobnego cyklu alertów po zmianie terminu.
 
-Wdrożenie wymaga tylko nowego frontendu Vercel Preview dla feature/orders.
-Nie wymaga deployu Supabase, migracji ani zmian sekretów. Production nietknięty.
+Testy lokalne:
+- 88 testów Node PASS, w tym importy, alerty, PIN, Auth, Tasks i ilości.
+- 54 Playwright headless PASS, profile i API syntetyczne; bez sesji użytkownika.
+- PostgreSQL Orders: 177 sprawdzeń PASS zarówno baseline, jak i upgrade po Tasks;
+  rzeczywista współbieżność połączeń: jeden sukces i jeden CLAIM_CONFLICT.
+- PostgreSQL Tasks: 111 sprawdzeń PASS bez zmian w kodzie Tasks.
+- test:migration PASS (legacy Production/RLS); lint i build:uat PASS.
+- Audyt screenshotów 375/768/1440 px; brak poziomego overflow strony, poziomy board.
+
+Snapshot UAT przed zmianą: tmp/orders-board.local/uat-schema-before.sql (lokalny,
+ignorowany przez Git). Odczyt funkcji zgodny ze starym Orders i zapisanymi zmianami
+owner z Tasks; nowe pola nie były obecne. Deploy wymaga wyłącznie nowego frontendu
+Preview oraz tej jednej migracji; nie uruchamiać db push obejmującego inne migracje.
+Nie wdrażać Edge Functions ani zmieniać sekretów. Target UAT: meuzkduxttjcuiynsnaa.
+Status wdrożenia/smoke należy potwierdzić osobno — lokalne testy nie dowodzą deployu.
+
+Ręczny smoke: nowy e-mail/hasło lub istniejąca sesja UAT → Orders → su-chef badge;
+maker przejmuje całe zamówienie, zaznaczone, 1/2 setu i część komponentu; drugi maker
+bierze pozostałe; dodatki niezależne; chef kroi i wydaje; ukryty napój nie blokuje
+ukończenia. Sprawdzić terminy null/31/30/10/po czasie i ack po reloadzie. Użyć
+wyłącznie syntetycznych zamówień UAT; istniejący generator nie wymyśla receptur setów.

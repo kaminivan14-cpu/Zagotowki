@@ -48,6 +48,7 @@ try{
  eq(await sql(`SELECT count(*) FROM public."Employees" e JOIN test_before b ON e.id=(b.original->>'id')::bigint WHERE e.pin_hash IS DISTINCT FROM b.original->>'pin_hash'`),'0')
  await sql(await readFile('supabase/migrations/202610010003_orders.sql','utf8'))
  if(process.env.TEST_TASKS_UPGRADE==='1') for(const f of (await readdir('supabase/migrations')).filter(f=>f.startsWith('20261002')).sort()) await sql(await readFile(`supabase/migrations/${f}`,'utf8'))
+ await sql(await readFile('supabase/migrations/202610030001_orders_board.sql','utf8'))
  const seed=await readFile('supabase/seeds/orders-uat.sql','utf8')
  await denied(sql(seed),/UAT target/)
  await sql("SET app.orders_seed_project_ref='meuzkduxttjcuiynsnaa';"+seed)
@@ -124,6 +125,39 @@ try{
  // Deny finances and mutation by role, even if bypassing UI.
  for(const n of [2,3,4,6,7])await denied(command(n,'rate',{product_id:1,rate_minor:100,active:true}),/ORDERS_DENIED/)
  eq(await sql(`SELECT count(*) FROM public."Employees" e JOIN test_before b ON e.id=(b.original->>'id')::bigint WHERE e.pin_hash IS DISTINCT FROM b.original->>'pin_hash'`),'0')
+ // New Orders-only upgrade: set ratios, hidden drinks, atomic work and persistent notices.
+ await command(4,'open_shift',{location_id:1});await command(5,'open_shift',{location_id:1})
+ await sql(`UPDATE public."Order_products" SET item_type='addon' WHERE id=9;UPDATE public."Order_products" SET item_type='drink' WHERE id=10;`)
+ const setInput={location_id:1,items:[{product_id:15,quantity:2,children:[{product_id:1,quantity:2},{product_id:9,quantity:1},{product_id:10,quantity:1}]}],ready_at:new Date(Date.now()+29*60000).toISOString(),estimated_prep_minutes:18}
+ const setOrder=(await command(2,'create_test',setInput)).order_id
+ await command(2,'send',{order_id:setOrder})
+ const setBoard=(await read(4,'orders_board','1')).find(o=>o.id===setOrder),parent=setBoard.items.find(i=>i.item_type==='set')
+ eq(setBoard.estimated_prep_minutes,18);eq(Boolean(setBoard.ready_at),true)
+ eq(setBoard.items.filter(i=>i.parent_item_id===parent.id).map(i=>i.quantity),[4,2,2])
+ const oneOp=randomUUID(),oneArgs={order_id:setOrder,set_id:parent.id,quantity:1}
+ const one=await command(4,'claim_set',oneArgs,oneOp);eq(await command(4,'claim_set',oneArgs,oneOp),one)
+ eq(one.assignment_ids.length,2)
+ eq((await read(4,'orders_board','1')).find(o=>o.id===setOrder).lifecycle,'partial')
+ const races=await Promise.allSettled([command(5,'claim_set',oneArgs),command(4,'claim_all',{order_id:setOrder})])
+ eq(races.filter(r=>r.status==='fulfilled').length,1);eq(races.filter(r=>r.status==='rejected'&&/CLAIM_CONFLICT/.test(r.reason.message)).length,1)
+ eq(await sql(`SELECT count(*) FROM public."Order_item_assignments" a JOIN public."Order_items" i ON i.id=a.order_item_id WHERE i.order_id=${setOrder} AND i.item_type IN ('drink','set')`),'0')
+ const notices=await read(3,'orders_notifications','1');eq(notices.some(n=>n.order_id===setOrder&&n.event_type==='DEADLINE_30'),true)
+ await Promise.all([read(3,'orders_notifications','1'),read(7,'orders_notifications','1')])
+ eq(await sql(`SELECT count(*) FROM public."Order_events" WHERE order_id=${setOrder} AND event_type='DEADLINE_30'`),'1')
+ await denied(read(4,'orders_notifications','1'),/ORDERS_DENIED/);await denied(read(2,'orders_notifications','1'),/ORDERS_DENIED/)
+ const notice=notices.find(n=>n.order_id===setOrder);await read(3,'orders_notifications',`1,${notice.id}`)
+ eq((await read(3,'orders_notifications','1')).some(n=>n.order_id===setOrder),false)
+ for(const [interval,kind] of [['9 minutes','DEADLINE_10'],['-1 minute','DEADLINE_OVERDUE']]){
+  await sql(`UPDATE public."Orders" SET ready_at=now()+interval '${interval}' WHERE id=${setOrder}`)
+  eq((await read(3,'orders_notifications','1')).some(n=>n.order_id===setOrder&&n.event_type===kind),true)
+  await read(3,'orders_notifications','1');eq(await sql(`SELECT count(*) FROM public."Order_events" WHERE order_id=${setOrder} AND event_type='${kind}'`),'1')
+ }
+ const setWork=JSON.parse(await sql(`SELECT json_agg(a) FROM public."Order_item_assignments" a JOIN public."Order_items" i ON i.id=a.order_item_id WHERE i.order_id=${setOrder}`))
+ for(const w of setWork){await command(w.employee_id,'ready',{assignment_id:w.id});const c=await command(3,'start_cutting',{assignment_id:w.id,quantity:w.quantity});await command(3,'complete_cutting',{cutting_id:c.cutting_id});await command(3,'issue',{cutting_id:c.cutting_id})}
+ const finished=(await read(3,'orders_board','1')).find(o=>o.id===setOrder)
+ eq(finished.status,'COMPLETED');eq(finished.lifecycle,'done');eq(finished.items.find(i=>i.item_type==='drink').issued,0)
+ eq(finished.items.find(i=>i.item_type==='set').lifecycle,'done')
+ eq((await read(3,'orders_notifications','1')).some(n=>n.order_id===setOrder),false)
  for(const state of ["active=false","active=false,archived_at=now()"]){await sql(`UPDATE public."Employees" SET ${state} WHERE id=4`);await denied(read(4,'orders_board','1'),/Brak aktywnego/)}
  console.log(`PASS ${checks} PostgreSQL checks; real concurrent claim: 1 PASS + 1 CONFLICT; changed credential hashes during role migration: 0`)
 }finally{await sql(`DROP DATABASE ${db}`,'postgres')}
