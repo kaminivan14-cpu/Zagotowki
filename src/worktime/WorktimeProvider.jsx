@@ -5,7 +5,7 @@ import './worktime.css'
 import {WorktimeContext as Context,useWorktime} from './context'
 export default function WorktimeProvider({employee,capabilities,module,onSignOut,children}){
  const lastModule=useRef('orders')
- useEffect(()=>{if(['orders','production'].includes(module))lastModule.current=module},[module])
+ useEffect(()=>{if(['orders','production','tasks'].includes(module))lastModule.current=module},[module])
  const enabled=capabilities?.includes('worktime.self')
  const [current,setCurrent]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[dialog,setDialog]=useState(false)
  const storageKey=`worktime-operation:${employee.id}`
@@ -46,8 +46,8 @@ export default function WorktimeProvider({employee,capabilities,module,onSignOut
  }
  return <Context.Provider value={{enabled,current,busy,pending,error,command,start,end,logout,refresh}}>
  {children}
- {error && <p className="worktime-error" role="alert">{error}</p>}
- {pending && <aside className="worktime-bar">Czas pracy: operacja wymaga potwierdzenia. <button disabled={busy} onClick={()=>command(pending.action,pending.args).catch(()=>{})}>Ponów operację czasu pracy</button></aside>}
+ {error && <p className="worktime-error" role="alert">{module==='tasks'?'Не вдалося підтвердити операцію часу роботи. Перевірте активну роботу та повторіть спробу.':error}</p>}
+ {pending && <aside className="worktime-bar">{module==='tasks'?'Час роботи: підтвердьте попередню операцію.':'Czas pracy: operacja wymaga potwierdzenia.'} <button disabled={busy} onClick={()=>command(pending.action,pending.args).catch(()=>{})}>{module==='tasks'?'Повторити операцію часу роботи':'Ponów operację czasu pracy'}</button></aside>}
  {dialog && <div className="worktime-overlay"><section role="dialog" aria-modal="true" aria-label="Czy zakończyć również czas pracy?" className="worktime-dialog">
  <h2>Czy zakończyć również czas pracy?</h2>
  {pending&&<button disabled={busy} onClick={()=>command(pending.action,pending.args).catch(()=>{})}>Ponów poprzednią operację</button>}

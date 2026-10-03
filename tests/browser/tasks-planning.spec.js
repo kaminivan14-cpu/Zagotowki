@@ -18,7 +18,7 @@ async function setup(page,{today='2026-10-02',paged=false}={}) {
   if(name==='user')data={id:uid}
   if(name==='tasks_context')data={employee_id:6,today,capabilities:caps,categories,settings:{company_timezone:'Europe/Warsaw',default_daily_task_capacity_minutes:360},manager_id:null}
   if(name==='tasks_assignable_people')data=[{id:6,name:'Олена'}]
-  if(name==='tasks_work_state')data={current:null,started:false,critical:[],task_count:0,planned_minutes:0,capacity_minutes:360}
+  if(name==='tasks_execution_state')data={current:null,started:false,critical:[],task_count:0,planned_minutes:0,capacity_minutes:360}
   if(name==='tasks_planning'){
    const days=[]
    for(let date=args.p_from;date<=args.p_to;date=day(date,1)){

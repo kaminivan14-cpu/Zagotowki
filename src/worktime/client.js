@@ -21,7 +21,7 @@ export function correctionInstant(value,original) {
 }
 export function worktimeError(error) {
  const msg=error?.message||''
- if(msg.includes('UNFINISHED_WORK'))return 'Najpierw zakończ lub oddaj aktywną pracę w Zamówieniach.'
+ if(msg.includes('UNFINISHED_WORK'))return 'Najpierw zakończ lub oddaj aktywną pracę w Zamówieniach lub zakończ zadanie w module Робота.'
  if(msg.includes('VERSION_CONFLICT'))return 'Sesja została zmieniona. Odśwież dane przed korektą.'
  if(msg.includes('SHIFT_OVERLAP'))return 'Korekta nakłada się na inną sesję tego pracownika.'
  if(msg.includes('END_CURRENT_SHIFT'))return 'Masz aktywną sesję w innym lokalu. Zakończ ją przed zmianą lokalu.'
