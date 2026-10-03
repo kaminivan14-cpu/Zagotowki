@@ -34,8 +34,8 @@ export default function TasksApp({employee,onSignOut,onModules}) {
  return <TaskFeedback.Provider value={{error,retry,busy}}><div className="app tasks-app" lang="uk"><header className="tasks-header"><div><h1>Робота</h1><p>{employee.name}</p></div><div className="task-actions"><button onClick={onModules}>Модулі</button><button onClick={onSignOut}>Вийти</button></div></header>
  <nav aria-label="Розділи роботи">{[['work','Робота'],['planning','Планування'],['reports','Рапорти'],['schedule','Графік']].map(([id,label])=><button key={id} aria-pressed={screen===id} onClick={()=>setScreen(id)}>{label}</button>)}{context.capabilities.includes('tasks.admin') && <button aria-pressed={screen==='settings'} onClick={()=>setScreen('settings')}>Налаштування</button>}<button className="primary" onClick={()=>setCreating(true)}>Створити завдання</button></nav>
  <p role="alert">{error}</p>{error && <button disabled={busy} onClick={retry}>Повторити дію</button>}
- <main>{screen==='work'?<WorkScreen {...props} state={state}/>:screen==='planning'?<PlanningScreen {...props}/>:screen==='reports'?<ReportsScreen {...props}/>:screen==='schedule'?<ScheduleScreen {...props}/>:<TaskSettingsScreen {...props} people={people}/>}</main>
- {creating && <TaskCreateDialog context={context} people={people} run={run} busy={busy} onClose={()=>setCreating(false)}/>}
+ <main className={screen==='planning'?'planning-main':undefined}>{screen==='work'?<WorkScreen {...props} state={state}/>:screen==='planning'?<PlanningScreen {...props} onCreate={(date,id)=>setCreating({planned_date:date,employee_id:id})}/>:screen==='reports'?<ReportsScreen {...props}/>:screen==='schedule'?<ScheduleScreen {...props}/>:<TaskSettingsScreen {...props} people={people}/>}</main>
+ {creating && <TaskCreateDialog initialPlannedDate={creating.planned_date} initialEmployeeId={creating.employee_id} context={context} people={people} run={run} busy={busy} onClose={()=>setCreating(false)}/>}
  {detail && <TaskDetailsDialog {...props} task={detail} onClose={()=>setDetail(null)}/>}
  {critical && <CriticalTaskDialog key={critical.id} task={critical} run={run} busy={busy}/>}
  </div></TaskFeedback.Provider>
