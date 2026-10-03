@@ -1,6 +1,6 @@
 import {useEffect,useRef} from 'react'
 import './module-header.css'
-function Menu({label,items,description,disabled}) {
+export function Menu({label,items,description,disabled}) {
  const root=useRef(null)
  useEffect(()=>{
   // Dismiss outside pointer interactions, not an ambiguous blur before click.
@@ -9,7 +9,7 @@ function Menu({label,items,description,disabled}) {
   return()=>document.removeEventListener('pointerdown',outside,true)
  },[])
  function close(){if(root.current)root.current.open=false}
- return <details ref={root} className="module-menu"
+ return <details ref={root} className="module-menu" aria-label={label}
   onKeyDown={event=>{if(event.key==='Escape'){event.preventDefault();close();root.current.querySelector('summary').focus()}}}
   onBlur={event=>{
    // Touch/non-focusing buttons may blur summary with relatedTarget=null.
@@ -19,7 +19,7 @@ function Menu({label,items,description,disabled}) {
   <summary>{label} ▾</summary>
   <div className="module-menu-items">
    {description && <span>{description}</span>}
-   {items.map(({label:actionLabel,action})=><button key={actionLabel} type="button" disabled={disabled} onClick={event=>{
+   {items.map(({label:actionLabel,action,disabled:itemDisabled=false,danger=false})=><button key={actionLabel} type="button" className={danger?'menu-danger':undefined} disabled={disabled || itemDisabled} onClick={event=>{
     close()
     action(event)
    }}>{actionLabel}</button>)}
