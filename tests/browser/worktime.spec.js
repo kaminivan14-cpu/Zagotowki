@@ -7,7 +7,7 @@ async function setup(page,{role='administrator',active=true}={}){
  state.rows=[{id:1,employee_id:1,employee_name:'Serhii',location_id:1,location_name:'Lokal A',started_at:iso(),ended_at:null,version:1,status:'active',worked_minutes:null},
  {id:2,employee_id:2,employee_name:'Anna',location_id:1,location_name:'Lokal A',started_at:iso(),ended_at:iso(16),version:1,status:'completed',worked_minutes:480},
  {id:3,employee_id:3,employee_name:'Jan',location_id:1,location_name:'Lokal A',started_at:iso(),ended_at:null,version:1,status:'needs_attention',worked_minutes:null}]
- const caps=['orders.access','orders.work','production.access','worktime.self',...(role==='administrator'?['worktime.access','worktime.read.scope','worktime.correct','worktime.export']:[])]
+ const caps=['orders.access','orders.work','production.access','worktime.self',...(role==='administrator'?['employees.manage','worktime.access','worktime.read.scope','worktime.correct','worktime.export']:[])]
  const exp=Math.floor(Date.now()/1000)+3600,b64=v=>Buffer.from(JSON.stringify(v)).toString('base64url')
  const user={id:uid,aud:'authenticated',role:'authenticated',email:'test@example.invalid'}
  const session={access_token:`${b64({alg:'HS256'})}.${b64({sub:uid,exp,role:'authenticated'})}.synthetic`,refresh_token:'synthetic',expires_at:exp,expires_in:3600,token_type:'bearer',user}
@@ -19,7 +19,7 @@ async function setup(page,{role='administrator',active=true}={}){
   if(name==='auth_employee_profile')data=[{id:1,name:'Serhii',role,location_id:1,active:true,auth_user_id:uid}]
   if(name==='auth_capabilities')data=caps
   if(name==='user')data=user
-  if(name==='Locations')data=[{id:1,name:'Lokal A',active:true}]
+  if(name==='Locations')data=[{id:1,name:'Lokal A',active:true},{id:2,name:'Lokal B',active:true}]
   if(name==='worktime_current')data=state.current
   if(name==='orders_shifts')data=state.current?[state.current]:[]
   if(name==='worktime_context')data={timezone:'Europe/Warsaw',employees:[{id:1,name:'Serhii'},{id:2,name:'Anna'}],locations:[{id:1,name:'Lokal A'}]}
@@ -130,4 +130,79 @@ for(const width of [375,768,1440])test(`production compact header and worktime s
  expect(s.calls.filter(c=>c.name==='worktime_command')).toHaveLength(0)
  await page.screenshot({path:`tmp/worktime.local/summary-${width}.png`,fullPage:true})
  await page.getByRole('button',{name:'Powrót do modułu'}).click();await expect(page.getByLabel('Lokal',{exact:true})).toHaveValue('1')
+})
+
+// Some touch/browser focus transitions report relatedTarget=null before click.
+// Reproduce that event order in isolated Chromium without a user's browser session.
+async function chooseHeaderAction(page,menu,action,input) {
+ const trigger=page.getByText(`${menu} ▾`,{exact:true})
+ if(input==='touch')await trigger.tap()
+ else if(input==='Enter'||input==='Space'){await trigger.focus();await trigger.press(input==='Space'?' ':input)}
+ else await trigger.click()
+ const button=page.getByRole('button',{name:action,exact:true})
+ await expect(button).toBeEnabled()
+ if(input==='null-focus') {
+  await button.evaluate(el=>el.addEventListener('pointerdown',event=>{
+   event.preventDefault()
+   el.closest('details').querySelector('summary').blur()
+  },{once:true}))
+  await button.click({timeout:3000})
+ } else if(input==='touch')await button.tap()
+ else if(input==='Enter'||input==='Space') {await button.focus();await button.press(input==='Space'?' ':input)}
+ else await button.click()
+ await expect(page.locator('.module-menu[open]')).toHaveCount(0)
+}
+for(const width of [375,768,1440])for(const input of ['click','touch','Enter','Space','null-focus'])for(const module of ['orders','production']) {
+ test(`header actions ${module} ${input} ${width}`,async({browser})=>{
+  const context=await browser.newContext({viewport:{width,height:1000},hasTouch:true})
+  const page=await context.newPage()
+  try {
+   const s=await setup(page)
+   await page.getByRole('button',{name:module==='orders'?/🍣 ZAMÓWIENIA/:/🥣 ZAGOTÓWKI/}).click()
+   if(module==='production'){await page.getByRole('button',{name:'Lokal A',exact:true}).click();await expect(page.getByRole('heading',{name:'📋 Zaplanowane plany',exact:true})).toBeVisible()}
+   await page.locator('.module-header').getByRole('combobox',{name:'Lokal',exact:true}).selectOption('2')
+   await chooseHeaderAction(page,'Narzędzia','Czas pracy',input)
+   await expect(page.getByRole('heading',{name:'Czas pracy',exact:true})).toBeVisible()
+   await page.getByRole('button',{name:'Powrót do modułu'}).click()
+   await expect(page.locator('.module-header').getByRole('combobox',{name:'Lokal',exact:true})).toHaveValue('2')
+   await chooseHeaderAction(page,'Narzędzia','Pracownicy',input)
+   await expect(page.getByRole('heading',{name:'Pracownicy',exact:true})).toBeVisible()
+   await page.getByRole('button',{name:'← Powrót',exact:true}).click()
+   await expect(page.locator('.module-header').getByRole('combobox',{name:'Lokal',exact:true})).toHaveValue('2')
+   await chooseHeaderAction(page,'Konto','Wyloguj',input)
+   const dialog=page.getByRole('dialog',{name:'Czy zakończyć również czas pracy?'})
+   await expect(dialog).toBeVisible()
+   expect(s.calls.filter(x=>x.name==='logout')).toHaveLength(0)
+   const close=module==='production'
+   await dialog.getByRole('button',{name:close?'Zakończ pracę i wyloguj':'Tylko wyloguj',exact:true}).click()
+   await expect(page.getByLabel('E-mail',{exact:true})).toBeVisible()
+   expect(s.calls.filter(x=>x.name==='worktime_command'&&x.args.p_action==='end')).toHaveLength(close?1:0)
+   expect(s.calls.filter(x=>x.name==='logout')).toHaveLength(1)
+   expect(Boolean(s.current)).toBe(!close)
+   expect(await page.evaluate(()=>localStorage.getItem('sb-auth-tests-auth-token'))).toBeNull()
+  }finally{await context.close()}
+ })
+}
+test('header menus dismiss outside, on Tab and Escape, with visible keyboard focus',async({page})=>{
+ await setup(page);await page.getByRole('button',{name:/🍣 ZAMÓWIENIA/}).click()
+ const tools=page.getByText('Narzędzia ▾',{exact:true}),account=page.getByText('Konto ▾',{exact:true})
+ await tools.click();await page.getByRole('heading',{name:'Zamówienia',exact:true}).click()
+ await expect(page.locator('.module-menu[open]')).toHaveCount(0)
+ await tools.focus();await tools.press('Enter');await page.keyboard.press('Tab')
+ const first=page.getByRole('button',{name:'Czas pracy',exact:true})
+ await expect(first).toBeFocused()
+ expect(await first.evaluate(e=>getComputedStyle(e).outlineStyle)).toBe('solid')
+ await page.keyboard.press('Escape');await expect(tools).toBeFocused()
+ await expect(page.locator('.module-menu[open]')).toHaveCount(0)
+ await tools.press('Enter');await account.focus()
+ await expect(page.locator('.module-menu[open]')).toHaveCount(0)
+})
+test('header logout without active work uses existing logout directly',async({page})=>{
+ const s=await setup(page,{active:false})
+ await page.getByRole('button',{name:/🍣 ZAMÓWIENIA/}).click()
+ await chooseHeaderAction(page,'Konto','Wyloguj','click')
+ await expect(page.getByLabel('E-mail',{exact:true})).toBeVisible()
+ await expect(page.getByRole('dialog')).toHaveCount(0)
+ expect(s.calls.filter(x=>x.name==='worktime_command')).toHaveLength(0)
+ expect(s.calls.filter(x=>x.name==='logout')).toHaveLength(1)
 })
