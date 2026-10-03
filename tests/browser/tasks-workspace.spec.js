@@ -1,0 +1,46 @@
+import {test,expect} from '@playwright/test'
+import {mkdir} from 'node:fs/promises'
+const user={id:'20000000-0000-4000-8000-000000000006',email:'ui@example.test',aud:'authenticated',role:'authenticated'}
+async function setup(page,{scoped=true,empty=false}={}){
+ const calls=[],caps=['tasks.access','tasks.create.self',...(scoped?['tasks.schedule.manage','tasks.read.scope','tasks.report.scope']:[])],people=[{id:6,name:'Олена'},...(scoped?[{id:8,name:'Іван'}]:[])]
+ const exp=Math.floor(Date.now()/1000)+3600,b64=v=>Buffer.from(JSON.stringify(v)).toString('base64url'),saved={access_token:`${b64({alg:'HS256'})}.${b64({sub:user.id,exp,role:'authenticated'})}.test`,refresh_token:'test',expires_at:exp,expires_in:3600,token_type:'bearer',user}
+ await page.addInitScript(s=>localStorage.setItem('sb-auth-tests-auth-token',JSON.stringify(s)),saved)
+ await page.routeWebSocket(/.*/,s=>s.close())
+ let schedule=[],version=1
+ await page.route('**/*',async route=>{
+  const req=route.request(),url=new URL(req.url());if(url.origin==='http://127.0.0.1:5173')return route.continue();if(url.hostname!=='auth-tests.supabase.co')return route.abort()
+  const args=req.postDataJSON()||{},name=url.pathname.split('/').at(-1);calls.push({name,args});let body
+  if(name==='user')body=user
+  else if(name==='auth_employee_profile')body=[{id:6,name:'Олена',role:'specialist',active:true,auth_user_id:user.id}]
+  else if(name==='auth_capabilities')body=caps
+  else if(name==='tasks_context')body={employee_id:6,today:'2026-10-02',capabilities:caps,categories:[{id:1,name:'Операційні',parent_id:null},{id:2,name:'Аудити',parent_id:1}],departments:[],settings:{company_timezone:'Europe/Warsaw',default_daily_task_capacity_minutes:360}}
+  else if(name==='tasks_assignable_people')body=people
+  else if(name==='tasks_work_state')body={current:null,started:false,critical:[],task_count:0,capacity_minutes:360}
+  else if(name==='tasks_schedule'||name==='tasks_team_schedule')body=schedule
+  else if(name==='tasks_schedule_capacity')body=Array.from({length:28},(_,i)=>({date:new Date(Date.parse(args.p_from+'T12:00Z')+i*86400000).toISOString().slice(0,10),capacity_minutes:schedule.some(e=>e.type==='day_off'&&e.starts_at.startsWith('2026-10-01'))?0:360}))
+  else if(name==='tasks_report_activity')body={rows:empty?[]:[{date:args.p_from,task_id:1,title:'Перевірити документи',category_id:2,kind:'planned',actual_minutes:75},{date:args.p_from,task_id:2,title:'Терміновий запит',category_id:1,kind:'unplanned',actual_minutes:120},{date:args.p_to,task_id:3,title:'Історичні дані',category_id:null,kind:'unknown',actual_minutes:15}]}
+  else if(name==='tasks_list')body=[{id:12,title:'Перевірити склад',version:1}]
+  else if(name==='tasks_details')body={task:{id:args.p_task,title:'Деталі',version:1,status:'completed'},checklist:[],events:[]}
+  else if(name==='tasks_command'){
+   if(args.p_action==='schedule_save')schedule.push({id:1,version:1,...args.p_args})
+   body={id:20,version:version++,title:args.p_args.title||'Завдання',status:'unplanned'}
+  }else body=[]
+  return route.fulfill({contentType:'application/json',body:JSON.stringify(body)})
+ });await page.goto('/');await expect(page.getByRole('button',{name:'Графік',exact:true})).toBeVisible();return calls
+}
+async function shot(page,name){await mkdir('tmp/tasks-workspace.local',{recursive:true});await page.screenshot({path:`tmp/tasks-workspace.local/${name}.png`,fullPage:true})}
+for(const width of [375,768,1024,1440])test(`schedule, event, task editor and reports ${width}`,async({page})=>{
+ await page.setViewportSize({width,height:950});const calls=await setup(page)
+ await page.getByRole('button',{name:'Графік',exact:true}).click();await expect(page.locator('.schedule-calendar article')).toHaveCount(28);await expect(page.getByText('Робоча зміна · за замовчуванням').first()).toBeVisible();await shot(page,`schedule-${width}`)
+ await page.getByRole('button',{name:'Додати подію: 2026-10-02',exact:true}).click();const dialog=page.getByRole('dialog');await expect(dialog.getByLabel('Дата',{exact:true})).toHaveValue('2026-10-02');await dialog.getByRole('combobox',{name:'Тип',exact:true}).selectOption('meeting');await shot(page,`event-${width}`);await dialog.getByLabel('Початок',{exact:true}).fill('13:00');await dialog.getByLabel('Кінець',{exact:true}).fill('14:00');await dialog.getByRole('button',{name:'Зберегти',exact:true}).click();await expect(dialog).toHaveCount(0);expect(calls.find(c=>c.args.p_action==='schedule_save').args.p_args.starts_at).toBe('2026-10-02T11:00:00.000Z');await expect(page.locator('.event-meeting')).toHaveCount(1)
+ await page.getByRole('button',{name:'+ Додати подію',exact:true}).click();await dialog.getByRole('combobox',{name:'Тип',exact:true}).selectOption('vacation');await expect(dialog.getByLabel('Початок',{exact:true})).toHaveCount(0);await dialog.getByRole('button',{name:'Скасувати',exact:true}).click()
+ await page.getByRole('button',{name:'Створити завдання',exact:true}).click();await dialog.getByLabel('Назва',{exact:true}).fill('Нова перевірка');await dialog.getByRole('button',{name:'1 год',exact:true}).click();await dialog.getByRole('combobox',{name:'Категорія',exact:true}).selectOption('2');await dialog.getByRole('combobox',{name:'Пріоритет',exact:true}).selectOption('high');await dialog.getByLabel('Дедлайн',{exact:true}).fill('2026-10-05T16:00');await dialog.getByLabel('Жорсткий дедлайн').check();await shot(page,`create-${width}`)
+ await dialog.getByText('Чек-лист',{exact:true}).click();await dialog.getByRole('button',{name:'+ Додати пункт'}).click();await dialog.getByLabel('Пункт 1',{exact:true}).fill('Перевірити');await dialog.getByText('Залежності',{exact:true}).click();await dialog.getByRole('button',{name:'+ Додати залежність'}).click();await dialog.getByLabel('Пошук завдань').fill('склад');await dialog.getByRole('button',{name:'#12 · Перевірити склад'}).click();await dialog.getByRole('button',{name:'Створити',exact:true}).click();await expect(dialog).toHaveCount(0)
+ const create=calls.find(c=>c.args.p_action==='create').args.p_args;expect(create.estimated_minutes).toBe(60);expect(create.deadline_is_hard).toBe(true);expect(create.category_id).toBe('2');expect(calls.filter(c=>c.args.p_action==='checklist_add')).toHaveLength(1);expect(calls.filter(c=>c.args.p_action==='dependency')).toHaveLength(1)
+ await page.getByRole('button',{name:'Звіти',exact:true}).click();await expect(page.locator('.report-day')).toHaveCount(7);await expect(page.locator('.report-total')).toHaveText('3 год 30 хв');await expect(page.getByText('Немає історії планування',{exact:true})).toBeVisible();await shot(page,`reports-${width}`);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
+ await page.getByRole('button',{name:'Місяць',exact:true}).click();await expect(page.locator('.report-week')).toHaveCount(5);await expect(page.locator('.report-day:visible')).toHaveCount(0);await page.locator('.report-week summary').first().click();await expect(page.locator('.report-day:visible')).toHaveCount(6)
+ const download=page.waitForEvent('download');await page.getByRole('button',{name:'Експортувати'}).click();expect((await download).suggestedFilename()).toContain('zvit-2026-09-01')
+ await page.getByRole('button',{name:'Команда',exact:true}).click();await expect(page.locator('.report-total')).toHaveText('7 год 00 хв');expect(calls.some(c=>c.name==='tasks_report_activity'&&c.args.p_employee===8)).toBe(true)
+})
+test('scope and empty reports do not invent data',async({page})=>{const calls=await setup(page,{scoped:false,empty:true});await page.getByRole('button',{name:'Звіти',exact:true}).click();await expect(page.locator('.report-total')).toHaveText('0 год 00 хв');await expect(page.getByRole('button',{name:'Команда',exact:true})).toHaveCount(0);await expect(page.getByRole('button',{name:'Експортувати'})).toBeDisabled();await page.getByRole('button',{name:'Графік',exact:true}).click();await expect(page.getByRole('button',{name:'+ Додати подію'})).toBeDisabled();expect(calls.filter(c=>c.name==='tasks_report_activity').every(c=>c.args.p_employee===6)).toBe(true)})
+test('partial create retry preserves task and operation UUID',async({page})=>{const calls=await setup(page);let fail=true;await page.route('**/rest/v1/rpc/tasks_command',async r=>{if(r.request().postDataJSON().p_action==='checklist_add'&&fail){fail=false;return r.abort('failed')}return r.fallback()});await page.getByRole('button',{name:'Створити завдання',exact:true}).click();const d=page.getByRole('dialog');await d.getByLabel('Назва',{exact:true}).fill('Надійне створення');await d.getByText('Чек-лист',{exact:true}).click();await d.getByRole('button',{name:'+ Додати пункт'}).click();await d.getByLabel('Пункт 1',{exact:true}).fill('Пункт');await d.getByRole('button',{name:'Створити',exact:true}).click();await expect(d.getByRole('button',{name:'Повторити дію'})).toBeVisible();const op=await page.evaluate(()=>JSON.parse(sessionStorage.getItem('tasks-pending:6')));await d.getByRole('button',{name:'Повторити дію'}).click();await expect(d).toHaveCount(0);expect(calls.filter(c=>c.args.p_action==='create')).toHaveLength(1);expect(calls.find(c=>c.args.p_action==='checklist_add').args.p_operation).toBe(op.id)})

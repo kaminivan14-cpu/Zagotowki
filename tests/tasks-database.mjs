@@ -2,6 +2,8 @@ import { spawn } from 'node:child_process'
 import { readFile, readdir } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import assert from 'node:assert/strict'
+// Keep queue fixtures around local noon, independently of the wall-clock test run.
+const offset=new Date().getUTCHours()-12,testZone=offset===0?'Etc/UTC':`Etc/GMT${offset>0?'+':''}${offset}`
 const container=process.env.TASKS_TEST_CONTAINER || 'zagotowki-tasks-test', database=`tasks_${Date.now()}`
 export const uid=n=>`20000000-0000-4000-8000-${String(n).padStart(12,'0')}`
 const literal=value=>`'${JSON.stringify(value).replaceAll("'","''")}'::jsonb`
@@ -19,11 +21,12 @@ try {
  CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
  GRANT USAGE ON SCHEMA auth TO anon,authenticated,service_role; GRANT EXECUTE ON FUNCTION auth.uid() TO anon,authenticated,service_role; CREATE PUBLICATION supabase_realtime;`)
  for(const f of (await readdir('supabase/migrations')).filter(f=>f.endsWith('.sql')).sort()) await sql(await readFile(`supabase/migrations/${f}`,'utf8'))
- await sql(`INSERT INTO public."Locations"(id,name,active) VALUES(1,'Synthetic A',true),(2,'Synthetic B',true);
+ await sql(`UPDATE public."Task_module_settings" SET company_timezone='${testZone}';
+ INSERT INTO public."Locations"(id,name,active) VALUES(1,'Synthetic A',true),(2,'Synthetic B',true);
  INSERT INTO auth.users(id,email) SELECT ('20000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,'tasks-'||n||'@example.invalid' FROM generate_series(1,11)n;
  INSERT INTO public."Employees"(id,name,role,location_id,active,auth_user_id) SELECT n,'Synthetic '||n,(ARRAY['owner','administrator','director','manager','expert','specialist','crafter','specialist','specialist','specialist','specialist'])[n],CASE WHEN n IN (4,7) THEN 1 ELSE NULL END,n<>9,('20000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid FROM generate_series(1,11)n;
  SELECT setval('public."Employees_id_seq"',100);
- INSERT INTO public."Plans"(id,location_id,plan_date,status) VALUES(1,1,(now() AT TIME ZONE 'Europe/Warsaw')::date,'active'); INSERT INTO public."Plan_items"(id,plan_id,nazwa,ilosc,jednostka) VALUES(1,1,'Synthetic',1,'g');`)
+ INSERT INTO public."Plans"(id,location_id,plan_date,status) VALUES(1,1,(now() AT TIME ZONE '${testZone}')::date,'active'); INSERT INTO public."Plan_items"(id,plan_id,nazwa,ilosc,jednostka) VALUES(1,1,'Synthetic',1,'g');`)
  for(const n of [1,2,3,4,5,6]) eq((await rpc(n,'tasks_context')).employee_id,n)
  for(const n of [7,9]) await denied(rpc(n,'tasks_context'),/TASKS_DENIED|Brak aktywnego/)
  for(const n of [3,5,6]){
@@ -83,7 +86,7 @@ try {
  eq(calendar.days[0].capacity_minutes,360)
  eq(calendar.days[0].planned_minutes,30)
  await denied(rpc(8,'tasks_planning',`6,'${today}','${today}'`),/TASKS_DENIED/)
- await command(1,'schedule_save',{employee_id:6,type:'vacation',starts_at:dayAdd(today,2)+'T00:00:00Z',ends_at:dayAdd(today,4)+'T00:00:00Z'})
+ await command(1,'schedule_save',{employee_id:6,type:'vacation',starts_at:dayAdd(today,2)+'T00:00:00Z',ends_at:dayAdd(today,5)+'T00:00:00Z'})
  const vacation=await rpc(6,'tasks_planning',`6,'${dayAdd(today,3)}','${dayAdd(today,3)}'`)
  eq(vacation.days[0].capacity_minutes,0)
  await denied(command(6,'plan',{task_id:task.id,version:planned.version,planned_date:dayAdd(today,3)}),/NO_AVAILABILITY/)
@@ -111,7 +114,7 @@ try {
  eq((await rpc(6,'tasks_details',task.id)).task.status,'completed')
 
  // Balancer chooses the lowest priority, honors permissions/deadlines and logs dates.
- await command(1,'settings_save',{company_timezone:'Europe/Warsaw',default_daily_task_capacity_minutes:360,planning_horizon_days:60,load_balancer_enabled:true})
+ await command(1,'settings_save',{company_timezone:testZone,default_daily_task_capacity_minutes:360,planning_horizon_days:60,load_balancer_enabled:true})
  const low=await command(8,'create',{title:'Низький',priority:'low',estimated_minutes:200})
  const high=await command(8,'create',{title:'Високий',priority:'high',estimated_minutes:200})
  await command(8,'plan',{task_id:low.id,version:1,planned_date:today})
@@ -234,5 +237,50 @@ try {
  assert.ok(teamSchedule.length>0);checks++
  eq(teamSchedule.every(e=>[4,6].includes(e.employee_id)),true)
  await denied(rpc(6,'tasks_team_schedule',`'${today}','${today}'`),/TASKS_DENIED/)
+ // Shared implicit availability: fixtures on an otherwise empty employee/day.
+ const freeDay=dayAdd(today,20),cap=()=>rpc(8,'tasks_schedule_capacity',`8,'${freeDay}','${freeDay}'`)
+ const beforeDefault=await sql('SELECT count(*) FROM public."Schedule_events"')
+ eq((await cap())[0].capacity_minutes,360)
+ eq(await sql('SELECT count(*) FROM public."Schedule_events"'),beforeDefault)
+ eq((await rpc(8,'tasks_planning',`8,'${freeDay}','${freeDay}'`)).days[0].capacity_minutes,360)
+ const event=async(type,start,end)=>{await sql(`DELETE FROM public."Schedule_events" WHERE employee_id=8 AND starts_at>= '${freeDay}'::date-1; INSERT INTO public."Schedule_events"(employee_id,type,starts_at,ends_at,created_by_employee_id) VALUES(8,'${type}','${freeDay} ${start}'::timestamp AT TIME ZONE '${testZone}','${freeDay} ${end}'::timestamp AT TIME ZONE '${testZone}',1);`)}
+ await event('day_off','00:00','24:00');eq((await cap())[0].capacity_minutes,0)
+ await event('vacation','00:00','24:00');eq((await cap())[0].capacity_minutes,0)
+ await event('absence','10:00','12:00');eq((await cap())[0].capacity_minutes,240)
+ await event('absence','00:00','24:00');eq((await cap())[0].capacity_minutes,0)
+ await event('absence','08:00','16:00');eq((await cap())[0].capacity_minutes,0)
+ eq(await sql(`SELECT isempty(app_private.task_windows(8,'${freeDay}',0))`),'t')
+ await event('meeting','10:00','11:00');eq((await cap())[0].capacity_minutes,300)
+ await sql(`INSERT INTO public."Schedule_events"(employee_id,type,starts_at,ends_at,created_by_employee_id) VALUES(8,'absence','${freeDay} 10:30'::timestamp AT TIME ZONE '${testZone}','${freeDay} 11:30'::timestamp AT TIME ZONE '${testZone}',1)`)
+ eq((await cap())[0].capacity_minutes,270) // overlapping busy intervals counted once
+ await event('work','10:00','14:00');eq((await cap())[0].capacity_minutes,240)
+ await sql(`INSERT INTO public."Schedule_events"(employee_id,type,starts_at,ends_at,created_by_employee_id) VALUES(8,'meeting','${freeDay} 11:00'::timestamp AT TIME ZONE '${testZone}','${freeDay} 12:00'::timestamp AT TIME ZONE '${testZone}',1)`)
+ eq((await cap())[0].capacity_minutes,180)
+ await denied(rpc(6,'tasks_schedule_capacity',`8,'${freeDay}','${freeDay}'`),/TASKS_DENIED/)
+ await denied(rpc(6,'tasks_report_activity',`8,'${freeDay}','${freeDay}'`),/TASKS_DENIED/)
+ // A no-event day can be planned and offered by the existing queue.
+ await sql(`DELETE FROM public."Schedule_events" WHERE employee_id=11; UPDATE public."Tasks" SET status='cancelled',completed_at=NULL WHERE assigned_to_employee_id=11; UPDATE public."Task_work_sessions" SET ended_at=clock_timestamp() WHERE employee_id=11 AND ended_at IS NULL; DELETE FROM public."Task_work_contexts" WHERE employee_id=11;`)
+ const implicitTask=await command(11,'create',{title:'Default day queue',estimated_minutes:1,planned_date:today})
+ eq((await rpc(11,'tasks_work_state')).capacity_minutes,360)
+ eq((await command(11,'next',{})).id,implicitTask.id)
+ // Real sessions cross midnight; planning after the session must not relabel it.
+ const history=await command(6,'create',{title:'Історичний звіт',estimated_minutes:999})
+ await sql(`INSERT INTO public."Task_work_sessions"(task_id,employee_id,started_at,ended_at) VALUES(${history.id},6,'2026-01-12 23:30'::timestamp AT TIME ZONE '${testZone}','2026-01-13 01:15'::timestamp AT TIME ZONE '${testZone}');
+ INSERT INTO public."Task_events"(task_id,event_type,actor_employee_id,task_version,operation_id,metadata,created_at) VALUES(${history.id},'TASK_CREATED',6,0,gen_random_uuid(),jsonb_build_object('after',jsonb_build_object('title','Історичний звіт','planned_date',null,'assigned_to_employee_id',6)),'2026-01-12 12:00'::timestamp AT TIME ZONE '${testZone}');
+ UPDATE public."Tasks" SET planned_date='2026-01-14' WHERE id=${history.id};`)
+ const activity=await rpc(6,'tasks_report_activity',"6,'2026-01-12','2026-01-13'")
+ eq(activity.rows.map(r=>[r.date,r.kind,Number(r.actual_minutes)]),[['2026-01-12','unplanned',30],['2026-01-13','unplanned',75]])
+ eq((await rpc(6,'tasks_report_activity',"6,'2025-01-01','2025-01-07'")).rows,[])
+ await denied(sql(`SET ROLE anon; SELECT public.tasks_report_activity(6,'2026-01-01','2026-01-07')`),/permission denied/)
+ await sql(`UPDATE public."Task_module_settings" SET company_timezone='Europe/Warsaw';
+ INSERT INTO public."Task_work_sessions"(task_id,employee_id,started_at,ended_at) VALUES(${history.id},6,'2026-03-29 00:00 Europe/Warsaw','2026-03-30 00:00 Europe/Warsaw');`)
+ const dst=await rpc(6,'tasks_report_activity',"6,'2026-03-29','2026-03-29'")
+ eq(Number(dst.rows[0].actual_minutes),1380)
+ const missing=await command(6,'create',{title:'No historical snapshot'})
+ await sql(`INSERT INTO public."Task_work_sessions"(task_id,employee_id,started_at,ended_at) VALUES(${missing.id},6,'2026-02-02 10:00 Europe/Warsaw','2026-02-02 11:00 Europe/Warsaw')`)
+ eq((await rpc(6,'tasks_report_activity',"6,'2026-02-02','2026-02-02'")).rows[0].kind,'unknown')
+ await sql(`INSERT INTO public."Task_events"(task_id,event_type,actor_employee_id,task_version,operation_id,metadata,created_at) VALUES(${history.id},'TASK_PLANNED',6,2,gen_random_uuid(),jsonb_build_object('after',jsonb_build_object('title','Planned historically','planned_date','2026-04-02','assigned_to_employee_id',6)),'2026-04-01 10:00 Europe/Warsaw');
+ INSERT INTO public."Task_work_sessions"(task_id,employee_id,started_at,ended_at) VALUES(${history.id},6,'2026-04-02 10:00 Europe/Warsaw','2026-04-02 11:00 Europe/Warsaw'); UPDATE public."Tasks" SET planned_date=NULL WHERE id=${history.id};`)
+ eq((await rpc(6,'tasks_report_activity',"6,'2026-04-02','2026-04-02'")).rows[0].kind,'planned')
  console.log(`Tasks PostgreSQL PASS (${checks} checks)`)
 } finally {await sql(`DROP DATABASE ${database} WITH (FORCE)`,'postgres')}
