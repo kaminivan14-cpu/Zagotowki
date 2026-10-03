@@ -49,6 +49,7 @@ try{
  await sql(await readFile('supabase/migrations/202610010003_orders.sql','utf8'))
  if(process.env.TEST_TASKS_UPGRADE==='1') for(const f of (await readdir('supabase/migrations')).filter(f=>f.startsWith('20261002')).sort()) await sql(await readFile(`supabase/migrations/${f}`,'utf8'))
  await sql(await readFile('supabase/migrations/202610030001_orders_board.sql','utf8'))
+ await sql(await readFile('supabase/migrations/202610030002_orders_uat_generator.sql','utf8'))
  const seed=await readFile('supabase/seeds/orders-uat.sql','utf8')
  await denied(sql(seed),/UAT target/)
  await sql("SET app.orders_seed_project_ref='meuzkduxttjcuiynsnaa';"+seed)
@@ -125,6 +126,24 @@ try{
  // Deny finances and mutation by role, even if bypassing UI.
  for(const n of [2,3,4,6,7])await denied(command(n,'rate',{product_id:1,rate_minor:100,active:true}),/ORDERS_DENIED/)
  eq(await sql(`SELECT count(*) FROM public."Employees" e JOIN test_before b ON e.id=(b.original->>'id')::bigint WHERE e.pin_hash IS DISTINCT FROM b.original->>'pin_hash'`),'0')
+ // Generator: invalid inputs roll back; test types are snapshots, never catalog edits.
+ const beforeInvalid=await sql('SELECT count(*) FROM public."Orders"')
+ for(const items of [
+  [{product_id:15,quantity:2,item_type:'set',children:[]}],
+  [{product_id:15,quantity:2,item_type:'set'}],
+  [{product_id:15,quantity:2,item_type:'set',children:[{product_id:999999,quantity:1}]}],
+  [{product_id:15,quantity:2,children:[{product_id:1,quantity:0}]}],
+  [{product_id:1,quantity:0}],
+  [{product_id:1,quantity:1,item_type:'unknown'}],
+ ])await denied(command(2,'create_test',{location_id:1,items}),/INVALID_|PRODUCT_UNMAPPED/)
+ eq(await sql('SELECT count(*) FROM public."Orders"'),beforeInvalid)
+ const typed=(await command(2,'create_test',{location_id:1,items:[{product_id:15,quantity:2,item_type:'set',children:[{product_id:1,quantity:2,item_type:'product'},{product_id:9,quantity:1,item_type:'addon'}]},{product_id:10,quantity:1,item_type:'drink'}]})).order_id
+ const typedBoard=(await read(4,'orders_board','1')).find(o=>o.id===typed)
+ eq(typedBoard.items.map(i=>i.item_type),['set','product','addon','drink'])
+ eq(typedBoard.items.map(i=>i.quantity),[2,4,2,1])
+ eq(await sql(`SELECT item_type FROM public."Order_products" WHERE id=10`),'product')
+ await denied(sql(`${as(2)} SELECT app_private.orders_import('external','bad',1,'[{"product_id":1,"quantity":1,"item_type":"drink"}]',false,NULL,NULL)`),/permission denied/)
+ await denied(sql(`SELECT app_private.orders_import('external','bad',1,'[{"product_id":1,"quantity":1,"item_type":"drink"}]',false,NULL,NULL)`),/INVALID_ITEM_TYPE/)
  // New Orders-only upgrade: set ratios, hidden drinks, atomic work and persistent notices.
  await command(4,'open_shift',{location_id:1});await command(5,'open_shift',{location_id:1})
  await sql(`UPDATE public."Order_products" SET item_type='addon' WHERE id=9;UPDATE public."Order_products" SET item_type='drink' WHERE id=10;`)

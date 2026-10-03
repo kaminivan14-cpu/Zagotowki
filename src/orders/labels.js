@@ -1,6 +1,15 @@
 // Polish Orders dictionary; all new board copy lives here for a future locale.
 export const labels = {
- all: 'Wszystkie', waiting: 'Oczekujące', working: 'W realizacji', done: 'Zakończone',
+ generatorTitle:'Generator zamówienia testowego', generatorHelp:'Wyłącznie fikcyjne zamówienia UAT. Wybieraj istniejące produkty; typ dotyczy tylko tej testowej pozycji.',
+ type:'Typ pozycji', itemTypes:{product:'Produkt',set:'Zestaw',addon:'Dodatek',drink:'Napój'},
+ line:n=>`Pozycja ${n}`, component:n=>`Komponent ${n}`, setName:'Nazwa zestawu', productName:'Produkt z katalogu', setCount:'Ilość zestawów', itemCount:'Ilość pozycji',
+ removeLine:'Usuń pozycję', composition:'Skład zestawu', perSetHint:'Podaj ilości na jeden zestaw. Łączna ilość przelicza się automatycznie.',
+ componentProduct:'Produkt komponentu', perSet:'Ilość na 1 zestaw', total:n=>`Łącznie: ${Number.isFinite(n)?n:0} szt.`,
+ removeComponent:'Usuń komponent', addRoll:'+ Dodaj rolkę', addLine:'+ Dodaj pozycję', createOrder:'Utwórz zamówienie',
+ searchProduct:'Szukaj produktu', chooseProduct:'Wybierz produkt', generatorInvalid:'Wybierz produkty z katalogu i dodatnie całkowite ilości. Zestaw musi mieć skład. Limit: 50 elementów, 10 000 szt. na element.',
+ operationalStatus:'Status operacyjny', ready_to_issue:'Do wydania', viewOrder:'Zobacz zamówienie', closeNotice:'Zamknij i oznacz jako przeczytane',
+ noticeShort:(type,number)=>`${number} · ${type==='DEADLINE_OVERDUE'?'po czasie':type==='DEADLINE_10'?'do wydania za 10 min':'do wydania za 30 min'}`,
+ all: 'Wszystkie' , waiting: 'Oczekujące', working: 'W realizacji', done: 'Zakończone',
  wholeOrder: 'Weź całe zamówienie', selected: n => `Weź zaznaczone (${n})`,
  dispatch: 'Przekaż na kuchnię', start: 'Start', part: 'Weź część', allQuantity: 'Całość', other: 'Inna', take: 'Weź',
  wholeSet: 'Weź cały zestaw', setPart: (n,total) => `Weź ${n}/${total} zestawów`,

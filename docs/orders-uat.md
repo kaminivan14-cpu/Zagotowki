@@ -189,8 +189,8 @@ nie ma w repo prawdziwego source payload ani algorytmu szacowania. Nie wymyślon
 ready_at w imporcie wymaga strefy czasowej. UI wyświetla czas w strefie przeglądarki.
 Istniejące zamówienia bez tych pól nie pokazują placeholderów.
 
-Alerty: >30 min normal, <=30 warning, <=10 urgent, po terminie overdue. Spokojne
-obramowania i badge, bez zalewania tła. Zdarzenia DEADLINE_30/10/OVERDUE w istniejącym
+Alerty: >30 min normal, <=30 warning, <=10 urgent, po terminie overdue. Delikatne tło całej karty,
+obramowanie, badge i spójne kolory przycisków. Zdarzenia DEADLINE_30/10/OVERDUE w istniejącym
 Order_events, unikalne (order_id,event_type), tworzone przy polling RPC
 orders_notifications. Wymaga orders.cut ORAZ orders.issue oraz dostępu do lokalu.
 Badge jest trwały do potwierdzenia przez użytkownika (order_notice_ack); reload
@@ -200,9 +200,9 @@ się dopiero przy kolejnym odczycie; nie ma gwarancji dostarczenia w tle. Próg 
 jednorazowy dla zamówienia, brak osobnego cyklu alertów po zmianie terminu.
 
 Testy lokalne:
-- 88 testów Node PASS, w tym importy, alerty, PIN, Auth, Tasks i ilości.
-- 54 Playwright headless PASS, profile i API syntetyczne; bez sesji użytkownika.
-- PostgreSQL Orders: 177 sprawdzeń PASS zarówno baseline, jak i upgrade po Tasks;
+- 91 testów Node PASS, w tym importy, alerty, PIN, Auth, Tasks i ilości.
+- 58 Playwright headless PASS, profile i API syntetyczne; bez sesji użytkownika.
+- PostgreSQL Orders: 189 sprawdzeń PASS zarówno baseline, jak i upgrade po Tasks;
   rzeczywista współbieżność połączeń: jeden sukces i jeden CLAIM_CONFLICT.
 - PostgreSQL Tasks: 111 sprawdzeń PASS bez zmian w kodzie Tasks.
 - test:migration PASS (legacy Production/RLS); lint i build:uat PASS.
@@ -220,3 +220,32 @@ maker przejmuje całe zamówienie, zaznaczone, 1/2 setu i część komponentu; d
 bierze pozostałe; dodatki niezależne; chef kroi i wydaje; ukryty napój nie blokuje
 ukończenia. Sprawdzić terminy null/31/30/10/po czasie i ack po reloadzie. Użyć
 wyłącznie syntetycznych zamówień UAT; istniejący generator nie wymyśla receptur setów.
+
+
+### Rozszerzenie generatora i boardu — 202610030002
+
+Generator wybiera istniejące product_id z katalogu testowego przez wyszukiwanie
+i listę. Każda pozycja ma typ Produkt/Zestaw/Dodatek/Napój. Nazwa zestawu także
+pochodzi z katalogu. Skład na jeden zestaw ma osobne ilości; podgląd mnoży je przez
+liczbę zestawów, lecz do istniejącego create_test wysyła ilości jednostkowe.
+Backend wykonuje mnożenie dokładnie raz. Nie tworzy nowych produktów ani nie
+zmienia klasyfikacji katalogu. Puste zestawy, brak produktu, ilości poza zakresem
+i niepoprawne typy są odrzucane w UI oraz bazie.
+
+Nowa migracja 202610030002_orders_uat_generator.sql zastępuje wyłącznie prywatny
+importer app_private.orders_import(text,text,bigint,jsonb,boolean,timestamptz,integer).
+Jawny item_type jest dozwolony tylko dla danych testowych. Publiczny create_test
+nadal wymaga uprawnienia i podpisanego issuer UAT. Nie zmienia tabel, grantów,
+locking, idempotency ani interfejsów publicznych RPC. Migracja 001 pozostaje
+wymaganym poprzednikiem; nie edytowano jej.
+
+Nagłówek pokazuje równoczesne etapy wynikające z przypisań i krojenia. Status czasu
+jest osobny. Alert to kompaktowy pasek; Zobacz zamówienie przełącza na Wszystkie,
+przewija, ustawia fokus i podświetla kartę. Przeczytane i × zapisują ten sam ack
+po stronie serwera. Nowe teksty są w src/orders/labels.js.
+
+Snapshot przed migracją 002: tmp/orders-generator.local/uat-schema-before.sql.
+Importer UAT porównano z migracją 001: zgodny. Skrypt wdrożenia ma dodatkowy
+warunek MD5 funkcji bezpośrednio przed zmianą i zapis historii w tej samej transakcji.
+Wdrażać tylko 002 na meuzkduxttjcuiynsnaa, nie używać ogólnego db push.
+Edge Functions, sekrety, Auth, Production i main pozostają bez zmian.

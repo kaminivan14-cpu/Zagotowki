@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../supabase'
 import OrdersBoard from './OrdersBoard'
+import OrderGenerator from './OrderGenerator'
+import OrderNotices from './OrderNotices'
 import { labels as L } from './labels'
 import { lifecycle } from './board'
 import EmployeesScreen from '../auth/EmployeesScreen'
@@ -8,13 +10,14 @@ import { pendingOperation, operationKey, orderError, formatTime, money, rateText
 
 export default function OrdersApp({ employee, capabilities, onSignOut, onModules }) {
   const [notices, setNotices] = useState([]), [noticeError, setNoticeError] = useState(false), [now, setNow] = useState(() => Date.now())
-  const [readyAt, setReadyAt] = useState(''), [prep, setPrep] = useState('')
+  const [focusOrder,setFocusOrder]=useState(null),[ackBusy,setAckBusy]=useState(false)
+  const acknowledged=useRef(new Set())
   const has = name => capabilities.includes(name)
   const [location, setLocation] = useState(employee.location_id || ''), [locations, setLocations] = useState([])
   const [orders, setOrders] = useState([]), [catalog, setCatalog] = useState([]), [shifts, setShifts] = useState([])
   const [employeesOpen, setEmployeesOpen] = useState(false)
   const [tab, setTab] = useState('all'), [message, setMessage] = useState(''), [busy, setBusy] = useState(false)
-  const [selection, setSelection] = useState({}), [testItems, setTestItems] = useState({}), [summary, setSummary] = useState(null), [history, setHistory] = useState(null), [events, setEvents] = useState(null)
+  const [selection, setSelection] = useState({}), [summary, setSummary] = useState(null), [history, setHistory] = useState(null), [events, setEvents] = useState(null)
   const [pending, setPending] = useState(() => { try { return JSON.parse(sessionStorage.getItem(operationKey(employee.id))) } catch { return null } })
   const alive = useRef(true), locked = useRef(false), generation = useRef(0), historyRequest = useRef(0)
   const shift = shifts.find(s => !s.ended_at && String(s.location_id) === String(location))
@@ -28,7 +31,7 @@ export default function OrdersApp({ employee, capabilities, onSignOut, onModules
       setCatalog(results[0].data || []); setShifts(results[1].data || []); setOrders(results[2].data || []); setNow(Date.now())
       if (chef && location) {
         const response = await supabase.rpc('orders_notifications', { p_location: Number(location) })
-        if (alive.current && n === generation.current) { setNoticeError(Boolean(response.error)); setNotices(response.error ? [] : response.data || []) }
+        if (alive.current && n === generation.current) { setNoticeError(Boolean(response.error)); setNotices(response.error ? [] : (response.data || []).filter(n=>!acknowledged.current.has(n.id))) }
       } else setNotices([])
     } catch { if (alive.current && n === generation.current) { console.error('orders-read', { code: 'NETWORK' }); setOrders([]); setCatalog([]); setShifts([]); setEvents(null); setSummary(null); setHistory(null); setMessage('Brak połączenia. Dane wymagają odświeżenia.') } }
   }, [location, chef])
@@ -81,13 +84,15 @@ export default function OrdersApp({ employee, capabilities, onSignOut, onModules
   return <div className="app orders-app"><header className="orders-header"><div><h1>Zamówienia</h1><p>{employee.name}</p></div><div className="header-actions"><button disabled={busy} onClick={onModules}>← Wybór modułów</button>{has('employees.manage') && <button disabled={busy} onClick={() => setEmployeesOpen(true)}>Pracownicy</button>}<button disabled={busy} onClick={onSignOut}>Wyloguj</button></div></header>
     <label>Lokal<select value={location} disabled={busy} onChange={e => { ++historyRequest.current; setSelection({}); setOrders([]); setNotices([]); setNoticeError(false); setSummary(null); setHistory(null); setEvents(null); setLocation(e.target.value) }}><option value="">Wybierz lokal</option>{locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}</select></label>
     <nav aria-label="Widoki zamówień">{[['all',L.all],['new',L.waiting],['board',L.working],['done',L.done],...(has('orders.work') ? [['mine','Moje zadania']] : []),['shifts','Zmiany / historia'],...(has('orders.test.generate') ? [['generator','Generator UAT']] : []),...(has('orders.rates.manage') ? [['rates','Katalog i stawki']] : [])].map(([key,label]) => <button key={key} aria-pressed={tab === key} onClick={() => setTab(key)}>{label}{['all','new','board','done'].includes(key) ? ` (${orders.filter(o=>key==='all' || (key==='new' ? lifecycle(o)==='new' : key==='done' ? lifecycle(o)==='done' : ['partial','in_progress'].includes(lifecycle(o)))).length})` : ''}</button>)}</nav>
-    {chef && <div className="order-notifications" aria-live="polite">{noticeError && <p>{L.noticesFailed}</p>}{notices.map(n=><aside key={n.id}><strong>{L.noticeTitle}</strong><p>{L.notice(n.event_type,n.display_number)}</p><button onClick={async()=>{const {error}=await supabase.rpc('orders_notifications',{p_location:Number(location),p_ack:n.id});if(!error)setNotices(old=>old.filter(x=>x.id!==n.id));else setNoticeError(true)}}>{L.dismiss}</button></aside>)}</div>}
+    {chef && <OrderNotices notices={notices} error={noticeError} busy={ackBusy} onView={id=>{setTab('all');setFocusOrder({id,nonce:Date.now()})}} onRead={async id=>{
+      if(ackBusy)return;setAckBusy(true)
+      try {const {error}=await supabase.rpc('orders_notifications',{p_location:Number(location),p_ack:id});if(error)throw error;acknowledged.current.add(id);if(alive.current)setNotices(old=>old.filter(x=>x.id!==id))}
+      catch {if(alive.current)setNoticeError(true)}finally{if(alive.current)setAckBusy(false)}
+    }}/>}
     <p role="status">{message}</p>{pending && <aside>Operacja oczekuje na potwierdzenie. {action('Ponów tę samą operację',pending.action,pending.args)}</aside>}
     <section className="shift-panel" aria-label="Moja zmiana"><div><h2>Moja zmiana</h2><p>{shift ? `Zmiana od ${formatTime(shift.started_at)}` : 'Brak aktywnej zmiany w tym lokalu'}</p><small>Podgląd zamówień nie wymaga rozpoczęcia zmiany.</small></div>
       {shift ? action('Zakończ zmianę','end_shift',{ shift_id: shift.id }) : action('Rozpocznij zmianę','open_shift',{ location_id: Number(location) },!location)}</section>
-    {tab === 'generator' && has('orders.test.generate') && <section><h2>Generator zamówienia testowego</h2><p>Wyłącznie fikcyjne zamówienia UAT.</p>{catalog.filter(p => p.active && p.is_test).map(p => <label key={p.id}>{p.name}<input disabled={busy} aria-label={`Test ${p.name}`} type="number" min="0" max="10000" step="1" value={testItems[p.id] || ''} onChange={e => setTestItems(x => ({ ...x,[p.id]: e.target.value }))} /></label>)}
-      <label>{L.readyInput}<input type="datetime-local" value={readyAt} onChange={e=>setReadyAt(e.target.value)}/></label><label>{L.prepInput}<input type="number" min="1" max="1440" value={prep} onChange={e=>setPrep(e.target.value)}/></label>
-      {action('Utwórz zamówienie','create_test',{ location_id: Number(location),...(readyAt ? {ready_at:new Date(readyAt).toISOString()} : {}),...(prep ? {estimated_prep_minutes:Number(prep)} : {}),items: Object.entries(testItems).filter(([,q]) => Number(q)>0).map(([id,q]) => ({product_id:Number(id),quantity:Number(q)})) },!location || !Object.values(testItems).some(q => Number(q)>0))}</section>}
+    {tab === 'generator' && has('orders.test.generate') && <OrderGenerator catalog={catalog} location={location} disabled={busy || Boolean(pending)} run={run}/>}
     {tab === 'rates' && has('orders.rates.manage') && <section><h2>Katalog i stawki</h2>{catalog.map(p => <RateEditor key={`${p.id}:${p.work_rate_minor}:${p.active}`} product={p} busy={busy} save={args => run('rate',args)} />)}</section>}
     {tab === 'shifts' && <section><h2>Zmiany / historia</h2>{shifts.length === 0 && <p>Nie masz jeszcze zmian.</p>}{shifts.map(s => <article key={s.id}><p>{formatTime(s.started_at)} → {formatTime(s.ended_at)}</p>
       {(has('orders.history.own') || has('orders.finance')) && s.ended_at && <button onClick={() => readHistory(s.id,'summary')}>Podsumowanie zmiany {s.id}</button>}
@@ -96,7 +101,7 @@ export default function OrdersApp({ employee, capabilities, onSignOut, onModules
       {history && <article><h2>Historia zmiany {history.shiftId}</h2>{history.rows.length === 0 && <p>Brak wydanych pozycji w tej zmianie.</p>}{history.rows.map((h,n) => <div key={n}><h3>{h.order} · {h.product} ×{h.quantity}</h3><p>Wykonał: {h.maker}; kroił: {h.cutter}; wydał: {h.issuer}</p><p>Przejęte: {formatTime(h.claimed_at)} · Gotowe: {formatTime(h.ready_at)} · Krojenie: {formatTime(h.cutting_started_at)} → {formatTime(h.cutting_completed_at)} · Wydane: {formatTime(h.issued_at)}</p></div>)}</article>}</section>}
     {['board','all','new','mine','done'].includes(tab) && <>
       {!visibleOrders.length && <p className="empty-state">{L.empty}</p>}
-      <OrdersBoard orders={visibleOrders} employee={employee} capabilities={capabilities} shift={shift} disabled={busy || Boolean(pending)} selection={selection} setSelection={setSelection} run={run} now={now} onHistory={tab==='all' ? async o => {
+      <OrdersBoard focusOrder={focusOrder} orders={visibleOrders} employee={employee} capabilities={capabilities} shift={shift} disabled={busy || Boolean(pending)} selection={selection} setSelection={setSelection} run={run} now={now} onHistory={tab==='all' ? async o => {
         const n=++historyRequest.current;setEvents(null)
         try { const {data,error}=await supabase.rpc('orders_history',{p_order:o.id});if(error)throw error;if(alive.current && n===historyRequest.current)setEvents({number:o.display_number,rows:data||[]}) }
         catch { if(alive.current && n===historyRequest.current)setMessage('Nie udało się pobrać historii zamówienia.') }

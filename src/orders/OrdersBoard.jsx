@@ -1,16 +1,23 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { labels as L } from './labels'
-import { deadline, visibleItems, operational, setAvailable, selectedItems, lifecycle } from './board'
+import { deadline, visibleItems, operational, setAvailable, selectedItems, lifecycle, operationalChips } from './board'
 const time = value => new Date(value).toLocaleTimeString('pl-PL', {hour:'2-digit',minute:'2-digit'})
-export default function OrdersBoard({ orders, employee, capabilities, shift, disabled, selection, setSelection, run, now, onHistory }) {
+export default function OrdersBoard({ orders, employee, capabilities, shift, disabled, selection, setSelection, run, now, onHistory, focusOrder }) {
+ const cards=useRef(new Map())
+ useEffect(()=>{
+   const card=cards.current.get(String(focusOrder?.id));if(!card)return
+   card.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'nearest',inline:'center'})
+   card.focus({preventScroll:true});card.classList.remove('order-highlight');void card.offsetWidth;card.classList.add('order-highlight')
+   const timer=setTimeout(()=>card.classList.remove('order-highlight'),4000);return()=>clearTimeout(timer)
+ },[focusOrder])
  const has = cap => capabilities.includes(cap)
  const button = (label,action,args,blocked=false) => <button disabled={disabled || blocked} onClick={() => run(action,args)}>{label}</button>
  return <div className="orders-horizontal" role="region" aria-label={L.board} tabIndex={0}>
  {orders.map(order => {
   const items = visibleItems(order), urgency = lifecycle(order)==='done' ? null : deadline(order.ready_at,now), selected = selectedItems(order,selection)
-  return <article key={order.id} className={`order-column deadline-${urgency?.level || 'normal'}`}>
+  return <article key={order.id} tabIndex={-1} ref={el=>{if(el)cards.current.set(String(order.id),el);else cards.current.delete(String(order.id))}} data-order-id={order.id} className={`order-column deadline-${urgency?.level || 'normal'}`}>
    <div className="order-heading"><h2>{order.display_number}</h2>{order.ready_at && <span className={`deadline-badge ${urgency?.level || ''}`}>{urgency?.level==='overdue' ? L.overdue(urgency.minutes) : L.readyAt(time(order.ready_at))}</span>}</div>
-   <span className="order-status">{L.stages[order.status] || order.status}</span><span className="order-lifecycle">{L.lifecycle[lifecycle(order)]}</span>
+   <div className="operational-chips" aria-label={L.operationalStatus}>{[...new Set(operationalChips(order).map(key=>key.startsWith('lifecycle:')?L.lifecycle[key.slice(10)]:L.stages[key]||L[key]).filter(Boolean))].map(label=><span className="order-status" key={label}>{label}</span>)}</div>
    <p>{L.visible(items.filter(operational).length)}</p>
    {order.estimated_prep_minutes != null && <p>{L.prep(order.estimated_prep_minutes)}</p>}
    {urgency && ['warning','urgent'].includes(urgency.level) && <p className={`deadline-badge ${urgency.level}`}>{L[urgency.level]}</p>}
