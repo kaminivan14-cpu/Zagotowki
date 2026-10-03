@@ -1,5 +1,6 @@
 // Polish Orders dictionary; all new board copy lives here for a future locale.
 export const labels = {
+ myActive:'Moje aktywne', availableWork:'Do wzięcia', operatorBoard:'Operacyjna tablica zamówień',
  workMode:'Tryb pracy Zamówień', generalMode:'Tryb ogólny', operationalMode:'Tryb operacyjny',
  generatorTitle:'Generator zamówienia testowego', generatorHelp:'Wyłącznie fikcyjne zamówienia UAT. Wybieraj istniejące produkty; typ dotyczy tylko tej testowej pozycji.',
  type:'Typ pozycji', itemTypes:{product:'Produkt',set:'Zestaw',addon:'Dodatek',drink:'Napój'},

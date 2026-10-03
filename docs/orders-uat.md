@@ -264,3 +264,14 @@ i dodatki pozostają operacyjne.
 Przełącznik zmienia jedynie widoczność widoków. Wspólny stan Orders, zmiany,
 pending operation UUID oraz lokalny formularz podziału są zachowane przy przełączaniu.
 Nie ma nowego backendu, RPC ani migracji.
+
+### Operacyjny board zamówień
+
+Tryb operacyjny grupuje projekcję istniejących work items po order_id w poziome
+kolumny. Jedno zamówienie występuje raz, również gdy ma pracę własną i wolne porcje.
+Zamówienia z własną aktywną pracą są pierwsze. Wewnątrz są kompaktowe wiersze,
+komponenty zestawów pod nazwą rodzica z wcięciem. Akcje i częściowe ilości nadal
+wykorzystują productionTasks / quantityArgs oraz dotychczasowe orders_command.
+OrderHeader, orderDeadline i paleta CSS są wspólne z trybem ogólnym. Termin jest
+widoczny również po czasie; operacyjne statusy pozostają osobne. Brak terminu
+oznacza brak badge czasu. Nie ma zmian backendu ani migracji.

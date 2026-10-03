@@ -45,3 +45,5 @@ export function operationalChips(order) {
   }
   return [...keys]
 }
+
+export const orderDeadline = (order, now) => lifecycle(order)==='done' ? null : deadline(order.ready_at, now)

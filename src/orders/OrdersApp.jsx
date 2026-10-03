@@ -116,7 +116,7 @@ export default function OrdersApp({ employee, capabilities, onSignOut, onModules
     </>}
     {tab === 'all' && events && <section><h2>Historia {events.number}</h2>{events.rows.length === 0 && <p>Brak zdarzeń.</p>}{events.rows.map((e,n)=><p key={n}>{formatTime(e.at)} · {e.event} · {e.actor}</p>)}</section>}
     </div>
-    {operatorAllowed && operatorMounted && <div hidden={!operatorActive}><ProductionMode employee={employee} capabilities={capabilities} orders={orders} shift={shift} location={location} busy={busy} pending={pending} message={message} run={run}/></div>}
+    {operatorAllowed && operatorMounted && <div hidden={!operatorActive}><ProductionMode now={now} employee={employee} capabilities={capabilities} orders={orders} shift={shift} location={location} busy={busy} pending={pending} message={message} run={run}/></div>}
   </div>
 }
 function RateEditor({product,busy,save}) {

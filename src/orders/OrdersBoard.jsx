@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { labels as L } from './labels'
-import { deadline, visibleItems, operational, setAvailable, selectedItems, lifecycle, operationalChips } from './board'
-const time = value => new Date(value).toLocaleTimeString('pl-PL', {hour:'2-digit',minute:'2-digit'})
+import { orderDeadline, visibleItems, operational, setAvailable, selectedItems, lifecycle } from './board'
+import OrderHeader from './OrderHeader'
 export default function OrdersBoard({ orders, employee, capabilities, shift, disabled, selection, setSelection, run, now, onHistory, focusOrder }) {
  const cards=useRef(new Map())
  useEffect(()=>{
@@ -14,13 +14,11 @@ export default function OrdersBoard({ orders, employee, capabilities, shift, dis
  const button = (label,action,args,blocked=false) => <button disabled={disabled || blocked} onClick={() => run(action,args)}>{label}</button>
  return <div className="orders-horizontal" role="region" aria-label={L.board} tabIndex={0}>
  {orders.map(order => {
-  const items = visibleItems(order), urgency = lifecycle(order)==='done' ? null : deadline(order.ready_at,now), selected = selectedItems(order,selection)
+  const items = visibleItems(order), urgency = orderDeadline(order,now), selected = selectedItems(order,selection)
   return <article key={order.id} tabIndex={-1} ref={el=>{if(el)cards.current.set(String(order.id),el);else cards.current.delete(String(order.id))}} data-order-id={order.id} className={`order-column deadline-${urgency?.level || 'normal'}`}>
-   <div className="order-heading"><h2>{order.display_number}</h2>{order.ready_at && <span className={`deadline-badge ${urgency?.level || ''}`}>{urgency?.level==='overdue' ? L.overdue(urgency.minutes) : L.readyAt(time(order.ready_at))}</span>}</div>
-   <div className="operational-chips" aria-label={L.operationalStatus}>{[...new Set(operationalChips(order).map(key=>key.startsWith('lifecycle:')?L.lifecycle[key.slice(10)]:L.stages[key]||L[key]).filter(Boolean))].map(label=><span className="order-status" key={label}>{label}</span>)}</div>
+   <OrderHeader order={order} urgency={urgency}/>
    <p>{L.visible(items.filter(operational).length)}</p>
    {order.estimated_prep_minutes != null && <p>{L.prep(order.estimated_prep_minutes)}</p>}
-   {urgency && ['warning','urgent'].includes(urgency.level) && <p className={`deadline-badge ${urgency.level}`}>{L[urgency.level]}</p>}
    {order.status==='NEW' && has('orders.dispatch') && button(L.dispatch,'send',{order_id:order.id})}
    {has('orders.work') && order.status!=='NEW' && lifecycle(order)!=='done' && <div className="order-claim-buttons">
     {button(L.wholeOrder,'claim_all',{order_id:order.id},!shift || !items.some(i=>operational(i)&&i.available>0))}

@@ -7,7 +7,7 @@ export function productionTasks(orders, employeeId, capabilities) {
   for (const order of orders) {
     if (['NEW', 'COMPLETED'].includes(order.status)) continue
     for (const item of order.items.filter(operational)) {
-      const base = { orderId: order.id, orderNumber: order.display_number, name: item.name }
+      const base = { orderId: order.id, orderNumber: order.display_number, name: item.name, itemId: item.id, parentId: item.parent_item_id || null }
       if (has('orders.work') && item.available > 0) available.push({ ...base, key: `item:${item.id}`, quantity: item.available, status: 'Do zrobienia', action: 'claim', args: { order_id: order.id, items: [{ item_id: item.id, quantity: item.available }] } })
       for (const assignment of item.assignments) {
         if (assignment.released_at) continue
