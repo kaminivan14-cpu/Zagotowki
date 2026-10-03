@@ -48,7 +48,7 @@ async function setup(page) {
 const card = page => page.locator('.produkt').filter({has:page.getByText('Manager A',{exact:true})})
 test('employee actions: cancel, deactivate, activate, archive, restore and no duplicate submission', async ({page}) => {
   const {calls} = await setup(page); await page.goto('/')
-  await page.getByRole('button',{name:'👥 Pracownicy'}).click()
+  await page.getByText('Narzędzia ▾',{exact:true}).click();await page.getByRole('button',{name:'Pracownicy',exact:true}).click()
   await expect(card(page)).toBeVisible()
   await card(page).getByRole('button',{name:'Dezaktywuj',exact:true}).click()
   await page.getByRole('dialog').getByRole('button',{name:'Anuluj'}).click(); expect(calls).toHaveLength(0)
@@ -77,7 +77,7 @@ test('employee actions: cancel, deactivate, activate, archive, restore and no du
 })
 test('failed archive keeps employee and confirmation, with generic error', async ({page}) => {
   const state=await setup(page); state.fail(); await page.goto('/')
-  await page.getByRole('button',{name:'👥 Pracownicy'}).click()
+  await page.getByText('Narzędzia ▾',{exact:true}).click();await page.getByRole('button',{name:'Pracownicy',exact:true}).click()
   await card(page).getByRole('button',{name:'Usuń',exact:true}).click()
   await page.getByRole('dialog').getByRole('button',{name:'Usuń konto'}).click()
   await expect(page.getByRole('dialog').getByRole('alert')).toContainText('Nie udało się')
@@ -102,7 +102,7 @@ test('inline PIN keeps employee context, prevents duplicate reset and preserves 
   if(attempts.length===2) return route.fulfill({status:409,json:{code:'PIN_UNAVAILABLE',retry_same_operation:false,request_id:'11111111-1111-4111-8111-111111111111'}})
   return route.fulfill({json:{success:true}})
  })
- await page.goto('/');await page.getByRole('button',{name:'👥 Pracownicy'}).click()
+ await page.goto('/');await page.getByText('Narzędzia ▾',{exact:true}).click();await page.getByRole('button',{name:'Pracownicy',exact:true}).click()
  await card(page).getByRole('button',{name:'Nadaj / resetuj PIN',exact:true}).click()
  const form=card(page).getByRole('form',{name:'PIN: Manager A'})
  await expect(form.getByText('manager · Lokal A')).toBeVisible()
@@ -119,7 +119,7 @@ test('inline PIN keeps employee context, prevents duplicate reset and preserves 
 })
 for(const width of [1024,768,1440,390]) test(`Employees PIN visual audit ${width}`,async({page})=>{
  await page.setViewportSize({width,height:900});await page.emulateMedia({colorScheme:'dark'});await setup(page);await page.goto('/')
- await page.getByRole('button',{name:'👥 Pracownicy'}).click();await card(page).getByRole('button',{name:'Nadaj / resetuj PIN',exact:true}).click()
+ await page.getByText('Narzędzia ▾',{exact:true}).click();await page.getByRole('button',{name:'Pracownicy',exact:true}).click();await card(page).getByRole('button',{name:'Nadaj / resetuj PIN',exact:true}).click()
  await expect(card(page).getByRole('form',{name:'PIN: Manager A'})).toBeVisible()
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true)
  await page.screenshot({path:`tmp/pin-audit.local/employees-${width}.png`,fullPage:true})

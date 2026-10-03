@@ -30,3 +30,11 @@ export function worktimeError(error) {
  if(msg.includes('EXPORT_TOO_LARGE'))return 'Eksport przekracza 10 000 sesji. Zawęź filtry.'
  return 'Nie udało się potwierdzić operacji. Ponów tę samą operację.'
 }
+
+export function polishDate(value) { return value ? value.split('-').reverse().join('.') : '' }
+export function parsePolishDate(value) {
+ const match=/^(\d{2})\.(\d{2})\.(\d{4})$/.exec(value)
+ if(!match)return null
+ const iso=`${match[3]}-${match[2]}-${match[1]}`
+ return Number.isFinite(Date.parse(iso)) && new Date(iso).toISOString().slice(0,10)===iso ? iso : null
+}

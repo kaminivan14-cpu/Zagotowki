@@ -14,3 +14,10 @@ test('DST gaps and ambiguous wall times require explicit offsets; unchanged time
  assert.equal(correctionInstant('2026-10-03T22:00','2026-10-03T20:00:31Z'),'2026-10-03T20:00:31Z')
  assert.equal(correctionInstant('',null),null)
 })
+test('date filters require real Polish calendar dates and keep ISO only for RPC',async()=>{
+ const {polishDate,parsePolishDate}=await import('../src/worktime/client.js')
+ assert.equal(polishDate('2026-10-03'),'03.10.2026')
+ assert.equal(parsePolishDate('03.10.2026'),'2026-10-03')
+ for(const value of ['10/03/2026','31.02.2026','29.02.2025','00.10.2026'])assert.equal(parsePolishDate(value),null)
+ assert.equal(parsePolishDate('29.02.2024'),'2024-02-29')
+})

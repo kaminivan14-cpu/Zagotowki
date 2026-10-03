@@ -1,5 +1,6 @@
 // Polish Orders dictionary; all new board copy lives here for a future locale.
 export const labels = {
+ urgencyFilters:{all:'Wszystkie',overdue:'Po czasie',urgent:'≤ 10 min',warning:'≤ 30 min',normal:'Pozostałe'}, urgencyFilter:'Pilność zamówień', actualPrep: value => `Czas przygotowania: ${value}`,
  myActive:'Moje aktywne', availableWork:'Do wzięcia', operatorBoard:'Operacyjna tablica zamówień',
  workMode:'Tryb pracy Zamówień', generalMode:'Tryb ogólny', operationalMode:'Tryb operacyjny',
  generatorTitle:'Generator zamówienia testowego', generatorHelp:'Wyłącznie fikcyjne zamówienia UAT. Wybieraj istniejące produkty; typ dotyczy tylko tej testowej pozycji.',
@@ -16,7 +17,7 @@ export const labels = {
  dispatch: 'Przekaż na kuchnię', start: 'Start', part: 'Weź część', allQuantity: 'Całość', other: 'Inna', take: 'Weź',
  wholeSet: 'Weź cały zestaw', setPart: (n,total) => `Weź ${n}/${total} zestawów`,
  left: 'Pozostało', issued: 'Wydane', units: 'szt.', visible: n => `Widoczne pozycje: ${n}`,
- readyAt: time => `Wydać o ${time}`, prep: n => `Czas przygotowania ~${n} min`,
+ readyAt: time => `Wydać o ${time}`, prep: n => `Przewidywany czas przygotowania ~${n} min`,
  overdue: n => `Po czasie · ${n} min`, warning: 'Do wydania ≤ 30 min', urgent: 'Pilne · do wydania ≤ 10 min',
  normal: 'Standardowo', empty: 'Brak zamówień w tym widoku.', expand: 'Rozwiń zestaw', collapse: 'Zwiń zestaw',
  select: name => `Zaznacz ${name}`, quantity: name => `Ilość — ${name}`,

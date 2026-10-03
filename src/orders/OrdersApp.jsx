@@ -1,3 +1,4 @@
+import ModuleHeader from '../ui/ModuleHeader'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../supabase'
 import ProductionMode from './ProductionMode'
@@ -6,17 +7,19 @@ import OrdersBoard from './OrdersBoard'
 import OrderGenerator from './OrderGenerator'
 import OrderNotices from './OrderNotices'
 import { labels as L } from './labels'
-import { lifecycle } from './board'
+import { lifecycle, sortedOrders } from './board'
 import EmployeesScreen from '../auth/EmployeesScreen'
 import { pendingOperation, operationKey, orderError, formatTime, money, rateText, parseRate } from './client'
 
 export default function OrdersApp({ employee, capabilities, onSignOut, onModules, onWorktime }) {
   // Keep both views mounted after first use so switching preserves in-progress form state.
+  const [urgencyFilter,setUrgencyFilter]=useState('all')
   const [mode,setMode]=useState('general'), [operatorMounted,setOperatorMounted]=useState(false)
   const operatorAllowed=canUseProductionMode(capabilities)
   const operatorActive=operatorAllowed && mode==='operational'
   const [notices, setNotices] = useState([]), [noticeError, setNoticeError] = useState(false), [now, setNow] = useState(() => Date.now())
   const [focusOrder,setFocusOrder]=useState(null),[ackBusy,setAckBusy]=useState(false)
+  useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),15000);return()=>clearInterval(timer)},[])
   const acknowledged=useRef(new Set())
   const has = name => capabilities.includes(name)
   const [location, setLocation] = useState(employee.location_id || ''), [locations, setLocations] = useState([])
@@ -75,7 +78,8 @@ export default function OrdersApp({ employee, capabilities, onSignOut, onModules
   }
   const action = (label, name, args, disabled = false) => <button disabled={busy || disabled} onClick={event => { if (event.detail < 2) void run(name, args) }}>{label}</button>
   const isMine = w => !w.released_at && w.employee_id === employee.id && !w.ready_for_cutting_at
-  const visibleOrders = orders.filter(o => (tab !== 'new' || lifecycle(o) === 'new') && (tab !== 'board' || ['partial','in_progress'].includes(lifecycle(o))) && (tab !== 'done' || lifecycle(o) === 'done') && (tab !== 'mine' || o.items.some(i => i.assignments.some(isMine))))
+  const rankedOrders = sortedOrders(orders,now,urgencyFilter)
+  const visibleOrders = rankedOrders.filter(o => (tab !== 'new' || lifecycle(o) === 'new') && (tab !== 'board' || ['partial','in_progress'].includes(lifecycle(o))) && (tab !== 'done' || lifecycle(o) === 'done') && (tab !== 'mine' || o.items.some(i => i.assignments.some(isMine))))
   async function readHistory(id, type) {
     const n = ++historyRequest.current
     setSummary(null); setHistory(null)
@@ -87,11 +91,13 @@ export default function OrdersApp({ employee, capabilities, onSignOut, onModules
     } catch { console.error('orders-history', { code: 'READ_FAILED' }); if (alive.current && n === historyRequest.current) setMessage('Podsumowanie niedostępne. Sprawdź zakończenie zmiany i uprawnienia.') }
   }
   if (employeesOpen && has('employees.manage')) return <EmployeesScreen pracownik={employee} lokale={locations} onPowrot={() => setEmployeesOpen(false)} />
-  return <div className="app orders-app"><header className="orders-header"><div><h1>Zamówienia</h1><p>{employee.name}</p></div><div className="header-actions">{has('worktime.access') && <button onClick={onWorktime}>Czas pracy</button>}{operatorAllowed && <div className="orders-mode-switch" role="group" aria-label={L.workMode}>{[['general',L.generalMode],['operational',L.operationalMode]].map(([key,label])=><button key={key} aria-pressed={operatorActive ? key==='operational' : key==='general'} onClick={()=>{setMode(key);if(key==='operational')setOperatorMounted(true)}}>{label}</button>)}</div>}<button disabled={busy} onClick={onModules}>← Wybór modułów</button>{has('employees.manage') && <button disabled={busy} onClick={() => setEmployeesOpen(true)}>Pracownicy</button>}<button disabled={busy} onClick={onSignOut}>Wyloguj</button></div></header>
-    <label>Lokal<select value={location} disabled={busy} onChange={e => { ++historyRequest.current; setSelection({}); setOrders([]); setNotices([]); setNoticeError(false); setSummary(null); setHistory(null); setEvents(null); setLocation(e.target.value) }}><option value="">Wybierz lokal</option>{locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}</select></label>
+  return <div className="app orders-app"><ModuleHeader title="Zamówienia" employee={employee} disabled={busy} onModules={onModules} onSignOut={onSignOut} onWorktime={has('worktime.access')?onWorktime:undefined} onEmployees={has('employees.manage')?()=>setEmployeesOpen(true):undefined} location={<label>Lokal<select value={location} disabled={busy} onChange={e => { ++historyRequest.current; setSelection({}); setOrders([]); setNotices([]); setNoticeError(false); setSummary(null); setHistory(null); setEvents(null); setLocation(e.target.value) }}><option value="">Wybierz lokal</option>{locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}</select></label>}>
+      {operatorAllowed && <div className="orders-mode-switch" role="group" aria-label={L.workMode}>{[['general',L.generalMode],['operational',L.operationalMode]].map(([key,label])=><button key={key} aria-pressed={operatorActive ? key==='operational' : key==='general'} onClick={()=>{setMode(key);if(key==='operational')setOperatorMounted(true)}}>{label}</button>)}</div>}
+    </ModuleHeader>
+    <nav className="urgency-filters" aria-label={L.urgencyFilter}>{Object.entries(L.urgencyFilters).map(([key,label])=><button key={key} aria-pressed={urgencyFilter===key} onClick={()=>setUrgencyFilter(key)}>{label}</button>)}</nav>
     <div hidden={operatorActive}>
     <nav aria-label="Widoki zamówień">{[['all',L.all],['new',L.waiting],['board',L.working],['done',L.done],...(has('orders.work') ? [['mine','Moje zadania']] : []),['shifts','Zmiany / historia'],...(has('orders.test.generate') ? [['generator','Generator UAT']] : []),...(has('orders.rates.manage') ? [['rates','Katalog i stawki']] : [])].map(([key,label]) => <button key={key} aria-pressed={tab === key} onClick={() => setTab(key)}>{label}{['all','new','board','done'].includes(key) ? ` (${orders.filter(o=>key==='all' || (key==='new' ? lifecycle(o)==='new' : key==='done' ? lifecycle(o)==='done' : ['partial','in_progress'].includes(lifecycle(o)))).length})` : ''}</button>)}</nav>
-    {chef && <OrderNotices notices={notices} error={noticeError} busy={ackBusy} onView={id=>{setTab('all');setFocusOrder({id,nonce:Date.now()})}} onRead={async id=>{
+    {chef && <OrderNotices notices={notices} error={noticeError} busy={ackBusy} onView={id=>{setTab('all');setUrgencyFilter('all');setFocusOrder({id,nonce:Date.now()})}} onRead={async id=>{
       if(ackBusy)return;setAckBusy(true)
       try {const {error}=await supabase.rpc('orders_notifications',{p_location:Number(location),p_ack:id});if(error)throw error;acknowledged.current.add(id);if(alive.current)setNotices(old=>old.filter(x=>x.id!==id))}
       catch {if(alive.current)setNoticeError(true)}finally{if(alive.current)setAckBusy(false)}
@@ -116,7 +122,7 @@ export default function OrdersApp({ employee, capabilities, onSignOut, onModules
     </>}
     {tab === 'all' && events && <section><h2>Historia {events.number}</h2>{events.rows.length === 0 && <p>Brak zdarzeń.</p>}{events.rows.map((e,n)=><p key={n}>{formatTime(e.at)} · {e.event} · {e.actor}</p>)}</section>}
     </div>
-    {operatorAllowed && operatorMounted && <div hidden={!operatorActive}><ProductionMode now={now} employee={employee} capabilities={capabilities} orders={orders} shift={shift} location={location} busy={busy} pending={pending} message={message} run={run}/></div>}
+    {operatorAllowed && operatorMounted && <div hidden={!operatorActive}><ProductionMode now={now} employee={employee} capabilities={capabilities} orders={rankedOrders} shift={shift} location={location} busy={busy} pending={pending} message={message} run={run}/></div>}
   </div>
 }
 function RateEditor({product,busy,save}) {

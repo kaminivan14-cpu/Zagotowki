@@ -55,8 +55,8 @@ test('Orders operational flow: generator, dispatch, split work, cutting, issue, 
  const open=async(id,role)=>{const context=await browser.newContext();contexts.push(context);const page=await context.newPage();await setup(page,s,id,role);await enter(page);return page}
  try{
   const admin=await open(1,'administrator');await admin.getByRole('button',{name:'Generator UAT',exact:true}).click();await admin.getByLabel('Produkt z katalogu',{exact:true}).selectOption('1');await admin.getByLabel('Ilość pozycji',{exact:true}).fill('10');await admin.getByRole('button',{name:'Utwórz zamówienie',exact:true}).click();await expect(admin.getByRole('status')).toHaveText('Zapisano.')
-  const manager=await open(2,'manager');await manager.getByRole('button',{name:/^Oczekujące/}).click();await manager.getByRole('button',{name:'Przekaż na kuchnię'}).click();await manager.getByRole('button',{name:/^Wszystkie/}).click();await expect(manager.getByRole('heading', {name:'TEST-000001'})).toBeVisible();await expect(manager.getByText('Katalog i stawki',{exact:true})).toHaveCount(0)
-  const maker=await open(4,'sushi-master');await maker.getByRole('button',{name:'Rozpocznij zmianę',exact:true}).click();await maker.getByRole('button',{name:'Inna',exact:true}).click();await maker.getByLabel('Ilość — Philadelphia Salmon').fill('6');await maker.getByRole('button',{name:'Weź',exact:true}).click();await maker.getByRole('button',{name:'Moje zadania',exact:true}).click();await maker.getByRole('button',{name:'Oddaj zadanie',exact:true}).click();await maker.getByRole('button',{name:'Potwierdź oddanie',exact:true}).click();await expect(maker.locator('.order-column')).toHaveCount(0);await maker.getByRole('button',{name:/^Wszystkie/}).click();await maker.getByRole('button',{name:'Inna',exact:true}).click();await maker.getByLabel('Ilość — Philadelphia Salmon').fill('6');await maker.getByRole('button',{name:'Weź',exact:true}).click();await expect(maker.getByRole('button',{name:'Gotowe',exact:true})).toBeEnabled();await maker.reload();await enter(maker);await expect(maker.getByRole('button',{name:'Zakończ zmianę',exact:true})).toBeVisible();await maker.getByRole('button',{name:'Moje zadania',exact:true}).click();await maker.getByRole('button',{name:'Gotowe',exact:true}).click();await expect(maker.getByRole('button',{name:'Gotowe',exact:true})).toHaveCount(0)
+  const manager=await open(2,'manager');await manager.getByRole('button',{name:/^Oczekujące/}).click();await manager.getByRole('button',{name:'Przekaż na kuchnię'}).click();await manager.getByRole('button',{name:/^Wszystkie \(/}).click();await expect(manager.getByRole('heading', {name:'TEST-000001'})).toBeVisible();await expect(manager.getByText('Katalog i stawki',{exact:true})).toHaveCount(0)
+  const maker=await open(4,'sushi-master');await maker.getByRole('button',{name:'Rozpocznij zmianę',exact:true}).click();await maker.getByRole('button',{name:'Inna',exact:true}).click();await maker.getByLabel('Ilość — Philadelphia Salmon').fill('6');await maker.getByRole('button',{name:'Weź',exact:true}).click();await maker.getByRole('button',{name:'Moje zadania',exact:true}).click();await maker.getByRole('button',{name:'Oddaj zadanie',exact:true}).click();await maker.getByRole('button',{name:'Potwierdź oddanie',exact:true}).click();await expect(maker.locator('.order-column')).toHaveCount(0);await maker.getByRole('button',{name:/^Wszystkie \(/}).click();await maker.getByRole('button',{name:'Inna',exact:true}).click();await maker.getByLabel('Ilość — Philadelphia Salmon').fill('6');await maker.getByRole('button',{name:'Weź',exact:true}).click();await expect(maker.getByRole('button',{name:'Gotowe',exact:true})).toBeEnabled();await maker.reload();await enter(maker);await expect(maker.getByRole('button',{name:'Zakończ zmianę',exact:true})).toBeVisible();await maker.getByRole('button',{name:'Moje zadania',exact:true}).click();await maker.getByRole('button',{name:'Gotowe',exact:true}).click();await expect(maker.getByRole('button',{name:'Gotowe',exact:true})).toHaveCount(0)
   const maker2=await open(5,'sushi-master');await maker2.getByRole('button',{name:'Rozpocznij zmianę',exact:true}).click();await maker2.getByRole('button',{name:'Weź całe zamówienie'}).click();await maker2.getByRole('button',{name:'Moje zadania',exact:true}).click();await maker2.getByRole('button',{name:'Gotowe',exact:true}).click()
   const chef=await open(3,'su-chef');await chef.getByRole('button',{name:'Rozpocznij zmianę',exact:true}).click();await expect(chef.getByText('Person 4 ×6',{exact:true})).toBeVisible()
   for(const qty of [6,4]){await chef.getByRole('button',{name:`Rozpocznij krojenie ×${qty}`,exact:true}).click();await chef.getByRole('button',{name:'Zakończ krojenie',exact:true}).click();await chef.getByRole('button',{name:'Wydane',exact:true}).click()}
@@ -67,7 +67,7 @@ test('Orders operational flow: generator, dispatch, split work, cutting, issue, 
  }finally{await Promise.allSettled(contexts.map(c=>c.close()))}
 })
 test('crafter skips module selector and cannot open Orders UI',async({page})=>{await setup(page,state(),6,'crafter');await expect(page.getByRole('button',{name:'Lokal 1',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:/ZAMÓWIENIA/})).toHaveCount(0)})
-test('shift manager gets operational screens, no catalog rates; local board only',async({page})=>{const s=state();s.orders=[{id:99,location_id:2,display_number:'OTHER-LOCATION',status:'TO_DO',items:[]}];await setup(page,s,7,'shift-manager');await enter(page);await expect(page.getByRole('button',{name:/^Wszystkie/})).toBeVisible();await expect(page.getByText('OTHER-LOCATION')).toHaveCount(0);await expect(page.getByRole('button',{name:'Katalog i stawki'})).toHaveCount(0)})
+test('shift manager gets operational screens, no catalog rates; local board only',async({page})=>{const s=state();s.orders=[{id:99,location_id:2,display_number:'OTHER-LOCATION',status:'TO_DO',items:[]}];await setup(page,s,7,'shift-manager');await enter(page);await expect(page.getByRole('button',{name:/^Wszystkie \(/})).toBeVisible();await expect(page.getByText('OTHER-LOCATION')).toHaveCount(0);await expect(page.getByRole('button',{name:'Katalog i stawki'})).toHaveCount(0)})
 
 test('dispatch double click submits one operation',async({page})=>{
  const s=state();s.orders=[{id:1,display_number:'TEST-DOUBLE',location_id:1,received_at:now(),status:'NEW',items:[]}]
@@ -88,7 +88,7 @@ test('manager monitors cutting and issued work without production actions or fin
  const deniedButtons=/^(Weź|Gotowe|Rozpocznij krojenie|Zakończ krojenie|Wydane|Katalog i stawki|Podsumowanie zmiany)/
  await expect(page.getByRole('button',{name:deniedButtons})).toHaveCount(0)
  cutting.completed_at=timestamp;cutting.issued_at=timestamp;s.orders[0].items[0].issued=2;s.orders[0].status='COMPLETED'
- await page.getByRole('button',{name:/^Wszystkie/}).click()
+ await page.getByRole('button',{name:/^Wszystkie \(/}).click()
  await expect(page.getByText('Wydane',{exact:true})).toBeVisible({timeout:10000})
  await expect(page.getByText('Zakończone',{exact:true})).toBeVisible()
  await expect(page.getByRole('button',{name:deniedButtons})).toHaveCount(0)
@@ -112,10 +112,10 @@ for (const viewport of [{width:1024,height:768},{width:768,height:1024},{width:1
   await expect(page.getByRole('status').filter({hasText:'Zapisano.'})).toHaveCount(1)
   expect(s.calls.find(c=>c.p_action==='rate').p_args.rate_minor).toBe(1250)
   await page.screenshot({path:`tmp/pin-audit.local/rates-${viewport.width}.png`,fullPage:true})
-  await page.getByRole('button',{name:'Pracownicy',exact:true}).click()
+  await page.getByText('Narzędzia ▾',{exact:true}).click();await page.getByRole('button',{name:'Pracownicy',exact:true}).click()
   await expect(page.getByRole('heading',{name:'Pracownicy',exact:true})).toBeVisible()
   await page.getByRole('button',{name:'← Powrót',exact:true}).click()
-  await page.getByRole('button',{name:'← Wybór modułów',exact:true}).click()
+  await page.getByRole('button',{name:'← Moduły',exact:true}).click()
   await expect(page.getByRole('heading',{name:'Co robisz?'})).toBeVisible()
  })
 }
@@ -134,7 +134,7 @@ for (const width of [375,768,1440]) test(`compact horizontal board, sets and dea
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
  await expect(page.getByText('Ukryty napój',{exact:true})).toHaveCount(0)
  await expect(page.getByText('Sos',{exact:true})).toHaveCount(5)
- const first=page.locator('.order-column').first()
+ const first=page.locator('.order-column[data-order-id="1"]')
  await expect(first.getByText(/Wydać o|Czas przygotowania|Po czasie/)).toHaveCount(0)
  await expect(page.locator('.deadline-warning')).toHaveCount(1)
  await expect(page.locator('.deadline-urgent')).toHaveCount(1)
@@ -316,4 +316,36 @@ test('operational column keeps cutting and issue commands and omits missing dead
  await board.getByRole('button',{name:'Wydane',exact:true}).click()
  await expect(board.locator('.order-column')).toHaveCount(0)
  expect(s.calls.map(c=>[c.p_action,c.p_args])).toEqual([['complete_cutting',{cutting_id:201}],['issue',{cutting_id:201}]])
+})
+
+for(const width of [375,768,1440])test(`shared urgency order, filter, timer and compact header ${width}`,async({page})=>{
+ await page.setViewportSize({width,height:1000})
+ const instant=new Date('2026-10-03T12:00:00Z');await page.clock.install({time:instant})
+ const at=n=>new Date(+instant+n*60000).toISOString(),s=state()
+ s.orders=[['NULL',null],['NORMAL',60],['WARNING',20],['URGENT',8],['OVERDUE',-3]].map(([name,minutes],i)=>({id:i+1,display_number:name,location_id:1,status:'TO_DO',received_at:at(-50),sent_to_kitchen_at:at(-18),estimated_prep_minutes:20,ready_at:minutes===null?null:at(minutes),items:[{id:i+1,name:'Roll '+name,item_type:'product',quantity:2,available:2,issued:0,assignments:[]}]}))
+ await setup(page,s,1,'administrator');await enter(page)
+ const general=page.getByRole('region',{name:'Tablica zamówień',exact:true}),operational=page.getByRole('region',{name:'Operacyjna tablica zamówień'})
+ const order=['OVERDUE','URGENT','WARNING','NORMAL','NULL']
+ await expect(general.locator('.order-heading h2')).toHaveText(order)
+ await expect(general.getByText('Czas przygotowania: 18 min',{exact:true})).toHaveCount(5)
+ await expect(general.getByText('Przewidywany czas przygotowania ~20 min',{exact:true})).toHaveCount(5)
+ await page.getByRole('button',{name:'Tryb operacyjny',exact:true}).click()
+ await expect(operational.locator('.order-heading h2')).toHaveText(order)
+ const filters=page.getByRole('navigation',{name:'Pilność zamówień'})
+ for(const [label,names] of [['Po czasie',['OVERDUE']],['≤ 10 min',['URGENT']],['≤ 30 min',['WARNING']],['Pozostałe',['NORMAL','NULL']]]) {
+  await filters.getByRole('button',{name:label,exact:true}).click();await expect(operational.locator('.order-heading h2')).toHaveText(names)
+  await page.getByRole('button',{name:'Tryb ogólny',exact:true}).click();await expect(general.locator('.order-heading h2')).toHaveText(names)
+  await page.getByRole('button',{name:'Tryb operacyjny',exact:true}).click()
+ }
+ await filters.getByRole('button',{name:'Po czasie',exact:true}).click()
+ await page.clock.fastForward(9*60000)
+ await expect(operational.locator('.order-heading h2')).toHaveText(['OVERDUE','URGENT'])
+ await expect(operational.getByText('Czas przygotowania: 27 min',{exact:true})).toHaveCount(2)
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
+ await page.screenshot({path:`tmp/orders-board.local/cleanup-${width}.png`,fullPage:true})
+ await expect(page.getByRole('button',{name:'Pracownicy',exact:true})).toBeHidden()
+ await page.getByText('Narzędzia ▾',{exact:true}).focus();await page.keyboard.press('Enter')
+ await expect(page.getByRole('button',{name:'Pracownicy',exact:true})).toBeVisible()
+ await page.keyboard.press('Escape');await expect(page.getByRole('button',{name:'Pracownicy',exact:true})).toBeHidden()
+ await page.getByText('Konto ▾',{exact:true}).click();await expect(page.getByRole('button',{name:'Wyloguj',exact:true})).toBeVisible()
 })

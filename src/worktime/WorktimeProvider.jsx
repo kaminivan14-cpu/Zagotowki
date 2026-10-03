@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useRef,useState} from 'react'
 import {supabase} from '../supabase'
-import {worktimeError,date,time,duration} from './client'
+import {worktimeError,duration} from './client'
 import './worktime.css'
 import {WorktimeContext as Context,useWorktime} from './context'
 export default function WorktimeProvider({employee,capabilities,module,onSignOut,children}){
@@ -64,7 +64,7 @@ export function WorktimeBar({location,locations=[],onLocation,onPanel,canAccess,
  if(!w?.enabled)return null
  return <nav className="worktime-bar" aria-label="Czas pracy">
  {canAccess && <button onClick={onPanel}>Czas pracy</button>}
- {showSession && <>{w.current?<><span>W pracy od {date(w.current.started_at)} {time(w.current.started_at)} · {duration((now-Date.parse(w.current.started_at))/60000)}</span><button disabled={w.busy||Boolean(w.pending)} onClick={()=>w.end().catch(()=>{})}>Zakończ pracę</button></>:<>
+ {showSession && <>{w.current?<><span>● W pracy · {duration((now-Date.parse(w.current.started_at))/60000)}</span><button disabled={w.busy||Boolean(w.pending)} onClick={()=>w.end().catch(()=>{})}>Zakończ pracę</button></>:<>
  {onLocation && <label>Lokal pracy<select aria-label="Lokal pracy" value={location||''} onChange={e=>onLocation(e.target.value)}><option value="">Wybierz lokal</option>{locations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></label>}
  <button disabled={!location||w.busy||Boolean(w.pending)} onClick={()=>w.start(location).catch(()=>{})}>Rozpocznij pracę</button>
  </>}</>}

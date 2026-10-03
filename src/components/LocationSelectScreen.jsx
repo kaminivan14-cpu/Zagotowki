@@ -1,4 +1,5 @@
 export default function LocationSelectScreen({
+  header,
   pracownik,
   lokale,
   wylogujPracownika,
@@ -7,7 +8,7 @@ export default function LocationSelectScreen({
 }) {
   return (
     <div className="app">
-      <header>
+      {header || <header>
         <h1>ZAGOTÓWKI</h1>
 
         <p>
@@ -31,13 +32,13 @@ export default function LocationSelectScreen({
     👥 Pracownicy
   </button>
 )}
-      </header>
+      </header>}
 
-      <main>  
+      <main className="location-choice">
 
-          <h2>Gdzie pracujesz?</h2>
+          <h2>Wybierz lokal</h2>
 
-          <div className="produkty">
+          <div className="location-cards">
            {lokale
   .filter((lokal) => {
     if (['owner', 'administrator'].includes(pracownik.role)) {
@@ -49,7 +50,7 @@ export default function LocationSelectScreen({
   .map((lokal) => (
               <button
                 key={lokal.id}
-                className="produkt"
+                className="location-card"
                 onClick={() =>
                   wybierzLokal(lokal)
                 }

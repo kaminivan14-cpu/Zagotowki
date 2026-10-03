@@ -26,3 +26,20 @@ test('normalized source explicitly carries timing and per-set composition, never
  assert.throws(()=>normalizeOrder({...input,estimated_prep_minutes:0},products,locations),/INVALID_PREP_TIME/)
  assert.throws(()=>normalizeOrder({...input,items:[{productKey:'set',quantity:2,children:[]}]},products,locations),/INVALID_SET/)
 })
+
+test('shared urgency sorting, filters and client threshold transitions',async()=>{
+ const {sortedOrders}=await import('../src/orders/board.js')
+ const make=(id,ready,received=-100)=>({id,ready_at:ready===null?null:at(ready),received_at:at(received),lifecycle:'in_progress',items:[]})
+ const orders=[make(6,null,-50),make(4,60),make(3,20),make(5,null,-100),make(2,8),make(1,-3)]
+ assert.deepEqual(sortedOrders(orders,now).map(o=>o.id),[1,2,3,4,5,6])
+ assert.deepEqual(sortedOrders(orders,now,'warning').map(o=>o.id),[3])
+ assert.deepEqual(sortedOrders(orders,now+21*60000,'overdue').map(o=>o.id),[1,2,3])
+ assert.deepEqual(orders.map(o=>o.id),[6,4,3,5,2,1])
+})
+test('actual preparation starts only from dispatch timestamp with minute/hour/day formatting',async()=>{
+ const {preparationTime}=await import('../src/orders/board.js')
+ assert.equal(preparationTime({created_at:at(-100),received_at:at(-90)},now),null)
+ for(const [minutes,value] of [[18,'18 min'],[68,'1 h 08 min'],[1560,'1 d 2 h']])
+  assert.equal(preparationTime({sent_to_kitchen_at:at(-minutes),created_at:at(-9999)},now),value)
+ assert.equal(preparationTime({sent_to_kitchen_at:'invalid'},now),null)
+})

@@ -148,3 +148,8 @@
 .orders-app .orders-mode-switch button { border:0; border-radius:0; min-height:48px; }
 .orders-app .orders-mode-switch button[aria-pressed=true] { background:#215649; color:white; }
 .orders-app .orders-mode-switch button:focus-visible { outline:3px solid #e5a700; outline-offset:-3px; }
+.orders-app .urgency-filters { display:flex; flex-wrap:wrap; gap:4px; padding:6px 0; border:0; }
+.orders-app .urgency-filters button { min-height:44px; padding:8px 12px; font-size:14px; border-radius:20px; }
+.orders-app .urgency-filters button[aria-pressed=true] { background:#245a48; color:white; }
+.order-column .order-prep { font-size:13px; margin:6px 0; }
+.order-column .order-prep.estimated { color:#586660; }

@@ -4,7 +4,7 @@ import { supabase } from '../supabase'
 import OrdersApp from './OrdersApp'
 const TasksApp = lazy(() => import('../tasks/TasksApp'))
 import './orders.css'
-import WorktimeProvider, {WorktimeBar} from '../worktime/WorktimeProvider'
+import WorktimeProvider from '../worktime/WorktimeProvider'
 import {useWorktime} from '../worktime/context'
 import WorktimePanel from '../worktime/WorktimePanel'
 const modules = [
@@ -20,14 +20,13 @@ export default function ModuleShell({ pracownik, onSignOut }) {
  return <WorktimeProvider employee={pracownik} capabilities={caps} module={module} onSignOut={onSignOut}><ModuleContent {...{pracownik,caps,module,setModule,onSignOut}}/></WorktimeProvider>
 }
 function ModuleContent({pracownik,caps,module,setModule,onSignOut}){
- const w=useWorktime(),[panel,setPanel]=useState(false),[location,setLocation]=useState(pracownik.location_id||''),[locations,setLocations]=useState([])
- useEffect(()=>{if(!w.enabled)return;let alive=true;supabase.from('Locations').select('id,name').eq('active',true).then(r=>{if(alive&&!r.error)setLocations(r.data||[])});return()=>{alive=false}},[w.enabled])
+ const w=useWorktime(),[panel,setPanel]=useState(false)
  const available=modules.filter(m=>caps.includes(m.permission)),back=()=>setModule(null)
  const canAccess=caps.includes('worktime.access')
  let screen
- if(module==='production' && caps.includes('production.access'))screen=<>{available.length>1 && <nav className="module-nav"><button onClick={back}>← Wybór modułów</button></nav>}<App pracownik={pracownik} onSignOut={w.logout} onStartWork={w.enabled?loc=>w.start(loc,'production'):undefined}/></>
+ if(module==='production' && caps.includes('production.access'))screen=<App pracownik={pracownik} onModules={available.length>1?back:undefined} onWorktime={canAccess?()=>setPanel(true):undefined} onSignOut={w.logout} onStartWork={w.enabled?loc=>w.start(loc,'production'):undefined}/>
  else if(module==='orders' && caps.includes('orders.access'))screen=<OrdersApp employee={pracownik} capabilities={caps} onSignOut={w.logout} onModules={back} onWorktime={()=>setPanel(true)}/>
  else if(module==='tasks' && caps.includes('tasks.access'))screen=<Suspense fallback={<p role="status">Завантаження роботи…</p>}><TasksApp employee={pracownik} onSignOut={onSignOut} onModules={back}/></Suspense>
  else screen=<div className="app module-selector"><h1>Co robisz?</h1>{available.map(m=><button key={m.id} onClick={()=>setModule(m.id)}>{m.label}<small>{m.description}</small></button>)}{!available.length && <p>Brak dostępnych modułów.</p>}<button onClick={w.logout}>Wyloguj</button></div>
- return <><div hidden={panel}>{module==='production'&&<WorktimeBar location={location} locations={locations} onLocation={setLocation} canAccess={canAccess} onPanel={()=>setPanel(true)}/>} {screen}</div>{panel&&canAccess&&<WorktimePanel capabilities={caps} onBack={()=>setPanel(false)}/>}</>
+ return <><div hidden={panel}>{screen}</div>{panel&&canAccess&&<WorktimePanel capabilities={caps} onBack={()=>setPanel(false)}/>}</>
 }

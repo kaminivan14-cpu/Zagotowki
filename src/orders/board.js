@@ -47,3 +47,22 @@ export function operationalChips(order) {
 }
 
 export const orderDeadline = (order, now) => lifecycle(order)==='done' ? null : deadline(order.ready_at, now)
+
+// One projection for both boards. Missing deadlines follow dated orders.
+export const urgencyLevel = (order, now) => orderDeadline(order, now)?.level || 'normal'
+export function sortedOrders(orders, now, filter = 'all') {
+  const ranks = {overdue:0, urgent:1, warning:2, normal:3}
+  const stamp = value => Number.isFinite(Date.parse(value)) ? Date.parse(value) : Infinity
+  return orders.filter(o => filter === 'all' || urgencyLevel(o, now) === filter).sort((a,b) =>
+    ranks[urgencyLevel(a,now)] - ranks[urgencyLevel(b,now)] ||
+    stamp(a.ready_at) - stamp(b.ready_at) ||
+    stamp(a.received_at || a.sent_to_kitchen_at) - stamp(b.received_at || b.sent_to_kitchen_at) || String(a.id).localeCompare(String(b.id), undefined, {numeric:true}))
+}
+export function preparationTime(order, now) {
+  const start = Date.parse(order.sent_to_kitchen_at)
+  if (!Number.isFinite(start)) return null
+  const minutes = Math.max(0, Math.floor((now-start)/60000))
+  if (minutes < 60) return `${minutes} min`
+  if (minutes < 1440) return `${Math.floor(minutes/60)} h ${String(minutes%60).padStart(2,'0')} min`
+  return `${Math.floor(minutes/1440)} d ${Math.floor(minutes%1440/60)} h`
+}

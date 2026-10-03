@@ -15,7 +15,7 @@ export default function ProductionMode({ employee, capabilities, orders, shift, 
     <p>{L.availableWork} · {available.length}</p>
     {!mine.length && !available.length && <p className="empty-state">{L.empty}</p>}
     <div className="orders-horizontal" role="region" aria-label={L.operatorBoard} tabIndex={0}>
-     {orders.filter(o=>[...mine,...available].some(t=>t.orderId===o.id)).sort((a,b)=>Number(mine.some(t=>t.orderId===b.id))-Number(mine.some(t=>t.orderId===a.id))).map(order=>{
+     {orders.filter(o=>[...mine,...available].some(t=>t.orderId===o.id)).map(order=>{
       const tasks=[...mine,...available].filter(t=>t.orderId===order.id), urgency=orderDeadline(order,now)
       const groups=new Map()
       for(const task of tasks) {
@@ -24,7 +24,7 @@ export default function ProductionMode({ employee, capabilities, orders, shift, 
        groups.get(key).push(task)
       }
       return <article key={order.id} data-order-id={order.id} className={`order-column deadline-${urgency?.level || 'normal'}`}>
-       <OrderHeader order={order} urgency={urgency}/>
+       <OrderHeader order={order} urgency={urgency} now={now}/>
        {[...groups].map(([key,rows])=>{
         const parent=order.items.find(i=>i.id===rows[0].parentId)
         return <section key={key} className={parent?'operator-set':'operator-items'}>

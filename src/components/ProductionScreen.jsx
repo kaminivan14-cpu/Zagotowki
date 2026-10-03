@@ -5,6 +5,7 @@ import PlanItemDetailsFields from './PlanItemDetailsFields'
 import { hasProductionHistory } from '../planItemDetails'
 
 export default function ProductionScreen({
+  header,
   onRequirements,
   mozeUsunacPlan,
   usunPlan,
@@ -53,13 +54,13 @@ export default function ProductionScreen({
 
   return (
     <div className="app">
-        <header>
+        {header || <header>
           <h1>ZAGOTÓWKI</h1>
 
           <p>
             {wybranyLokal?.name}
           </p>
-        </header>
+        </header>}
 
         <main>
           <p style={{ marginBottom: '16px' }}>Plan: {dataPlanu}</p>
@@ -200,7 +201,7 @@ export default function ProductionScreen({
       </button>
     </div>
 )}
-          {['owner', 'administrator'].includes(pracownik?.role) && (
+          {!header && ['owner', 'administrator'].includes(pracownik?.role) && (
   <button
     className="powrot"
     onClick={zmienLokal}
@@ -212,7 +213,7 @@ export default function ProductionScreen({
   </button>
 )}
 
-{['owner', 'administrator', 'manager'].includes(pracownik?.role) && (
+{!header && ['owner', 'administrator', 'manager'].includes(pracownik?.role) && (
   <button
     className="powrot"
     onClick={pobierzPracownikow}
@@ -224,7 +225,7 @@ export default function ProductionScreen({
     👥 Pracownicy
   </button>
 )}
-<button
+{!header && <button
   className="powrot"
   onClick={wylogujPracownika}
   style={{
@@ -233,7 +234,7 @@ export default function ProductionScreen({
   }}
 >
   🚪 Wyloguj
-</button>
+</button>}
 <button
   className="powrot"
   onClick={pobierzHistorie}

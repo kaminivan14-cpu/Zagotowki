@@ -16,9 +16,8 @@ export default function OrdersBoard({ orders, employee, capabilities, shift, dis
  {orders.map(order => {
   const items = visibleItems(order), urgency = orderDeadline(order,now), selected = selectedItems(order,selection)
   return <article key={order.id} tabIndex={-1} ref={el=>{if(el)cards.current.set(String(order.id),el);else cards.current.delete(String(order.id))}} data-order-id={order.id} className={`order-column deadline-${urgency?.level || 'normal'}`}>
-   <OrderHeader order={order} urgency={urgency}/>
+   <OrderHeader order={order} urgency={urgency} now={now}/>
    <p>{L.visible(items.filter(operational).length)}</p>
-   {order.estimated_prep_minutes != null && <p>{L.prep(order.estimated_prep_minutes)}</p>}
    {order.status==='NEW' && has('orders.dispatch') && button(L.dispatch,'send',{order_id:order.id})}
    {has('orders.work') && order.status!=='NEW' && lifecycle(order)!=='done' && <div className="order-claim-buttons">
     {button(L.wholeOrder,'claim_all',{order_id:order.id},!shift || !items.some(i=>operational(i)&&i.available>0))}
