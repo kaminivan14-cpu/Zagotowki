@@ -1,0 +1,33 @@
+.tasks-app main.planning-main {max-width:none}
+.tasks-workspace,.tasks-app .task-editor {line-height:1.4;color:#25364b}
+.tasks-workspace h2 {font-size:30px}.workspace-muted,.tasks-workspace small,.task-editor small{color:#63748c}
+.workspace-heading,.workspace-toolbar {display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}.workspace-heading{justify-content:space-between}
+.tasks-workspace :is(button,input,select),.task-editor :is(button,input,select,textarea){border-color:#d8e2ef}
+.tasks-app .tasks-workspace button[aria-pressed=true],.tasks-app .tasks-workspace .primary,.tasks-app .task-editor .primary,.tasks-app .task-editor button[aria-pressed=true]{background:#1769e0;color:white;border-color:#1769e0}
+.tasks-workspace button[aria-pressed=true]:hover,.tasks-workspace .primary:hover,.task-editor .primary:hover{background:#1254b5}
+.tasks-workspace button:disabled,.task-editor button:disabled{cursor:not-allowed}
+.schedule-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin-top:18px}
+.schedule-calendar article{background:white;border:1px solid #dce6f3;border-radius:12px;padding:8px;min-width:0}
+.tasks-workspace .schedule-day{width:100%;text-align:left;border:0;padding:6px;font-size:14px;background:#f4f8fd;color:#25364b;opacity:1}
+.schedule-event{padding:8px;border-radius:8px;margin:8px 0;font-size:13px;overflow-wrap:anywhere;background:#eaf3fb}
+.schedule-event p{margin:5px 0}.tasks-workspace .schedule-event button{font-size:12px;padding:6px;min-height:44px}
+.event-day_off{background:#f0f1f4}.event-vacation{background:#e6f4ec}.event-meeting{background:#f0edfc}.event-absence{background:#fff0e4}
+.schedule-empty{font-size:13px;color:#597460}.schedule-calendar small{font-size:12px}
+.tasks-app .task-editor{margin:8px 0;padding:0;border:0;background:transparent}
+.task-editor section,.task-editor details{background:white;border:1px solid #dce6f3;border-radius:10px;padding:12px;margin-bottom:10px}
+.task-editor h3{margin:0 0 8px}.tasks-app .task-editor label{display:flex;flex-direction:column;align-items:stretch;margin:8px 0;font-size:14px;gap:4px}
+.task-editor label:has(input[type=checkbox]){flex-direction:row;align-items:center}.editor-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
+.task-editor textarea{min-height:64px}.editor-actions{position:sticky;bottom:-16px;padding:12px 0;background:#f4f5f7;display:flex;gap:10px;z-index:1}
+.editor-row{display:flex;align-items:center;gap:8px}.editor-row label,.editor-row span{flex:1;min-width:0}.task-editor summary,.report-week summary{cursor:pointer;padding:10px 0;font-weight:600;min-height:44px}
+.task-editor .dependency-result{display:block;width:100%;text-align:left;margin:6px 0}
+.report-layout{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:22px;margin-top:20px}.tasks-app .report-sidebar{background:none;padding:0;color:inherit}
+.report-sidebar section,.report-day,.report-week{background:white;border:1px solid #dce6f3;border-radius:12px;padding:16px;margin-bottom:12px}
+.report-day{display:grid;grid-template-columns:140px minmax(0,1fr);gap:16px}.report-day h3{font-size:16px;margin:0 0 6px}.report-row{display:grid;grid-template-columns:8px minmax(120px,1fr) auto auto;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #edf2f8;font-size:13px}.report-row:last-child{border:0}
+.tasks-workspace .report-title{border:0;padding:4px 0;min-height:44px;text-align:left;background:none;overflow-wrap:anywhere;font-size:14px}.report-row small{display:block}.report-category{grid-column:2/-1;color:#626488}.report-badge{padding:5px 8px;border-radius:7px;max-width:155px}.kind-planned{background:#eaf3ff;color:#1760be}.kind-unplanned{background:#edf0f5;color:#586880}.kind-unknown{background:#fff5de;color:#7b5b0d}.report-dot{height:8px;width:8px;border-radius:50%;background:#1769e0}.report-dot.kind-unplanned{background:#98a6bf}.report-dot.kind-unknown{background:#d0a947}
+.report-total{font-size:28px;display:block}.report-donut{width:170px;height:170px;margin:12px auto;border-radius:50%;display:grid;place-items:center}.report-donut span{background:white;width:122px;height:122px;border-radius:50%;display:grid;place-items:center;text-align:center;padding:12px;font-weight:700}
+.report-category-bar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px;margin:12px 0;font-size:13px}.report-category-bar progress{grid-column:1/-1;height:7px;accent-color:#7cacdf}.report-category-bar strong{grid-column:2;grid-row:1}
+@media(max-width:1100px){.schedule-calendar{grid-template-columns:repeat(4,minmax(0,1fr))}.report-layout{grid-template-columns:minmax(0,1fr) 250px;gap:12px}.report-day{grid-template-columns:100px minmax(0,1fr)}.report-row{grid-template-columns:8px minmax(0,1fr)}.report-badge,.report-row>strong{grid-column:2}}
+@media(max-width:800px){.schedule-calendar{grid-template-columns:repeat(2,minmax(0,1fr))}.report-layout{grid-template-columns:1fr}.report-sidebar{display:grid;grid-template-columns:1fr 1fr;gap:12px}.report-day{grid-template-columns:110px minmax(0,1fr)}}
+@media(max-width:500px){.schedule-calendar,.editor-grid,.report-sidebar,.report-day{grid-template-columns:1fr}.workspace-toolbar>label{width:100%}.tasks-workspace h2{font-size:25px}.workspace-toolbar>div{display:flex;flex-wrap:wrap}.report-row{grid-template-columns:8px minmax(0,1fr)}.editor-actions{bottom:-10px}.task-editor .workspace-toolbar button{padding:8px}.report-category-bar{grid-template-columns:1fr}.report-category-bar strong{grid-column:1;grid-row:auto}}
+
+.report-day>div:first-child>strong{display:block;margin-top:5px}.report-day time{font-size:14px;color:#63748c}.report-sidebar p{font-size:14px;line-height:1.5}.tasks-app .report-category-bar progress{accent-color:#7cacdf}

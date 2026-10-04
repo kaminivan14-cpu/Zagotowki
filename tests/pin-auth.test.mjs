@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { pinHandler } from '../supabase/functions/_shared/pin-handlers.js'
-import { UAT_URL, PROD_URL, PIN_ERROR, hmac, signedMessage, validPin, validPinEmail, validSignature } from '../supabase/functions/_shared/pin-protocol.js'
+import { UAT_URL, PROD_URL, PIN_ERROR, hmac, signedMessage, managementOrigin, validPin, validPinEmail, validSignature } from '../supabase/functions/_shared/pin-protocol.js'
 
 const secret = 'test-only-proxy-secret-not-a-deployed-credential'
 const uid = '11111111-1111-4111-8111-111111111111'
@@ -19,12 +19,13 @@ function fixture(t, settings = {}) {
   const calls = [], logs = []
   t.mock.method(console, 'info', (...args) => logs.push(args))
   const env = name => ({ SUPABASE_URL: settings.url ?? (settings.environment === 'production' ? PROD_URL : UAT_URL), SUPABASE_SERVICE_ROLE_KEY: 'server-test-key', SUPABASE_ANON_KEY: 'public-test-key',
-    PIN_PROXY_SECRET: secret, APP_ENV: settings.environment ?? 'uat', APP_URL: settings.origin ?? 'https://preview.test' })[name]
+    PIN_PROXY_SECRET: secret, APP_ENV: settings.environment ?? 'uat', PIN_MANAGEMENT_ORIGINS: settings.additionalOrigins, APP_URL: settings.origin ?? 'https://preview.test' })[name]
   const targetRow = { ...row, email: settings.email ?? (settings.environment === 'production' ? `${uid}@pin.prod.invalid` : row.email) }
   const account = { id: uid, email: targetRow.email, app_metadata: { pin_employee_id: '2' } }
   const admin = {
     rpc: async (name, args) => {
       calls.push([name, args])
+      if (settings.failureAt === name) return { error: { message: settings.failureMessage, code: 'P0001' } }
       if (settings.rpcError) return { error: { message: 'private' } }
       if (name === 'pin_reserve') return ok(settings.allowed ?? true)
       if (name === 'pin_verify') return ok(settings.denied ? [] : [targetRow])
@@ -195,3 +196,40 @@ test('management rejects six-digit NEW PIN even in production',async t=>{
  assert.equal(response.status,400)
  assert.equal(f.calls.some(([name])=>name==='pin_finish'||name==='pin_prepare'),false)
 })
+
+const ordersOrigin = 'https://zagotowki-eylp1zta5-sbla-b.vercel.app'
+test('exact UAT management origin supports browser preflight and still requires admin bearer', async t => {
+  const f = fixture(t, { additionalOrigins: ordersOrigin })
+  const handler = pinHandler('manage', f.deps)
+  const preflight = await handler(new Request('https://edge.test/manage', { method:'OPTIONS', headers:{origin:ordersOrigin} }))
+  assert.equal(preflight.status,204)
+  assert.equal(preflight.headers.get('access-control-allow-origin'),ordersOrigin)
+  const denied = await handler(new Request('https://edge.test/manage', { method:'POST', headers:{origin:ordersOrigin}, body:'{}' }))
+  assert.equal(denied.status,401)
+  assert.equal(f.calls.some(([name])=>name==='pin_prepare'),false)
+  const untrusted = await handler(new Request('https://edge.test/manage', { method:'OPTIONS', headers:{origin:ordersOrigin+'.attacker.invalid'} }))
+  assert.equal(untrusted.status,403)
+})
+test('extra management origins cannot change production or signed-login origin', async t => {
+  const config = {environment:'production',origin:'https://production.test'}
+  assert.equal(managementOrigin(config,ordersOrigin,ordersOrigin),config.origin)
+  assert.equal(managementOrigin({...config,environment:'uat'},'https://other.test','*,http://other.test,https://other.test/path'),config.origin)
+  const f = fixture(t,{additionalOrigins:ordersOrigin})
+  const response = await pinHandler('login',f.deps)(await request(undefined,{origin:ordersOrigin}))
+  assert.equal(response.status,403)
+})
+for (const [message,code,status] of [['PIN unavailable','PIN_UNAVAILABLE',409],['Unavailable target','TARGET_UNAVAILABLE',403],['Existing non-PIN identity','EXISTING_IDENTITY',409]]) {
+  test(`management safe diagnostics: ${code}`, async t => {
+    const f = fixture(t,{failureAt:'pin_prepare',failureMessage:message})
+    const response = await pinHandler('manage',f.deps)(new Request('https://edge.test/manage',{method:'POST',headers:{authorization:'Bearer private-token'},body:JSON.stringify({employee_id:2,pin:'0091',operation_id:id})}))
+    assert.equal(response.status,status)
+    const result = await response.json()
+    assert.equal(result.code,code)
+    assert.equal(result.retry_same_operation,false)
+    assert.match(result.request_id,/^[a-f0-9-]{36}$/)
+    const logs = JSON.stringify(f.logs)
+    assert.equal(logs.includes('pin_prepare'),true)
+    assert.equal(logs.includes('0091'),false)
+    assert.equal(logs.includes('private-token'),false)
+  })
+}

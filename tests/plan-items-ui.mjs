@@ -28,8 +28,9 @@ async function setup(role='manager',otherLocation=false) {
   if(!u.pathname.startsWith('/rest/v1/'))return route.abort()
   const name=u.pathname.split('/').pop();let data=[]
   if(u.pathname.includes('/rpc/')) {
-   const b=req.postDataJSON();if(name!=='auth_employee_profile')calls.push({name,body:b})
+   const b=req.postDataJSON();if(!['auth_employee_profile','auth_capabilities'].includes(name))calls.push({name,body:b})
    if(name==='auth_employee_profile') data=[employee]
+   else if(name==='auth_capabilities') data=['production.access']
    else if(name==='add_plan_item') {data=100+items.length;items.push({id:data,plan_id:b.p_plan_id,nazwa:b.p_nazwa,product_external_id:b.p_product_external_id,ilosc:b.p_ilosc,jednostka:b.p_jednostka,priorytet:b.p_priorytet,note:b.p_note,ready_time:b.p_ready_time,gotowe:false})}
    else if(name==='update_plan_item') Object.assign(items.find(i=>i.id===b.p_item_id),{nazwa:b.p_nazwa,product_external_id:b.p_product_external_id,ilosc:b.p_ilosc,jednostka:b.p_jednostka,priorytet:b.p_priorytet,note:b.p_note,ready_time:b.p_ready_time})
    else if(name==='update_production_plan') items=b.p_items.map((i,n)=>({...i,id:20+n,plan_id:1,gotowe:false}))

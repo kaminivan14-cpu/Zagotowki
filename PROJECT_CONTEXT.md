@@ -119,3 +119,40 @@ Po zatwierdzeniu: konfiguracja wyłącznie UAT/Preview, migracja
 `202609290001_employee_pin.sql`, wdrożenie funkcji i proxy, provisioning fikcyjnych
 pracowników oraz realny test sesji i izolacji lokali. Szczegóły i bramki bezpieczeństwa:
 `docs/pin-auth-uat.md`. Bez rollout Production przed osobną decyzją.
+
+## 12. Checkpoint Orders/PIN — 2026-10-01 (nadrzędny wobec starszych checkpointów)
+
+- Branch `feature/orders`, baza `066f924`; poprawki Orders/Pracownicy/PIN przygotowane lokalnie.
+- Potwierdzona blokada PIN UAT: CORS dopuszczał tylko Preview `feature/auth`, żądanie z podanego Preview Orders otrzymało 403 przed Auth/RPC.
+- Przed ograniczeniem przez operatora pracy do lokalnej ustawiono na UAT `APP_ENV=uat` i `PIN_MANAGEMENT_ORIGINS` z dokładnym istniejącym originem Orders. Funkcji/frontendów nie wdrożono, push nie wykonano. Sam zapis konfiguracji nie usuwa blokady w starej funkcji.
+- Production nietknięty. Brak migracji SQL i zapisów kont/PIN/danych biznesowych.
+- Od instrukcji operatora: zakaz przeglądarki/Computer Use, zalogowanych sesji Maca i dalszych operacji Vercel/Supabase; wdrożenie i hosted testy wykonuje operator.
+- Instrukcja, wyniki i checklisty: `docs/orders-pin-uat-fix.md`.
+
+## 13. Tasks checkpoint — 2026-10-02
+
+- Branch `feature/task-management`, from local `feature/orders`; local work only.
+- User authorized implementing all task phases locally, separate commits; no push,
+  merge, remote migrations, UAT or PROD deploy. This authorization supersedes the
+  earlier analysis-only stop for the new task module.
+- Added central Tasks model, organization scope, task capabilities, append-only
+  history, approvals, schedule/capacity/planning, transactional queue, nested
+  critical interruptions, balancing/recommendations, reports and recurring foundation.
+- New roles: owner (distinct from administrator), director, expert, specialist.
+  Owner has explicit legacy admin compatibility; task-only roles cannot call production
+  or Orders endpoints. Production PIN credentials and Auth identities remain unchanged.
+- New UI in `src/tasks`, Ukrainian, lazy-loaded through generalized ModuleShell.
+  Current month = current week + 3 weeks; weekly Mon–Thu current / Fri–Sun next.
+- New migration chain `202610020001` through `202610020012`; earlier migrations untouched.
+- RLS enabled with no direct client grants on new tables; public RPCs explicitly check
+  identity, capabilities and scope. Private functions have no client EXECUTE.
+- Graph/employee locks and task versions protect queue, critical, planning and balance.
+  Periodic generator is explicit/manual, no scheduler. No AI API/UI.
+- Local checks: unit suite 88 pass; full Playwright suite 51 pass, latest Tasks subset
+  8 pass; Tasks PostgreSQL 111 checks; Orders after Tasks migrations 154 checks;
+  PIN PostgreSQL 70; production upgrade PostgreSQL 126; existing migration/UI checks pass.
+- Build passes (main bundle size advisory remains), lint clean. Hosted Auth and actual
+  remote schemas remain unverified and require a separately authorized UAT phase.
+- Runbooks: `docs/tasks-architecture.md`, `docs/tasks-rollout.md`,
+  `docs/tasks-implementation-report.md`. Before any remote operation verify the target
+  project-ref again; do not treat old recorded environment checkpoints as current state.

@@ -4,3 +4,28 @@
 .auth-form input, .auth-form select { width: 100%; box-sizing: border-box; padding: 12px; font: inherit; border: 1px solid #94a3b8; border-radius: 8px; background: white; color: #111827; }
 .auth-form button { min-height: 44px; }
 .auth-form p { overflow-wrap: anywhere; }
+
+.employees-screen { text-align: left; color: #1e293b; }
+.employees-screen main { max-width: 1100px; padding: 20px 16px 40px; }
+.employees-screen button { min-height: 46px; padding: 10px 14px; border-radius: 8px; border: 1px solid #94a3b8; background: #fff; color: #233d34; cursor: pointer; font-weight: 600; }
+.employees-screen button.primary-action { background: #215649; color: #fff; border-color: #215649; }
+.employees-screen button.danger-action { color: #a12222; border-color: #ca8e8e; background: #fff6f6; }
+.employees-screen button:hover:not(:disabled) { box-shadow: 0 0 0 2px #91aea0; }
+.employees-screen button:disabled { opacity: 1; color: #58675f; background: #e5eae7; border-color: #c6d0ca; cursor: not-allowed; }
+.employees-screen .employee-card h2 { font-size: 22px; margin: 0 0 6px; color: #172b26; font-weight: 750; }
+.employee-card > p { margin: 6px 0; }
+.employee-state { display: inline-block; padding: 5px 9px; border-radius: 6px; font-size: 15px; background: #e5eae7; color: #37473f; }
+.employee-state.is-active { background: #e0eee5; color: #215233; }
+.employee-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.employee-actions > p { flex-basis: 100%; color: #5d4920; font-size: 14px; }
+.employee-pin { border-top: 2px solid #8fb6a4; padding-top: 16px; margin-top: 16px; gap: 10px; }
+.employee-pin h3 { margin: 0; color: #172b26; font-size: 19px; }
+.employees-screen .auth-form label { display: grid; font-size: 16px; gap: 6px; }
+.employee-pin input { max-width: 180px; font-size: 20px; letter-spacing: 6px; }
+.employee-pin p { font-size: 15px; }
+.employees-screen select { min-height: 44px; max-width: 100%; padding: 8px; background: white; color: #172b26; border: 1px solid #94a3b8; border-radius: 6px; }
+.employees-screen [role=alert] { color: #8b2020; background: #fff1f1; border-radius: 6px; padding: 10px; }
+.employees-screen dialog { width: min(560px, calc(100% - 32px)); border: 1px solid #94a3b8; border-radius: 12px; padding: 20px; color: #1e293b; background: white; }
+.employees-screen dialog::backdrop { background: #102a2370; }
+.employees-screen dialog button { margin: 8px 8px 0 0; }
+@media (max-width: 600px) { .employee-actions button { flex: 1 1 140px; } }

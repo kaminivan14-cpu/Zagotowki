@@ -10,6 +10,21 @@ export function trustedEnvironment(environment, url, appUrl) {
     return { url, origin: app.origin, environment }
   } catch { return null }
 }
+// Additional management origins are explicit UAT-only origins, never a wildcard.
+// Login still uses the existing APP_URL and signed server proxy.
+export function managementOrigin(config, requestOrigin, additional = '') {
+  if (!config) return ''
+  const allowed = [config.origin]
+  if (config.environment === 'uat') {
+    for (const value of additional.split(',').map(value => value.trim()).filter(Boolean)) {
+      try {
+        const url = new URL(value)
+        if (url.protocol === 'https:' && value === url.origin) allowed.push(value)
+      } catch { /* Invalid configuration never adds an origin. */ }
+    }
+  }
+  return requestOrigin && allowed.includes(requestOrigin) ? requestOrigin : config.origin
+}
 // Login may verify grandfathered credentials. Assignment/reset remains exactly four digits.
 export const validLoginPin = value => typeof value === 'string' && /^[0-9]{4,8}$/.test(value)
 export const PIN_ERROR = 'Nieprawidłowy PIN lub konto niedostępne.'

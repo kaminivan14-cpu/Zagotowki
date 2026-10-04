@@ -25,6 +25,7 @@ async function setup(page, { loggedIn = false, legacy = false, active = true } =
     else if (url.pathname === '/auth/v1/user') body = user
     else if (['/auth/v1/logout', '/auth/v1/recover'].includes(url.pathname)) body = {}
     else if (url.pathname === '/rest/v1/rpc/auth_employee_profile') body = active ? [{ id: 1, auth_user_id: user.id, name: 'Kucharz testowy', role: 'employee', location_id: 1, active: true }] : []
+    else if (url.pathname === '/rest/v1/rpc/auth_capabilities') body = ['production.access']
     else if (url.pathname === '/rest/v1/Locations') body = [{ id: 1, name: 'Lokal A', active: true }]
     else if (url.pathname === '/rest/v1/Products') body = []
     else throw new Error(`Unexpected request: ${url.pathname}`)
@@ -47,9 +48,9 @@ test('email login persists on reload; logout removes the previous employee', asy
   await page.getByRole('button', { name: 'Zaloguj', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Lokal A' })).toBeVisible()
   await page.reload()
-  await expect(page.getByText('Kucharz testowy', { exact: false })).toBeVisible()
+  await expect(page.locator('.module-identity')).toContainText('Kucharz testowy')
   expect(calls.filter(c => c.path === '/auth/v1/token')).toHaveLength(1)
-  await page.getByRole('button', { name: 'Wyloguj', exact: true }).click()
+  await page.getByText('Konto ▾',{exact:true}).click();await page.getByRole('button', { name: 'Wyloguj', exact: true }).click()
   await expect(page.getByLabel('E-mail', { exact: true })).toBeVisible()
   await expect(page.getByText('Kucharz testowy', { exact: false })).toHaveCount(0)
   await page.reload()
@@ -231,7 +232,7 @@ test('recovery email network error is actionable', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Wyślij link' })).toBeEnabled()
 })
 
-for (const [role, pin] of [['manager','0001'],['su-chef','0001'],['employee','0001'],['manager','000001'],['su-chef','00000001']]) {
+for (const [role, pin] of [['manager','0001'],['su-chef','0001'],['employee','0001'],['crafter','0001'],['sushi-master','0001'],['shift-manager','0001'],['manager','000001'],['su-chef','00000001']]) {
   test(`PIN ${role} (${pin.length} digits): leading zero, real SDK setSession, reload, refresh and logout`, async ({ page }) => {
     const calls = await setup(page)
     let active = true
@@ -247,7 +248,7 @@ for (const [role, pin] of [['manager','0001'],['su-chef','0001'],['employee','00
     await page.getByRole('button', { name: 'Pracownik — logowanie PIN' }).click()
     await page.getByLabel('PIN', { exact: true }).fill(pin)
     await page.getByRole('button', { name: 'Zaloguj', exact: true }).click()
-    await expect(page.getByRole('button', { name: /Wyloguj/ })).toBeVisible()
+    await page.getByText('Konto ▾',{exact:true}).click();await expect(page.getByRole('button', { name: /Wyloguj/ })).toBeVisible()
     const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('sb-auth-tests-auth-token')))
     expect(stored.user.id).toBe(user.id)
     expect(stored.pin).toBeUndefined()
@@ -258,7 +259,7 @@ for (const [role, pin] of [['manager','0001'],['su-chef','0001'],['employee','00
       localStorage.setItem(key,JSON.stringify(saved))
     })
     await page.reload()
-    await expect(page.getByRole('button', { name: /Wyloguj/ })).toBeVisible()
+    await page.getByText('Konto ▾',{exact:true}).click();await expect(page.getByRole('button', { name: /Wyloguj/ })).toBeVisible()
     expect(calls.some(c => c.path === '/auth/v1/token')).toBe(true)
     active = false
     await page.reload()

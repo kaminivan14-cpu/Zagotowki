@@ -1,0 +1,23 @@
+.app .module-header { display:flex; align-items:center; flex-wrap:wrap; gap:12px 20px; padding:16px 20px; background:#152c28; color:#fff; border-radius:14px; text-align:left; margin-bottom:16px; }
+.module-header .module-identity { flex:1; min-width:180px; }
+.module-header h1 { font-size:26px; line-height:1.15; margin:0 0 5px; color:inherit; }
+.module-header p { font-size:13px; margin:0 0 6px; color:#d4e1dd; }
+.module-header label { display:flex; gap:8px; align-items:center; font-size:13px; }
+.module-header select { max-width:220px; min-height:36px; padding:4px 8px; border-radius:6px; color:#183d32; background:#fff; }
+.module-header-actions { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.module-header button,.module-menu summary { min-height:44px; border:1px solid #b4c9c0; border-radius:8px; background:#fff; color:#204638; font-size:14px; font-weight:600; padding:10px 12px; cursor:pointer; margin:0; width:auto; }
+.module-menu { position:relative; }
+.module-menu summary { list-style:none; display:flex; align-items:center; }
+.module-menu summary::-webkit-details-marker { display:none; }
+.module-menu-items { position:absolute; right:0; top:calc(100% + 6px); z-index:100; display:grid; gap:4px; min-width:180px; max-width:calc(100vw - 40px); padding:8px; border:1px solid #b4c9c0; border-radius:8px; background:white; box-shadow:0 8px 24px #0003; color:#203c32; }
+.module-menu-items span { font-size:13px; padding:8px; overflow-wrap:anywhere; }
+.module-menu-items button { text-align:left; border:0; }
+.module-header :focus-visible,.worktime-panel :focus-visible { outline:3px solid #d18b17; outline-offset:3px; }
+.module-header .orders-mode-switch { display:flex; gap:2px; padding:3px; background:#e9efeb; border-radius:9px; }
+.module-header .orders-mode-switch button { border:0; }
+.module-header .orders-mode-switch button[aria-pressed=true] { background:#25604c; color:white; }
+.module-header .worktime-bar { padding:0; background:transparent; color:#d4e1dd; font-size:13px; gap:8px; margin-top:8px; }
+.module-header .worktime-bar button { min-height:36px; padding:6px 10px; font-size:13px; }
+.location-choice .location-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,280px)); gap:12px; }
+.location-choice .location-cards button { min-height:70px; padding:16px; border:1px solid #b4c9c0; border-radius:10px; background:#fff; color:#204638; text-align:left; cursor:pointer; }
+@media(max-width:600px) { .app .module-header { padding:12px; gap:10px; } .module-header .module-identity { flex-basis:100%; } .module-header h1 { font-size:24px; } .module-header-actions { width:100%; } .module-menu-items { left:0; right:auto; } }

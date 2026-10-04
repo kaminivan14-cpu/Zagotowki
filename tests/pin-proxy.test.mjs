@@ -98,3 +98,25 @@ test('temporary config diagnostics expose only booleans and preserve fail-closed
   assert.equal(res.code, 503)
   assert.equal(calls, 0)
 })
+
+test('UAT proxy accepts only listed preview origins and still signs the request',async t=>{
+ const names=['VERCEL_ENV','VITE_SUPABASE_URL','PIN_PROXY_SECRET','APP_URL','PIN_MANAGEMENT_ORIGINS'],old=Object.fromEntries(names.map(n=>[n,process.env[n]]))
+ t.after(()=>names.forEach(n=>{if(old[n]===undefined)delete process.env[n];else process.env[n]=old[n]}))
+ Object.assign(process.env,{VERCEL_ENV:'preview',VITE_SUPABASE_URL:UAT_URL,APP_URL:'https://old-preview.test',PIN_PROXY_SECRET:'test-only-secret-at-least-32-characters',PIN_MANAGEMENT_ORIGINS:'https://orders-preview.test'})
+ let calls=0
+ t.mock.method(globalThis,'fetch',async(url,options)=>{
+  calls++;assert.equal(url,`${UAT_URL}/functions/v1/pin-login`)
+  const h=options.headers
+  assert.equal(await validSignature(process.env.PIN_PROXY_SECRET,signedMessage(h['x-pin-time'],h['x-pin-id'],h['x-pin-source'],options.body),h['x-pin-signature']),true)
+  return Response.json({access_token:'test',refresh_token:'test'})
+ })
+ const res={setHeader(){},status(n){this.code=n;return this},json(v){this.body=v}}
+ const req={method:'POST',headers:{origin:'https://orders-preview.test','x-vercel-forwarded-for':'192.0.2.1'},body:{pin:'0091'}}
+ await handler(req,res);assert.equal(res.code,200);assert.equal(calls,1)
+ req.headers.origin='https://orders-preview.test.attacker.invalid'
+ await handler(req,res);assert.equal(res.code,403);assert.equal(calls,1)
+ const {PROD_URL}=await import('../supabase/functions/_shared/pin-protocol.js')
+ Object.assign(process.env,{VERCEL_ENV:'production',VITE_SUPABASE_URL:PROD_URL})
+ req.headers.origin='https://orders-preview.test'
+ await handler(req,res);assert.equal(res.code,403);assert.equal(calls,1)
+})

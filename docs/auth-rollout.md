@@ -149,8 +149,9 @@ frontendu wymaga skoordynowania z migracją; frontend Auth nie działa na starej
    -- Sprawdź, że zmieniono dokładnie jeden właściwy rekord.
    ```
 
-5. Wdrożyć Edge Function `invite-employee`; ustawić jej sekret `APP_URL` na dokładny
-   adres aplikacji. SUPABASE_URL i SUPABASE_SERVICE_ROLE_KEY to zmienne serwerowe.
+5. Wdrożyć Edge Function `invite-employee`; ustawić jej sekret `INVITATION_APP_URL`
+   na dokładny adres aplikacji (fallback: `APP_URL`). Osobny adres zaproszeń pozwala
+   zachować konfigurację proxy PIN. SUPABASE_URL i SUPABASE_SERVICE_ROLE_KEY to zmienne serwerowe.
    `verify_jwt=false` w konfiguracji gateway jest celowe: sam handler weryfikuje
    token w Auth, również przy nowych kluczach podpisujących. Nie usuwać `getUser`.
 6. Frontend dostaje VITE_SUPABASE_URL i VITE_SUPABASE_ANON_KEY (publiczny klucz
@@ -204,6 +205,77 @@ wysłane, a powiązanie się nie udało (np. równoległa edycja), niepołączon
 ma dostępu do danych. Administrator sprawdza Auth i Employees, weryfikuje osobę
 i powiązuje właściwy UUID. Nie ponawiać masowo zaproszeń ani automatycznie usuwać
 konta Auth — mogło już istnieć. Endpoint zwraca 409; nie ujawnia tokenów.
+
+### UAT Orders: naprawa brakującej funkcji (2026-10-01)
+
+Projekt: `meuzkduxttjcuiynsnaa`, branch `feature/orders`. Production nietknięty.
+Frontend wywołuje `supabase.functions.invoke('invite-employee', ...)`, czyli
+`https://meuzkduxttjcuiynsnaa.supabase.co/functions/v1/invite-employee`
+przy poprawnym VITE_SUPABASE_URL UAT. Vercel Preview musi mieć URL tego projektu
+i jego publiczny klucz. Nie dodawać klucza service_role do frontendu.
+Konfiguracja Vercel nie była odczytywana z zalogowanej sesji ani zmieniana.
+
+Root cause: OPTIONS zwracał 404 NOT_FOUND „Requested function was not found”.
+Lista funkcji UAT potwierdziła brak invite-employee (były tylko pin-login i
+manage-employee-pin). Błąd występował przed Auth, wysyłką i RPC. UI błędnie
+sugerowało istniejące konto dla każdego błędu; teraz rozróżnia kody konfliktu
+Auth, ograniczeń SMTP i limitów, a błąd transportu nie stwierdza istnienia konta.
+
+Odczyt bazy: Serhii, id=10, active=true, archived=false, role=administrator,
+auth_user_id NULL. RPC auth_link_employee istnieje; EXECUTE mają tylko postgres
+i service_role. Brak adresu e-mail w zgłoszeniu uniemożliwia potwierdzenie jego
+istnienia w auth.users. Żadnego konta nie powiązano ani nie zaproszono podczas audytu.
+Serhii jako administrator może zostać zaproszony przez administratora, nie managera.
+
+Wdrożono invite-employee na UAT oraz ustawiono:
+
+```text
+INVITATION_APP_URL=https://zagotowki-git-feature-orders-sbla-b.vercel.app
+```
+
+W Auth URL Configuration dopisano dokładny redirect
+`https://zagotowki-git-feature-orders-sbla-b.vercel.app/?auth=password`.
+Zachowano wcześniejszą listę i Site URL feature-auth; funkcja przekazuje nowy
+redirect jawnie. Nie zmieniono APP_URL ani PIN_MANAGEMENT_ORIGINS.
+Nie dodano wildcardów. Test endpointu po wdrożeniu: dozwolony OPTIONS 204 z
+dokładnym Allow-Origin; obcy origin 403; POST bez tokena 401.
+
+UAT nie ma smtp_host. Domyślna poczta Supabase dopuszcza tylko adresy członków
+zespołu projektu: https://supabase.com/docs/guides/auth/auth-smtp.
+Dla pozostałych odbiorców właściciel musi skonfigurować SMTP:
+
+1. Otwórz https://supabase.com/dashboard/project/meuzkduxttjcuiynsnaa/auth/smtp.
+   Sprawdź identyfikator projektu przed zapisem.
+2. Włącz Custom SMTP, wpisz sender email/name oraz host, port, username i password
+   z konta dostawcy poczty. Zapisz. Nie przesyłaj hasła w rozmowie.
+   Nie dodawaj pracownika do zespołu administracyjnego Supabase jako obejścia.
+3. Authentication → URL Configuration: sprawdź obecność dokładnego redirectu
+   Orders powyżej. Authentication → Email templates → Invite user: link powinien
+   korzystać z ConfirmationURL, a nie ze stałego adresu starego środowiska.
+4. Użyj aplikacji na stałym adresie Orders i konta administratora UAT.
+   Dla Serhii wpisz jego zweryfikowany adres. Network powinien pokazać OPTIONS 204
+   i następnie POST; przekaż do diagnostyki tylko status i code/error, bez tokenów.
+
+Ręczne smoke testy (nie wykonano wysyłki/aktywacji przez agenta):
+
+- Nowy kontrolowany e-mail: POST 200, e-mail dociera, UUID Auth odpowiada
+  Employees.auth_user_id dokładnie właściwego pracownika.
+- Aktywacja: link otwiera Orders, pozwala ustawić hasło i zalogować właściwego
+  pracownika z jego rolą. Nie zmieniaj PIN-u w ramach tego testu.
+- Istniejące potwierdzone konto Auth: konflikt i jasna akcja administratora;
+  brak automatycznego linkowania, resetu hasła lub zmiany dotychczasowych powiązań.
+- Ponowienie po sukcesie: UI nie oferuje kolejnego zaproszenia dla powiązanego
+  rekordu; RPC odrzuca ponowne powiązanie przed wysyłką. Aplikacja nie ma osobnej
+  funkcji ponownej wysyłki zaproszenia. Właściciel konta może użyć odzyskiwania
+  hasła. Po częściowym sukcesie wymagany jest audyt, nie kolejne zaproszenie.
+- Obcy/nieuprawniony użytkownik nie może zapraszać ani przepiąć konta. Próba
+  użycia istniejącego adresu nie może zmienić UUID lub uprawnień jego właściciela.
+
+Lokalnie: testy handlera z mockiem Auth obejmują nową wiadomość, istniejące konto,
+odmowę SMTP, limit, częściowy sukces, odmowę uprawnień oraz CORS; SQL testuje
+ograniczenia powiązań. To nie jest potwierdzenie dostarczenia e-maila na UAT.
+Backend wdrożony; nowe komunikaty UI wymagają push feature/orders i builda
+Vercel Preview. Nie scalać ani nie wdrażać tych zmian na Production.
 
 ## Kontrakt dla zdjęć
 

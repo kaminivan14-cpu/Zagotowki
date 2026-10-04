@@ -1,0 +1,6 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {dateLabel,dayLabel,timeLabel,instantLabel,inputDateTimeLabel,localToInstant} from '../src/tasks/dateTime.js'
+test('European dates always include four-digit year and zero-padded day/month',()=>{assert.equal(dateLabel('2026-10-04'),'04.10.2026');assert.equal(dayLabel('2026-01-02'),'02.01.2026');assert.equal(dateLabel(null),'—')})
+test('Warsaw timestamp formatting uses 24 hours including midnight and DST',()=>{for(const [iso,expected] of [['2026-10-03T22:15:00Z','04.10.2026 00:15'],['2026-10-04T10:15:00Z','04.10.2026 12:15'],['2026-12-04T22:45:00Z','04.12.2026 23:45']])assert.equal(instantLabel(iso,'Europe/Warsaw'),expected);assert.equal(timeLabel('2026-10-04T06:00:00Z','Europe/Warsaw'),'08:00')})
+test('input presentation leaves ISO date and local-to-instant conversion intact',()=>{assert.equal(inputDateTimeLabel('2026-10-04','date'),'04.10.2026');assert.equal(inputDateTimeLabel('23:45','time'),'23:45');assert.equal(inputDateTimeLabel('2026-10-04T18:30','datetime-local'),'04.10.2026 18:30');const instant=localToInstant('2026-10-04T18:30','Europe/Warsaw');assert.equal(instant,'2026-10-04T16:30:00.000Z');assert.equal(instantLabel(instant,'Europe/Warsaw'),'04.10.2026 18:30')})

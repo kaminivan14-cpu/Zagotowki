@@ -1,3 +1,5 @@
+import {Menu} from '../ui/ModuleHeader'
+import './production-plan.css'
 import { Fragment, useState } from 'react'
 import TechnologyCard from './TechnologyCard'
 import ProductCombobox from './ProductCombobox'
@@ -5,6 +7,7 @@ import PlanItemDetailsFields from './PlanItemDetailsFields'
 import { hasProductionHistory } from '../planItemDetails'
 
 export default function ProductionScreen({
+  header,
   onRequirements,
   mozeUsunacPlan,
   usunPlan,
@@ -53,20 +56,22 @@ export default function ProductionScreen({
 
   return (
     <div className="app">
-        <header>
+        {header || <header>
           <h1>ZAGOTÓWKI</h1>
 
           <p>
             {wybranyLokal?.name}
           </p>
-        </header>
+        </header>}
 
-        <main>
-          <p style={{ marginBottom: '16px' }}>Plan: {dataPlanu}</p>
-          <button className="powrot" onClick={onRequirements}>📦 Zapotrzebowanie ogólne</button>
-          {statusPlanu === 'completed' && <p role="status">✓ Zakończony</p>}
+        <main className="production-plan">
+          <div className="plan-topbar">
+            {pracownik && <button type="button" className="plan-back" onClick={pobierzZaplanowanePlany} disabled={ladowaniePlanow}>← Lista planów</button>}
+            <h2>Plan {dataPlanu?.split('-').reverse().join('.')}</h2>
+            {statusPlanu && <span className={`plan-status ${statusPlanu}`} role="status">{statusPlanu==='active'?'Aktywny':statusPlanu==='completed'?'Zakończony':statusPlanu}</span>}
+          </div>
           {tylkoOdczyt && <p role="status">Plan tylko do odczytu.</p>}
-          {statusPlanu === 'completed' && ['administrator', 'manager', 'su-chef'].includes(pracownik?.role) && (
+          {statusPlanu === 'completed' && ['owner', 'administrator', 'manager', 'su-chef'].includes(pracownik?.role) && (
             <div style={{ margin: '16px 0' }}>
               <button className="powrot" onClick={wznowPlan} disabled={!wznowienieDostepne || wznawianie}>
                 {wznawianie ? 'Wznawianie…' : 'Wznów plan'}
@@ -74,49 +79,22 @@ export default function ProductionScreen({
               {!wznowienieDostepne && <p>Wznowienie jest chwilowo niedostępne.</p>}
             </div>
           )}
-          {mozeUsunacPlan && <div className="plan-delete-action">
-            <button className="powrot" onClick={usunPlan} disabled={usuwaniePlanu}>
-              {usuwaniePlanu ? 'Usuwanie…' : '🗑 Usuń plan'}
-            </button>
-            {(statusPlanu !== 'active' || plan.some(hasProductionHistory)) &&
-              <p>Rozpoczętego lub zakończonego planu nie można usunąć. Historia pozostaje zachowana.</p>}
-          </div>}
-          <div className="naglowek-produkcji">
-            <div>
-              <h2>Do zrobienia</h2>
-
-              <p className="licznik">
-                Pozostało:{' '}
-                <strong>
-                  {pozostalo}
-                </strong>
-              </p>
+          <div className="plan-work-heading">
+            <div><h2>Do zrobienia</h2><p>Pozostało: <strong>{pozostalo}</strong></p></div>
+            <div className="plan-actions">
+              {mozeEdytowac && <button type="button" className="plan-add" aria-expanded={pokazDodawaniePozycji} aria-controls="plan-add-form" onClick={()=>setPokazDodawaniePozycji(!pokazDodawaniePozycji)}>+ Dodaj pozycję</button>}
+              <Menu label="Więcej" description={mozeUsunacPlan && (statusPlanu!=='active' || plan.some(hasProductionHistory)) ? 'Rozpoczętego lub zakończonego planu nie można usunąć. Historia pozostaje zachowana.' : undefined} items={[
+                ...(mozeEdytowac?[{label:'Edytuj plan',action:edytujPlan}]:[]),
+                {label:'Historia',action:pobierzHistorie,disabled:ladowanieHistorii},
+                {label:'Zapotrzebowanie ogólne',action:onRequirements},
+                ...(mozeUsunacPlan?[{label:usuwaniePlanu?'Usuwanie…':'Usuń plan',action:usunPlan,disabled:usuwaniePlanu,danger:true}]:[]),
+              ]}/>
             </div>
-
-            {mozeEdytowac && (
-  <button
-    className="powrot"
-    onClick={edytujPlan}
-  >
-    ← Edytuj plan
-  </button>
-)}
-{mozeEdytowac && (
-  <button
-    className="powrot"
-    onClick={() =>
-      setPokazDodawaniePozycji(!pokazDodawaniePozycji)
-    }
-    style={{ marginLeft: 'var(--inline-action-offset, 10px)' }}
-  >
-    ➕ Dodaj pozycję
-  </button>
-)}
           </div>
 {pokazDodawaniePozycji &&
   mozeEdytowac && (
     <div
-      className="produkt responsive-form"
+      className="produkt responsive-form" id="plan-add-form"
       style={{ marginBottom: '20px' }}
     >
       <h3>➕ Dodaj pozycję do planu</h3>
@@ -200,7 +178,7 @@ export default function ProductionScreen({
       </button>
     </div>
 )}
-          {pracownik?.role === 'administrator' && (
+          {!header && ['owner', 'administrator'].includes(pracownik?.role) && (
   <button
     className="powrot"
     onClick={zmienLokal}
@@ -212,7 +190,7 @@ export default function ProductionScreen({
   </button>
 )}
 
-{['administrator', 'manager'].includes(pracownik?.role) && (
+{!header && ['owner', 'administrator', 'manager'].includes(pracownik?.role) && (
   <button
     className="powrot"
     onClick={pobierzPracownikow}
@@ -224,7 +202,7 @@ export default function ProductionScreen({
     👥 Pracownicy
   </button>
 )}
-<button
+{!header && <button
   className="powrot"
   onClick={wylogujPracownika}
   style={{
@@ -233,35 +211,7 @@ export default function ProductionScreen({
   }}
 >
   🚪 Wyloguj
-</button>
-<button
-  className="powrot"
-  onClick={pobierzHistorie}
-  disabled={ladowanieHistorii}
-  style={{
-    marginBottom: '20px',
-    marginLeft: 'var(--inline-action-offset, 10px)',
-  }}
->
-  {ladowanieHistorii
-    ? 'Ładowanie...'
-    : '📊 Historia'}
-</button>
-{pracownik && (
-  <button
-    className="powrot"
-    onClick={pobierzZaplanowanePlany}
-    disabled={ladowaniePlanow}
-    style={{
-      marginBottom: '20px',
-      marginLeft: 'var(--inline-action-offset, 10px)',
-    }}
-  >
-    {ladowaniePlanow
-      ? 'Ładowanie...'
-      : '← Lista planów'}
-  </button>
-)}
+</button>}
           <div className="produkty">
             {plan.map((produkt) => (
               <Fragment key={produkt.id}>
