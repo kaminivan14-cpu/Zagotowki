@@ -28,6 +28,11 @@ try {
  INSERT INTO public."Employees"(id,name,role,location_id,active,auth_user_id) SELECT n,'Synthetic '||n,(ARRAY['owner','administrator','director','manager','expert','specialist','crafter','specialist','specialist','specialist','specialist'])[n],CASE WHEN n IN (4,7) THEN 1 ELSE NULL END,n<>9,('20000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid FROM generate_series(1,11)n;
  SELECT setval('public."Employees_id_seq"',100);
  INSERT INTO public."Plans"(id,location_id,plan_date,status) VALUES(1,1,(now() AT TIME ZONE '${testZone}')::date,'active'); INSERT INTO public."Plan_items"(id,plan_id,nazwa,ilosc,jednostka) VALUES(1,1,'Synthetic',1,'g');`)
+ // Phase A fails closed; phase B is installed separately by the Storage policy owner.
+ eq(await sql("SELECT count(*) FROM pg_policies WHERE schemaname='storage' AND tablename='objects'"),'0')
+ await denied(sql(`${as(6)} INSERT INTO storage.objects(bucket_id,name) VALUES('tasks-private','${uid(6)}/before-policy')`),/row-level security/)
+ await sql(await readFile('supabase/storage/tasks-private-policies.sql','utf8'))
+ eq(await sql("SELECT string_agg(cmd,',' ORDER BY cmd) FROM pg_policies WHERE schemaname='storage' AND tablename='objects'"),'INSERT,SELECT')
  const asAdmin=(action,args,op=randomUUID())=>command(1,action,args,op)
  const all=(await rpc(1,'tasks_admin_directory'))
  eq(all.departments.filter(d=>d.code).length,7)
@@ -114,6 +119,10 @@ try {
  eq(await sql(`${as(6)} SELECT count(*) FROM storage.objects WHERE name='${key}'`),'1')
  eq(await sql(`${as(8)} SELECT count(*) FROM storage.objects WHERE name='${key}'`),'0')
  await denied(sql(`${as(8)} INSERT INTO storage.objects(bucket_id,name) VALUES('tasks-private','${uid(6)}/forged')`),/row-level security/)
+ await sql(`${as(6)} INSERT INTO storage.objects(bucket_id,name) VALUES('tasks-private','${uid(6)}/own-upload')`);checks++
+ await denied(sql(`${as(6)} INSERT INTO storage.objects(bucket_id,name) VALUES('other-bucket','${uid(6)}/wrong-bucket')`),/row-level security/)
+ await denied(sql(`${as(9)} INSERT INTO storage.objects(bucket_id,name) VALUES('tasks-private','${uid(9)}/inactive')`),/row-level security/)
+
  // Failed launches are atomic; concurrent retry of one operation creates one instance.
  const beforeInstances=await sql('SELECT count(*) FROM public."Process_instances"')
  await denied(asAdmin('process_launch',{version_id:firstVersion,starts_on:today,default_employee_id:9}),/INVALID_ASSIGNEE/)

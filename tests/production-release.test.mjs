@@ -24,3 +24,14 @@ test('Production upgrade excludes conversion and test seed, commits policy atomi
  assert.equal((sql.match(/^BEGIN;$/gm)||[]).length,1);assert.equal((sql.match(/^COMMIT;$/gm)||[]).length,1)
  assert.equal(sql.includes("SET role='crafter' WHERE role='employee'"),false)
 })
+
+test('Application release never owns Storage policies; separate step preserves only insert/select',async()=>{
+ const {readFile}=await import('node:fs/promises')
+ const sql=await productionReleaseSql()
+ assert.doesNotMatch(sql,/CREATE POLICY\s+\w+\s+ON storage\.objects/i)
+ const policies=await readFile('supabase/storage/tasks-private-policies.sql','utf8')
+ assert.equal((policies.match(/CREATE POLICY /g)||[]).length,2)
+ assert.match(policies,/FOR INSERT TO authenticated/)
+ assert.match(policies,/FOR SELECT TO authenticated/)
+ assert.doesNotMatch(policies,/FOR (UPDATE|DELETE|ALL)|ALTER TABLE|GRANT |SET ROLE/i)
+})

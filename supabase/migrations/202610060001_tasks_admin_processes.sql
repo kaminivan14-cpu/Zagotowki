@@ -263,9 +263,8 @@ END $$;
 DO $$ BEGIN IF to_regclass('storage.buckets') IS NOT NULL THEN
  IF EXISTS(SELECT FROM storage.buckets WHERE id='tasks-private') THEN RAISE EXCEPTION 'SCHEMA_DRIFT tasks_private_storage';END IF;
  INSERT INTO storage.buckets(id,name,public,file_size_limit,allowed_mime_types) VALUES('tasks-private','tasks-private',false,20971520,ARRAY['application/pdf','image/jpeg','image/png','image/webp','text/plain','text/csv','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/vnd.openxmlformats-officedocument.wordprocessingml.document']) ON CONFLICT(id) DO NOTHING;
- EXECUTE $p$CREATE POLICY tasks_file_insert ON storage.objects FOR INSERT TO authenticated WITH CHECK(bucket_id='tasks-private' AND (storage.foldername(name))[1]=auth.uid()::text AND app_private.has_permission('tasks.access'))$p$;
- -- app_private function is guarded and exposed only to the storage policy via an explicit grant.
- EXECUTE $p$CREATE POLICY tasks_file_select ON storage.objects FOR SELECT TO authenticated USING(bucket_id='tasks-private' AND app_private.has_permission('tasks.access') AND ((storage.foldername(name))[1]=auth.uid()::text OR public.tasks_storage_read(name)))$p$;
+ -- Storage policies are a separate privileged Dashboard rollout step.
+ -- See supabase/storage/tasks-private-policies.sql; do not run it via postgres migrations.
 END IF;END $$;
 CREATE TRIGGER task_admin_append_only BEFORE UPDATE OR DELETE ON public."Task_admin_events" FOR EACH ROW EXECUTE FUNCTION app_private.worktime_append_only();
 COMMIT;
