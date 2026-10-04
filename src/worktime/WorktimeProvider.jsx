@@ -48,12 +48,12 @@ export default function WorktimeProvider({employee,capabilities,module,onSignOut
  {children}
  {error && <p className="worktime-error" role="alert">{module==='tasks'?'Не вдалося підтвердити операцію часу роботи. Перевірте активну роботу та повторіть спробу.':error}</p>}
  {pending && <aside className="worktime-bar">{module==='tasks'?'Час роботи: підтвердьте попередню операцію.':'Czas pracy: operacja wymaga potwierdzenia.'} <button disabled={busy} onClick={()=>command(pending.action,pending.args).catch(()=>{})}>{module==='tasks'?'Повторити операцію часу роботи':'Ponów operację czasu pracy'}</button></aside>}
- {dialog && <div className="worktime-overlay"><section role="dialog" aria-modal="true" aria-label="Czy zakończyć również czas pracy?" className="worktime-dialog">
- <h2>Czy zakończyć również czas pracy?</h2>
- {pending&&<button disabled={busy} onClick={()=>command(pending.action,pending.args).catch(()=>{})}>Ponów poprzednią operację</button>}
- <button disabled={busy||Boolean(pending)} onClick={async()=>{try{await end();setDialog(false);await onSignOut()}catch{}}}>Zakończ pracę i wyloguj</button>
- <button disabled={busy} onClick={async()=>{setDialog(false);await onSignOut()}}>Tylko wyloguj</button>
- <button disabled={busy} onClick={()=>setDialog(false)}>Anuluj</button>
+ {dialog && <div className="worktime-overlay"><section role="dialog" aria-modal="true" aria-label={module==='tasks'?'Завершити також час роботи?':'Czy zakończyć również czas pracy?'} className="worktime-dialog">
+ <h2>{module==='tasks'?'Завершити також час роботи?':'Czy zakończyć również czas pracy?'}</h2>
+ {pending&&<button disabled={busy} onClick={()=>command(pending.action,pending.args).catch(()=>{})}>{module==='tasks'?'Повторити попередню операцію':'Ponów poprzednią operację'}</button>}
+ <button disabled={busy||Boolean(pending)} onClick={async()=>{try{await end();setDialog(false);await onSignOut()}catch{}}}>{module==='tasks'?'Завершити роботу та вийти':'Zakończ pracę i wyloguj'}</button>
+ <button disabled={busy} onClick={async()=>{setDialog(false);await onSignOut()}}>{module==='tasks'?'Лише вийти':'Tylko wyloguj'}</button>
+ <button disabled={busy} onClick={()=>setDialog(false)}>{module==='tasks'?'Скасувати':'Anuluj'}</button>
  </section></div>}
  </Context.Provider>
 }

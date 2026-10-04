@@ -16,6 +16,7 @@ async function setup(page,{active=false,empty=false,critical=false}={}){
   else if(name==='worktime_current')data=shift
   else if(name==='worktime_command'){shift=args.p_action==='start'?(shift||{id:5,started_at:new Date().toISOString()}):null;data=shift||{}}
   else if(name==='tasks_context')data={employee_id:6,today:'2026-10-04',capabilities:caps,categories:[],settings:{company_timezone:'Europe/Warsaw'}}
+  else if(name==='tasks_result_inbox')data=[]
   else if(name==='tasks_assignable_people')data=[{id:6,name:'Олена'}]
   else if(name==='tasks_execution_state')data={current,next:tasks.find(t=>t.status==='planned')||null,critical:urgent?[urgent]:[],locations:[{id:1,name:'Локал A'}],session_started_at:current?new Date(Date.now()-65000).toISOString():null,completed_today:tasks.filter(t=>t.status==='completed').length,task_count:tasks.length,planned_minutes:30,capacity_minutes:360}
   else if(name==='tasks_details')data={task:tasks.find(t=>t.id===args.p_task)||current,checklist:[],events:[]}

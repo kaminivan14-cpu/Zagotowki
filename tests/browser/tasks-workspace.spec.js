@@ -16,6 +16,7 @@ async function setup(page,{scoped=true,empty=false,manual=false}={}){
   else if(name==='auth_capabilities')body=caps
   else if(name==='worktime_current')body=manual?{id:1,started_at:new Date().toISOString()}:null
   else if(name==='tasks_context')body={employee_id:6,today:'2026-10-02',capabilities:caps,categories:[{id:1,name:'Операційні',parent_id:null},{id:2,name:'Аудити',parent_id:1}],departments:[],settings:{company_timezone:'Europe/Warsaw',default_daily_task_capacity_minutes:360}}
+  else if(name==='tasks_result_inbox')body=[]
   else if(name==='tasks_assignable_people')body=people
   else if(name==='tasks_execution_state')body={next:manual&&manualTask.status==='planned'?manualTask:null,current,started:true,critical:manual&&!['completed','in_progress'].includes(manualTask.status)?[manualTask]:[],task_count:manual&&manualTask.status!=='completed'?1:0,capacity_minutes:360}
   else if(name==='tasks_schedule'||name==='tasks_team_schedule')body=schedule

@@ -1,9 +1,10 @@
+import TaskResult from '../admin/TaskResult'
 import TaskActions from './TaskActions'
 import DateTimeInput from './DateTimeInput'
 import { useEffect, useState } from 'react'
 import Dialog from './Dialog'
 import { read, errorText } from '../client'
-import { events, duration, priorities } from '../labels.uk'
+import { events, duration, priorities, eventReason } from '../labels.uk'
 import { instantLabel, localToInstant } from '../dateTime'
 export default function TaskDetailsDialog({ task, context, run, busy, onClose, revision, people }) {
  const [data,setData] = useState(null), [error,setError] = useState('')
@@ -24,6 +25,6 @@ export default function TaskDetailsDialog({ task, context, run, busy, onClose, r
  <form onSubmit={e=>{e.preventDefault();run('dependency',{task_id:t.id,version:t.version,depends_on_task_id:Number(new FormData(e.currentTarget).get('dependency'))})}}><label>Спочатку виконати завдання №<input name="dependency" type="number" min="1" required/></label><button disabled={busy}>Додати залежність</button></form>
  <form onSubmit={e=>{e.preventDefault();run('cancel',{task_id:t.id,version:t.version}).then(ok=>{if(ok)onClose()})}}><label><input type="checkbox" required/>Підтверджую скасування завдання зі збереженням історії</label><button disabled={busy}>Скасувати завдання</button></form>
  </details>}
- <h3>Історія</h3><ol className="task-timeline">{data.events.map(e=><li key={e.id}><time>{instantLabel(e.created_at,context.settings.company_timezone)}</time> — {events[e.event_type] || 'Зміна завдання'}{e.metadata.text && <p>{e.metadata.text}</p>}{e.metadata.reason && <p>{e.metadata.reason}</p>}</li>)}</ol>{data.events.length>=100 && <button disabled={busy} onClick={async()=>{try {const more=await read('tasks_events',{p_task:t.id,p_before:Math.min(...data.events.map(e=>e.id))});setData(old=>({...old,events:[...more.events,...old.events]}))}catch(e){setError(errorText(e))}}}>Раніші події</button>}
+ {t.source_type==='process'&&<TaskResult task={t} run={run} busy={busy} revision={revision}/>}<h3>Історія</h3><ol className="task-timeline">{data.events.map(e=><li key={e.id}><time>{instantLabel(e.created_at,context.settings.company_timezone)}</time> — {events[e.event_type] || 'Зміна завдання'}{e.metadata.text && <p>{e.metadata.text}</p>}{e.metadata.reason && <p>{eventReason(e.metadata.reason)}</p>}</li>)}</ol>{data.events.length>=100 && <button disabled={busy} onClick={async()=>{try {const more=await read('tasks_events',{p_task:t.id,p_before:Math.min(...data.events.map(e=>e.id))});setData(old=>({...old,events:[...more.events,...old.events]}))}catch(e){setError(errorText(e))}}}>Раніші події</button>}
  </>}</Dialog>
 }

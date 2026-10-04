@@ -20,6 +20,7 @@ async function setup(page,{role='specialist',critical=false,denied=false}={}){
   }else if(name==='worktime_current')body=shift
   else if(name==='worktime_command'){shift=args.p_action==='start'?{id:1,started_at:new Date().toISOString()}:null;body=shift||{}}
   else if(name==='tasks_list')body=tasks
+  else if(name==='tasks_result_inbox')body=[]
   else if(name==='tasks_assignable_people')body=[{id:6,name:'Олена'}]
   else if(name==='tasks_execution_state')body={locations:[{id:1,name:'UAT'}],next:tasks.find(t=>t.status==='planned'),current:tasks.find(t=>t.id===current)||null,started,critical:tasks.filter(t=>t.urgency==='critical_now' && t.status!=='completed' && t.status!=='in_progress'),task_count:tasks.length,planned_minutes:20,capacity_minutes:360}
   else if(name==='tasks_approvals')body=approvals
