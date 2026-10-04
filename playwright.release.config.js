@@ -1,0 +1,2 @@
+import { defineConfig } from '@playwright/test'
+export default defineConfig({testDir:'./tests/release-browser',use:{baseURL:'http://127.0.0.1:5174'},webServer:{command:'node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 5174 --config tests/fixtures/production-vite.config.mjs',url:'http://127.0.0.1:5174',reuseExistingServer:false,env:{VITE_SUPABASE_URL:'https://auth-tests.supabase.co',VITE_SUPABASE_PUBLISHABLE_KEY:'public-test-key'}}})

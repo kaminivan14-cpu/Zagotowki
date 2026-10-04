@@ -1,3 +1,4 @@
+import { generatorAllowed, runtimeEnvironment } from './environment'
 import ModuleHeader from '../ui/ModuleHeader'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../supabase'
@@ -61,6 +62,7 @@ export default function OrdersApp({ employee, capabilities, onSignOut, onModules
     return () => { active = false }
   }, [])
   async function run(action, args) {
+    if (action === 'create_test' && !generatorAllowed(runtimeEnvironment,capabilities)) { setMessage('Generator dostępny wyłącznie na UAT.'); return }
     if (locked.current) return
     locked.current = true; setBusy(true); setMessage('')
     try {
@@ -96,7 +98,7 @@ export default function OrdersApp({ employee, capabilities, onSignOut, onModules
     </ModuleHeader>
     <nav className="urgency-filters" aria-label={L.urgencyFilter}>{Object.entries(L.urgencyFilters).map(([key,label])=><button key={key} aria-pressed={urgencyFilter===key} onClick={()=>setUrgencyFilter(key)}>{label}</button>)}</nav>
     <div hidden={operatorActive}>
-    <nav aria-label="Widoki zamówień">{[['all',L.all],['new',L.waiting],['board',L.working],['done',L.done],...(has('orders.work') ? [['mine','Moje zadania']] : []),['shifts','Zmiany / historia'],...(has('orders.test.generate') ? [['generator','Generator UAT']] : []),...(has('orders.rates.manage') ? [['rates','Katalog i stawki']] : [])].map(([key,label]) => <button key={key} aria-pressed={tab === key} onClick={() => setTab(key)}>{label}{['all','new','board','done'].includes(key) ? ` (${orders.filter(o=>key==='all' || (key==='new' ? lifecycle(o)==='new' : key==='done' ? lifecycle(o)==='done' : ['partial','in_progress'].includes(lifecycle(o)))).length})` : ''}</button>)}</nav>
+    <nav aria-label="Widoki zamówień">{[['all',L.all],['new',L.waiting],['board',L.working],['done',L.done],...(has('orders.work') ? [['mine','Moje zadania']] : []),['shifts','Zmiany / historia'],...(generatorAllowed(runtimeEnvironment,capabilities) ? [['generator','Generator UAT']] : []),...(has('orders.rates.manage') ? [['rates','Katalog i stawki']] : [])].map(([key,label]) => <button key={key} aria-pressed={tab === key} onClick={() => setTab(key)}>{label}{['all','new','board','done'].includes(key) ? ` (${orders.filter(o=>key==='all' || (key==='new' ? lifecycle(o)==='new' : key==='done' ? lifecycle(o)==='done' : ['partial','in_progress'].includes(lifecycle(o)))).length})` : ''}</button>)}</nav>
     {chef && <OrderNotices notices={notices} error={noticeError} busy={ackBusy} onView={id=>{setTab('all');setUrgencyFilter('all');setFocusOrder({id,nonce:Date.now()})}} onRead={async id=>{
       if(ackBusy)return;setAckBusy(true)
       try {const {error}=await supabase.rpc('orders_notifications',{p_location:Number(location),p_ack:id});if(error)throw error;acknowledged.current.add(id);if(alive.current)setNotices(old=>old.filter(x=>x.id!==id))}
@@ -105,7 +107,7 @@ export default function OrdersApp({ employee, capabilities, onSignOut, onModules
     <p role="status">{message}</p>{pending && <aside>Operacja oczekuje na potwierdzenie. {action('Ponów tę samą operację',pending.action,pending.args)}</aside>}
     <section className="shift-panel" aria-label="Moja zmiana"><div><h2>Moja zmiana</h2><p>{shift ? `Zmiana od ${formatTime(shift.started_at)}` : 'Brak aktywnej zmiany w tym lokalu'}</p><small>Podgląd zamówień nie wymaga rozpoczęcia zmiany.</small></div>
       {shift ? action('Zakończ zmianę','end_shift',{ shift_id: shift.id }) : action('Rozpocznij zmianę','open_shift',{ location_id: Number(location) },!location)}</section>
-    {tab === 'generator' && has('orders.test.generate') && <OrderGenerator catalog={catalog} location={location} disabled={busy || Boolean(pending)} run={run}/>}
+    {tab === 'generator' && generatorAllowed(runtimeEnvironment,capabilities) && <OrderGenerator catalog={catalog} location={location} disabled={busy || Boolean(pending)} run={run}/>}
     {tab === 'rates' && has('orders.rates.manage') && <section><h2>Katalog i stawki</h2>{catalog.map(p => <RateEditor key={`${p.id}:${p.work_rate_minor}:${p.active}`} product={p} busy={busy} save={args => run('rate',args)} />)}</section>}
     {tab === 'shifts' && <section><h2>Zmiany / historia</h2>{shifts.length === 0 && <p>Nie masz jeszcze zmian.</p>}{shifts.map(s => <article key={s.id}><p>{formatTime(s.started_at)} → {formatTime(s.ended_at)}</p>
       {(has('orders.history.own') || has('orders.finance')) && s.ended_at && <button onClick={() => readHistory(s.id,'summary')}>Podsumowanie zmiany {s.id}</button>}
