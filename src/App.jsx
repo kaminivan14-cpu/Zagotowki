@@ -1,3 +1,5 @@
+import ModuleHeader from './ui/ModuleHeader'
+import {WorktimeBar} from './worktime/WorktimeProvider'
 import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import LocationSelectScreen from './components/LocationSelectScreen'
@@ -8,13 +10,13 @@ import RequirementsScreen from './components/RequirementsScreen'
 import HistoryScreen from './components/HistoryScreen'
 import PlanningScreen from './components/PlanningScreen'
 import { supabase } from './supabase'
-import { managementRoles, productionDate, employeeCanViewPlan, canWorkOnPlan } from './planAccess'
+import { isProductionWorker, managementRoles, productionDate, employeeCanViewPlan, canWorkOnPlan } from './planAccess'
 import { pobierzKatalogProduktow } from './productCatalog'
 import { itemDetails, hasProductionHistory, canDeletePlan } from './planItemDetails'
 
 const jednostki = ['g', 'kg', 'ml', 'l', 'szt.']
 
-function App({ pracownik, onSignOut }) {
+function App({ pracownik, onSignOut, onStartWork, onModules, onWorktime }) {
   const [produkty, setProdukty] = useState([])
   const [ladowanieProduktow, setLadowanieProduktow] = useState(true)
   const [bladProduktow, setBladProduktow] = useState('')
@@ -58,7 +60,7 @@ const blokadaDodawania = useRef(false)
   // Włączyć dopiero po audycie i wdrożeniu opisanego kontraktu RPC.
   const wznowienieDostepne = import.meta.env.VITE_PLAN_REOPEN_ENABLED === 'true'
   const tylkoOdczyt = otwartyPlan?.status !== 'active' ||
-    (pracownik?.role === 'employee' && !canWorkOnPlan(pracownik, otwartyPlan))
+    (isProductionWorker(pracownik) && !canWorkOnPlan(pracownik, otwartyPlan))
   const mozeEdytowac = managementRoles.includes(pracownik?.role) && !tylkoOdczyt
   const [dataPlanu, setDataPlanu] = useState(() => {
   const jutro = new Date()
@@ -113,11 +115,10 @@ const [edytowanaPozycja, setEdytowanaPozycja] = useState({
   // START APLIKACJI - POBIERAMY LOKALE
   // -----------------------------------------
 const wylogujPracownika = () => {
-  kontekst.current += 1
   void onSignOut()
 }
 const pobierzPracownikow = () => {
-  if (['administrator', 'manager'].includes(pracownik.role)) setEkran('pracownicy')
+  if (['owner', 'administrator', 'manager'].includes(pracownik.role)) setEkran('pracownicy')
 }
   useEffect(() => {
   const timer = setInterval(() => {
@@ -202,7 +203,7 @@ useEffect(() => {
   // -----------------------------------------
 
  const wybierzLokal = async (lokal, aktualnyPracownik = pracownik) => {
-  if (aktualnyPracownik?.role !== 'administrator' &&
+  if (!['owner', 'administrator'].includes(aktualnyPracownik?.role) &&
     String(lokal.id) !== String(aktualnyPracownik.location_id)) return
   kontekst.current += 1
   wyczyscFormularzPozycji()
@@ -214,8 +215,8 @@ useEffect(() => {
   setOtwartyPlan(null)
   setWybrane({})
 
-  // Pracownik wybiera plan na dziś lub jeden z kolejnych siedmiu dni.
-  if (aktualnyPracownik?.role === 'employee') {
+  // Role wykonawcze widzą wyłącznie aktywny plan na dziś.
+  if (isProductionWorker(aktualnyPracownik)) {
     await pobierzZaplanowanePlany(lokal, aktualnyPracownik)
     return
   }
@@ -685,6 +686,7 @@ const rozpocznijPrace = async (id) => {
   if (!canWorkOnPlan(pracownik, otwartyPlan)) return
   const wersja = kontekst.current
   try {
+    if (onStartWork) await onStartWork(otwartyPlan?.location_id || wybranyLokal?.id)
     const { error } = await supabase.rpc(
       'start_plan_item',
       {
@@ -899,11 +901,11 @@ const otworzZaplanowanyPlan = async (planZaplanowany) => {
     const { data: aktualnyPlan, error: planError } = await supabase
       .from('Plans').select('id, plan_date, status, location_id')
       .eq('id', planZaplanowany.id)
-      .eq('location_id', pracownik.role === 'employee' ? pracownik.location_id : wybranyLokal.id)
+      .eq('location_id', isProductionWorker(pracownik) ? pracownik.location_id : wybranyLokal.id)
       .single()
     if (wersja !== kontekst.current) return
     if (planError) throw planError
-    if (pracownik.role === 'employee' && !employeeCanViewPlan(pracownik, aktualnyPlan)) {
+    if (isProductionWorker(pracownik) && !employeeCanViewPlan(pracownik, aktualnyPlan)) {
       throw new Error('Ten plan nie jest dostępny w Twoim zakresie dat i lokalu.')
     }
     const { data: items, error } = await supabase
@@ -955,19 +957,19 @@ const pobierzZaplanowanePlany = async (lokal = wybranyLokal, osoba = pracownik) 
           id
         )
       `)
-      .eq('location_id', osoba.role === 'employee' ? osoba.location_id : lokal.id)
+      .eq('location_id', isProductionWorker(osoba) ? osoba.location_id : lokal.id)
       .order('plan_date', { ascending: false })
       .order('created_at', { ascending: false, nullsFirst: false })
       .order('id', { ascending: false })
 
-    if (osoba.role === 'employee') {
+    if (isProductionWorker(osoba)) {
       query = query.eq('status', 'active').eq('plan_date', productionDate())
     }
     const { data, error } = await query
     if (wersja !== kontekst.current) return
     if (error) throw error
 
-    setZaplanowanePlany(osoba.role === 'employee' ? (data || []).filter((p) => employeeCanViewPlan(osoba, p)) : data || [])
+    setZaplanowanePlany(isProductionWorker(osoba) ? (data || []).filter((p) => employeeCanViewPlan(osoba, p)) : data || [])
     setEkran('zaplanowane')
   } catch (error) {
     if (wersja !== kontekst.current) return
@@ -1235,9 +1237,15 @@ console.log('GOTOWA HISTORIA:', historiaZPracownikami)
 // EKRAN LOGOWANIA
 // -----------------------------------------
 
+const moduleHeader = <ModuleHeader title="ZAGOTÓWKI" employee={pracownik} disabled={zapisywanie || wznawianie || usuwaniePlanu} onModules={onModules} onSignOut={wylogujPracownika} onWorktime={onWorktime}
+  onEmployees={['owner','administrator','manager'].includes(pracownik.role)?pobierzPracownikow:undefined}
+  location={wybranyLokal && <label>Lokal<select disabled={zapisywanie || wznawianie || usuwaniePlanu || ladowaniePlanow} aria-label="Lokal" value={wybranyLokal.id} onChange={e=>{const lokal=lokale.find(l=>String(l.id)===e.target.value);if(lokal)void wybierzLokal(lokal)}}>{lokale.filter(l=>['owner','administrator'].includes(pracownik.role)||l.id===pracownik.location_id).map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></label>}
+  status={<WorktimeBar location={wybranyLokal?.id}/>}/>
+
 if (ekran === 'wybor-lokalu') {
   return (
     <LocationSelectScreen
+      header={moduleHeader}
       pracownik={pracownik}
       lokale={lokale}
       wylogujPracownika={wylogujPracownika}
@@ -1252,7 +1260,7 @@ if (ekran === 'wybor-lokalu') {
     <EmployeesScreen
       pracownik={pracownik}
       lokale={lokale}
-      onPowrot={() => setEkran('wybor-lokalu')}
+      onPowrot={() => setEkran(wybranyLokal ? (planId ? 'produkcja' : 'zaplanowane') : 'wybor-lokalu')}
     />
   )
 }
@@ -1273,6 +1281,7 @@ if (ekran === 'wybor-lokalu') {
 
     return (
       <ProductionScreen
+      header={moduleHeader}
         onRequirements={() => setEkran('zapotrzebowanie')}
         wybranyLokal={wybranyLokal}
         mozeUsunacPlan={canDeletePlan(pracownik, otwartyPlan)}
@@ -1326,6 +1335,7 @@ if (ekran === 'wybor-lokalu') {
 if (ekran === 'zaplanowane') {
   return (
     <ScheduledPlansScreen
+      header={moduleHeader}
       wybranyLokal={wybranyLokal}
       zaplanowanePlany={zaplanowanePlany}
       pracownik={pracownik}
@@ -1338,10 +1348,10 @@ if (ekran === 'zaplanowane') {
       komunikatNowegoPlanu={komunikatNowegoPlanu}
       onZmienDateNowegoPlanu={() => setKomunikatNowegoPlanu('')}
       otworzZaplanowanyPlan={otworzZaplanowanyPlan}
-      onPowrot={() => {
+      onPowrot={planId ? () => {
         kontekst.current += 1
-        setEkran(planId ? 'produkcja' : 'wybor-lokalu')
-      }}
+        setEkran('produkcja')
+      } : undefined}
       onUtworzPlan={async (nowaData) => {
         if (!managementRoles.includes(pracownik?.role) || !nowaData || !wybranyLokal || sprawdzaniePlanu) return
         setKomunikatNowegoPlanu('')
@@ -1415,7 +1425,7 @@ if (ekran === 'historia') {
       formatujGodzine={formatujGodzine}
       obliczCzas={obliczCzas}
       onPowrot={() => setEkran(
-        planId ? 'produkcja' : pracownik.role === 'employee' ? 'zaplanowane' : 'planowanie'
+        planId ? 'produkcja' : isProductionWorker(pracownik) ? 'zaplanowane' : 'planowanie'
       )}
     />
   )

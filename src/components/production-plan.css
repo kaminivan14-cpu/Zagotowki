@@ -1,0 +1,24 @@
+.app .production-plan { padding-top:8px; }
+.production-plan .plan-topbar { display:flex; align-items:center; flex-wrap:wrap; gap:8px 20px; padding:8px 0 16px; border-bottom:1px solid #d8e1dc; }
+.production-plan .plan-topbar h2 { margin:0; font-size:22px; }
+.production-plan .plan-back { border:0; background:transparent; color:#365c4d; padding:10px 0; min-height:44px; font-size:14px; font-weight:500; width:auto; cursor:pointer; }
+.production-plan .plan-status { padding:4px 9px; border-radius:12px; font-size:12px; background:#e5efe9; color:#315b45; }
+.production-plan .plan-status.completed { background:#e9edef; color:#485860; }
+.production-plan .plan-work-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin:20px 0; }
+.production-plan .plan-work-heading h2 { font-size:24px; margin:0 0 4px; }
+.production-plan .plan-work-heading p { margin:0; color:#52655c; font-size:15px; }
+.production-plan .plan-actions { display:flex; align-items:center; gap:10px; }
+.production-plan .plan-actions button { min-height:44px; padding:10px 14px; font-size:15px; border-radius:8px; background:white; color:#234737; cursor:pointer; width:auto; }
+.production-plan .plan-actions .plan-add { background:#245d49; color:white; border:1px solid #245d49; font-weight:700; }
+.production-plan .module-menu summary { background:#f8faf9; }
+.production-plan .module-menu-items { width:260px; }
+.production-plan .module-menu-items button { text-align:left; }
+.production-plan .module-menu-items .menu-danger { border-top:1px solid #e5c7c7; border-radius:0 0 6px 6px; margin-top:4px; padding-top:14px; color:#a12b35; }
+.production-plan :focus-visible { outline:3px solid #d18b17; outline-offset:3px; }
+.production-plan .plan-actions button:disabled,.production-plan .plan-back:disabled { opacity:.55; cursor:not-allowed; }
+@media(max-width:600px) {
+ .production-plan .plan-topbar { gap:4px 12px; }
+ .production-plan .plan-back { flex-basis:100%; text-align:left; }
+ .production-plan .plan-actions { width:100%; justify-content:space-between; }
+ .production-plan .module-menu-items { right:0; left:auto; }
+}

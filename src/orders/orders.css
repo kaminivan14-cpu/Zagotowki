@@ -1,0 +1,155 @@
+.module-nav { padding: 8px 16px; background: #e8efeb; color-scheme: light; }
+.module-selector { max-width: 680px; margin: auto; display: grid; gap: 18px; padding: 32px; }
+.module-selector button { min-height: 90px; font-size: 1.2rem; }
+.module-selector small { display: block; margin-top: 10px; }
+.orders-app { max-width: 1600px; margin: auto; padding: 16px; text-align: left; color: #172b26; }
+.orders-app :is(h2,h3) { color: #172b26; font-weight: 700; line-height: 1.25; }
+.orders-app h2 { font-size: 22px; margin: 0 0 8px; }
+.orders-app h3 { font-size: 19px; margin: 0 0 8px; }
+.orders-app p { margin: 6px 0; }
+.orders-app small { color: #425950; line-height: 1.4; }
+.orders-app .orders-header { border-radius: 12px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.orders-app .orders-header h1 { font-size: 28px; letter-spacing: 0; }
+.orders-app .orders-header p { color: #d5e3dc; }
+.orders-app .header-actions, .orders-app nav, .claim-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.orders-app nav { padding: 10px 0; border-block: 1px solid #d2ddd7; }
+.orders-app button, .module-nav button, .module-selector button { min-height: 46px; padding: 10px 14px; border: 1px solid #899f94; border-radius: 8px; color: #203e32; background: #fff; font-weight: 600; cursor: pointer; touch-action: manipulation; }
+.orders-app button:hover:not(:disabled), .module-nav button:hover { background: #e8f0ec; border-color: #215649; }
+.orders-app button[aria-pressed=true], .claim-actions button:first-child, .orders-app .rate-editor button { background: #215649; border-color: #215649; color: white; }
+.orders-app button:disabled { color: #56665e; background: #e4e9e6; border-color: #c6d0ca; cursor: not-allowed; opacity: 1; }
+.orders-app :is(button,input,select,[tabindex]):focus-visible, .module-nav button:focus-visible, .employees-screen :is(button,input,select):focus-visible { outline: 3px solid #1769aa; outline-offset: 3px; }
+.orders-app input, .orders-app select { min-height: 44px; min-width: 0; max-width: 100%; padding: 8px; border: 1px solid #899f94; border-radius: 6px; background: white; color: #172b26; }
+.orders-app input[type=checkbox] { min-height: 24px; width: 24px; accent-color: #215649; }
+.orders-app label { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 8px 0; }
+.orders-app article, .orders-app > section { border: 1px solid #c2d1c8; border-radius: 12px; padding: 14px; margin: 12px 0; background: white; min-width: 0; }
+.orders-app .shift-panel { background: #eaf0ed; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.orders-app .shift-panel h2 { font-size: 18px; margin: 0; }
+.orders-app .order-heading { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+.orders-app .order-heading h2 { font-size: 26px; margin: 0; font-weight: 800; }
+.order-heading time { font-size: 14px; color: #425950; margin-left: auto; }
+.order-status { display: inline-block; padding: 6px 12px; border-radius: 6px; color: #143f32; background: #dcece4; font-weight: 750; }
+.status-NEW { background: #e2eafa; color: #234779; }
+.status-IN_PROGRESS, .status-CUTTING { background: #fff0c2; color: #674400; }
+.status-READY_FOR_CUTTING { background: #eaddf5; color: #593577; }
+.status-COMPLETED { background: #d7eddd; color: #215233; }
+.claim-actions { margin-bottom: 12px; }
+.order-items { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(280px, 340px); gap: 12px; max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; padding: 3px 3px 12px; scrollbar-color: #688c7b #edf2ef; }
+.orders-app .order-item { border: 1px solid #c6d5cc; background: #fbfdfc; border-radius: 10px; padding: 12px; min-width: 0; scroll-snap-align: start; }
+.item-quantity { color: #425950; font-size: 15px; }
+.item-counters { display: flex; gap: 6px 12px; flex-wrap: wrap; font-size: 15px; }
+.orders-app .partial-claim { font-size: 14px; }
+.partial-claim input { width: 84px; }
+.work-card { border-left: 4px solid #438773; padding: 10px; margin: 10px 0 0; background: #edf4ef; }
+.work-card > strong { font-size: 15px; }
+.work-card p { font-size: 13px; color: #425950; }
+.work-card button { margin: 4px 6px 4px 0; }
+.orders-app [role=status]:empty { display: none; }
+.orders-app [role=status]:not(:empty), .orders-app aside { padding: 12px; background: #fff3cd; color: #624708; border-radius: 8px; }
+.orders-app .empty-state { padding: 24px; text-align: center; border: 1px dashed #899f94; border-radius: 12px; }
+.orders-app .rate-editor { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid #ccd8d2; padding: 12px 0; }
+.rate-editor > strong { flex: 1 1 220px; }
+.rate-editor small { display: block; font-weight: 400; }
+.rate-editor input:not([type=checkbox]) { width: 130px; }
+@media (min-width: 1200px) { .order-items { grid-auto-flow: row; grid-template-columns: repeat(auto-fit,minmax(280px,1fr)); } }
+@media (max-width: 600px) {
+  .orders-app { padding: 10px; }
+  .orders-app .orders-header { padding: 14px; }
+  .orders-app nav button { flex: 1 0 40%; }
+  .orders-app .header-actions { width: 100%; }
+  .header-actions button { flex: 1 1 auto; }
+  .orders-app .order-heading h2 { font-size: 22px; }
+  .order-heading time { width: 100%; margin: 0; }
+  .order-items { grid-auto-flow: row; grid-template-columns: minmax(0,1fr); }
+  .claim-actions button { flex: 1 1 auto; }
+}
+.module-selector h1 { color: #172b26; }
+
+/* Orders board: horizontal orders, vertical compact operational rows. */
+.orders-horizontal { display: grid; grid-auto-flow: column; grid-auto-columns: 380px; gap: 16px; align-items: start; overflow-x: auto; max-width: 100%; padding: 4px 2px 18px; scroll-snap-type: x proximity; overscroll-behavior-x: contain; }
+.orders-app .order-column { margin: 0; border: 2px solid #d5e3de; border-radius: 12px; padding: 16px; background: #fff; scroll-snap-align: start; min-width: 0; }
+.order-column .order-heading h2 { font-size: 23px; overflow-wrap: anywhere; }
+.orders-app .deadline-warning { border-color: #e9b745; }
+.orders-app .deadline-urgent { border-color: #dd762e; }
+.orders-app .deadline-overdue { border-color: #e25b60; }
+.deadline-badge { display: inline-block; font-weight: 650; padding: 6px 10px; border-radius: 10px; font-size: 14px; background: #eef4f0; }
+.deadline-badge.warning { background: #fff3d5; color: #795500; }
+.deadline-badge.urgent { background: #ffeadb; color: #963a08; }
+.deadline-badge.overdue { background: #ffebec; color: #a12630; }
+.order-lifecycle { display: inline-block; margin: 6px; font-size: 13px; color: #425950; }
+.order-claim-buttons { display: grid; gap: 8px; margin: 14px 0; }
+.order-claim-buttons > button:first-child, .orders-app .start-item { background: #215649; color: #fff; }
+.compact-item, .set-row { padding: 12px 0; border-top: 1px solid #dfebe4; min-width: 0; }
+.compact-title { display: flex; gap: 8px; align-items: center; }
+.compact-title strong { flex: 1; overflow-wrap: anywhere; font-size: 16px; }
+.compact-title > span { flex-shrink: 0; color: #425950; font-size: 14px; }
+.orders-app .compact-title input { width: 26px; min-width: 26px; height: 26px; }
+.orders-app .compact-counters { font-size: 14px; margin: 6px 0 8px 34px; }
+.compact-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.orders-app .compact-actions button { min-height: 44px; min-width: 44px; padding: 8px 10px; font-size: 14px; }
+.compact-actions > span { font-size: 13px; color: #425950; }
+.set-components { border-left: 2px solid #e2ebe5; padding-left: 12px; margin-top: 8px; }
+.compact-work { border-left: 4px solid #38886b; padding: 10px; margin-top: 8px; background: #eff6f2; font-size: 14px; }
+.compact-work button { margin: 4px 4px 0 0; }
+.orders-app .compact-work p { font-size: 13px; }
+.order-notifications { display: flex; flex-wrap: wrap; gap: 8px; }
+.order-notifications aside { flex: 1 1 280px; border: 1px solid #e9b745; }
+@media(max-width: 600px) { .orders-horizontal { grid-auto-columns: min(350px, calc(100vw - 28px)); } }
+.orders-app .order-claim-buttons > button:first-child:hover:not(:disabled), .orders-app .start-item:hover:not(:disabled) { background: #163f34; color: #fff; }
+.orders-app .order-claim-buttons > button:disabled, .orders-app .start-item:disabled { background: #e4e9e6; color: #56665e; border-color: #c6d0ca; }
+
+/* Time and operational state are independent; only time selects this palette. */
+.orders-app .order-column { --card-bg:#fff; --card-border:#d5e3de; --button-bg:#f2f6f4; --button-text:#203e32; --button-border:#b1c6ba; --primary-bg:#215649; background:var(--card-bg); border-color:var(--card-border); }
+.orders-app .order-column.deadline-warning { --card-bg:#fff9e9; --card-border:#dfb64b; --button-bg:#fff1ca; --button-text:#674500; --button-border:#cfad54; --primary-bg:#805600; }
+.orders-app .order-column.deadline-urgent { --card-bg:#fff0e3; --card-border:#da833f; --button-bg:#ffe0c3; --button-text:#763706; --button-border:#d59259; --primary-bg:#914007; }
+.orders-app .order-column.deadline-overdue { --card-bg:#fff0f2; --card-border:#d77681; --button-bg:#ffe0e5; --button-text:#7b2836; --button-border:#d798a1; --primary-bg:#9b3045; }
+.orders-app .order-column button:not(:disabled) { background:var(--button-bg); color:var(--button-text); border-color:var(--button-border); }
+.orders-app .order-column .order-claim-buttons>button:first-child:not(:disabled), .orders-app .order-column .start-item:not(:disabled) { background:var(--primary-bg); color:#fff; border-color:var(--primary-bg); }
+.orders-app .order-column button:hover:not(:disabled) { filter:brightness(.94); }
+.operational-chips { display:flex; flex-wrap:wrap; gap:5px; margin:6px 0; }
+.operational-chips .order-status { font-size:12px; padding:4px 7px; }
+.orders-app .order-notifications { display:grid; gap:6px; margin:10px 0; }
+.orders-app .order-notice { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 12px; margin:0; background:#fff7df; color:#674500; border:1px solid #dfb64b; border-left-width:4px; }
+.orders-app .notice-DEADLINE_10 { background:#fff0e3; border-color:#da833f; color:#763706; }
+.orders-app .notice-DEADLINE_OVERDUE { background:#fff0f2; border-color:#d77681; color:#7b2836; }
+.notice-copy { min-width:0; font-size:14px; }
+.orders-app .notice-copy p { margin:2px 0 0; overflow-wrap:anywhere; }
+.notice-actions { display:flex; gap:6px; flex-shrink:0; }
+.orders-app .notice-actions button { min-height:40px; padding:6px 10px; font-size:13px; }
+.order-highlight { outline:4px solid #1769aa; outline-offset:-6px; }
+.order-generator fieldset { min-width:0; border:0; padding:0; }
+.generator-line { border:1px solid #bacfc2; border-radius:10px; padding:14px; margin:12px 0; }
+.generator-fields,.generator-component { display:flex; align-items:end; gap:12px; flex-wrap:wrap; }
+.generator-picker { flex:1 1 240px; min-width:0; }
+.order-generator label { display:flex; flex-direction:column; align-items:stretch; gap:5px; }
+.order-generator input[type=number] { width:110px; }
+.order-generator input[type=search],.order-generator select { width:100%; }
+.generator-components { border-left:3px solid #b5cabc; padding-left:14px; margin-top:16px; }
+.generator-component { padding:10px 0; border-top:1px solid #dfebe4; }
+.generator-component output { padding:14px 0; font-weight:600; }
+@media(max-width:600px) { .orders-app .order-notice { flex-wrap:wrap; } .notice-actions { width:100%; } .notice-copy { flex:1 1 100%; } .generator-fields>* { max-width:100%; } }
+
+/* Operator board shares column geometry and deadline palette with the general board. */
+.orders-app .production-mode { max-width:none; width:100%; margin:0; padding:0; }
+.orders-app .production-task button { font-size:14px; padding:8px 10px; }
+.production-mode .production-task { display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:12px 0; border-top:1px solid #dfebe4; min-width:0; }
+.production-task .compact-title { flex:1 0 100%; }
+.production-task .order-status { font-size:12px; padding:4px 7px; }
+.production-mode button { min-height:48px; min-width:48px; }
+.orders-app .order-column .production-primary:not(:disabled) { background:var(--primary-bg); border-color:var(--primary-bg); color:white; }
+.production-mode .production-task .production-primary { margin-left:auto; }
+.production-mode .operator-set > h3 { margin:12px 0 0; font-size:16px; }
+.production-split,.production-confirm { flex:1 0 100%; }
+.production-choices { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0; }
+.production-keypad { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:8px 0; }
+.production-split output { display:block; font-size:22px; padding:8px; }
+.production-confirm { display:grid; gap:8px; padding:8px; border:2px solid #a65026; border-radius:8px; }
+
+.orders-app .orders-mode-switch { display:flex; border:1px solid #91a99f; border-radius:10px; overflow:hidden; }
+.orders-app .orders-mode-switch button { border:0; border-radius:0; min-height:48px; }
+.orders-app .orders-mode-switch button[aria-pressed=true] { background:#215649; color:white; }
+.orders-app .orders-mode-switch button:focus-visible { outline:3px solid #e5a700; outline-offset:-3px; }
+.orders-app .urgency-filters { display:flex; flex-wrap:wrap; gap:4px; padding:6px 0; border:0; }
+.orders-app .urgency-filters button { min-height:44px; padding:8px 12px; font-size:14px; border-radius:20px; }
+.orders-app .urgency-filters button[aria-pressed=true] { background:#245a48; color:white; }
+.order-column .order-prep { font-size:13px; margin:6px 0; }
+.order-column .order-prep.estimated { color:#586660; }

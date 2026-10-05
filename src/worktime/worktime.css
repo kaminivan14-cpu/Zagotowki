@@ -1,0 +1,41 @@
+.worktime-bar { display:flex; align-items:center; flex-wrap:wrap; gap:12px; padding:12px 16px; background:#eaf0ed; color:#172b26; }
+.worktime-bar button,.worktime-panel button,.worktime-dialog button { min-height:44px; padding:10px 14px; border:1px solid #8fa89d; border-radius:8px; background:#fff; color:#173e31; cursor:pointer; }
+.worktime-bar label,.worktime-panel label,.worktime-dialog label { display:flex; flex-direction:column; gap:5px; }
+.worktime-panel { max-width:1500px; padding:20px; margin:auto; color:#172b26; }
+.worktime-panel header { background:transparent; color:inherit; display:flex; gap:16px; justify-content:space-between; align-items:center; }
+.worktime-panel h1 { color:#172b26; }
+.worktime-panel nav,.worktime-filters { display:flex; gap:10px; flex-wrap:wrap; margin:16px 0; align-items:end; }
+.worktime-panel button[aria-pressed=true] { background:#215649; color:#fff; }
+.worktime-panel input,.worktime-panel select,.worktime-dialog input,.worktime-dialog textarea,.worktime-bar select { min-height:44px; padding:8px; border:1px solid #91a99f; border-radius:6px; background:white; color:#172b26; max-width:100%; }
+.worktime-table { overflow-x:auto; }
+.worktime-table table { border-collapse:collapse; width:100%; }
+.worktime-table th,.worktime-table td { text-align:left; padding:10px; border-bottom:1px solid #cfdbd4; white-space:nowrap; }
+.worktime-table button { margin:3px; }
+.worktime-calendar { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; }
+.worktime-calendar button { display:flex; flex-direction:column; min-height:80px; }
+.worktime-overlay { position:fixed; inset:0; z-index:2000; background:#0006; display:grid; place-items:center; padding:16px; }
+.worktime-dialog { background:white; color:#172b26; padding:24px; border-radius:12px; width:min(580px,100%); max-height:90vh; overflow:auto; display:grid; gap:12px; }
+.worktime-error,.worktime-panel [role=alert] { color:#962e3b; padding:12px; }
+@media(max-width:600px) { .worktime-panel { padding:10px; } .worktime-calendar button { padding:6px; font-size:12px; } }
+
+.worktime-panel { text-align:left; }
+.worktime-panel button:disabled,.worktime-bar button:disabled,.worktime-dialog button:disabled { opacity:.55; cursor:not-allowed; }
+.worktime-calendar > strong { text-align:center; }
+.worktime-panel header { padding:8px 0; margin:0; border-radius:0; }
+.worktime-panel h1 { font-size:26px; margin:0; }
+.worktime-info { font-size:13px; margin:8px 0; color:#52665c; }
+.worktime-info summary { cursor:pointer; min-height:32px; padding:8px 0; }
+.worktime-panel nav { display:inline-flex; gap:2px; padding:3px; background:#e5ece8; border-radius:9px; margin:10px 0; }
+.worktime-panel nav button { border:0; background:transparent; }
+.worktime-filters { gap:8px; margin:8px 0 16px; font-size:13px; }
+.worktime-filters input { width:130px; }
+.worktime-filters select { max-width:220px; }
+.worktime-filters .worktime-export { margin-left:auto; }
+.worktime-table td,.worktime-table th { padding:8px 10px; font-size:14px; }
+.worktime-table .numeric { text-align:right; font-variant-numeric:tabular-nums; }
+.worktime-kpis { display:flex; flex-wrap:wrap; gap:12px 24px; margin:14px 0; padding:12px; background:#edf2ef; border-radius:8px; font-size:13px; }
+.worktime-kpis strong { margin-left:8px; font-size:17px; }
+.worktime-badge { display:inline-block; padding:4px 8px; border-radius:12px; font-size:12px; font-weight:600; background:#edf0ef; color:#40564b; }
+.worktime-badge.active { background:#e1f1e8; color:#206343; }
+.worktime-badge.needs_attention { background:#fff0d5; color:#7b4906; }
+@media(max-width:600px) { .worktime-panel header { flex-wrap:wrap; gap:8px; } .worktime-filters label { flex:1 1 130px; min-width:0; } .worktime-filters input,.worktime-filters select { width:100%; max-width:100%; } .worktime-filters .worktime-export { margin-left:0; } }

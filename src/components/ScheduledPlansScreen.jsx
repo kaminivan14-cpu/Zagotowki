@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { isProductionWorker } from '../planAccess'
 
 export default function ScheduledPlansScreen({
+  header,
   pracownik,
   dzisiaj,
   onWyloguj,
@@ -19,7 +21,7 @@ export default function ScheduledPlansScreen({
   // Data nowego planu nie zmienia daty aktualnie otwartego planu.
   const [dataNowegoPlanu, setDataNowegoPlanu] = useState(dataPlanu)
 
-  const employee = pracownik?.role === 'employee'
+  const employee = isProductionWorker(pracownik)
   const grupy = employee ? [
     { tytul: 'DZISIAJ', plany: zaplanowanePlany.filter((plan) => plan.plan_date === dzisiaj) },
     { tytul: 'NADCHODZĄCE PLANY', plany: zaplanowanePlany.filter((plan) => plan.plan_date > dzisiaj) },
@@ -27,12 +29,12 @@ export default function ScheduledPlansScreen({
 
   return (
     <div className="app">
-      <header>
+      {header || <header>
         <h1>ZAGOTÓWKI</h1>
         <p>
           Zaplanowane — {wybranyLokal?.name}
         </p>
-      </header>
+      </header>}
 
       <main>
         <div className="naglowek-produkcji">
@@ -46,17 +48,17 @@ export default function ScheduledPlansScreen({
             </p>
           </div>
 
-          <button
+          {onPowrot && <button
             className="powrot"
             onClick={onPowrot}
           >
             ← Powrót
-          </button>
+          </button>}
           {employee && <>
             <button className="powrot" onClick={onHistoria} disabled={ladowanieHistorii}>
               {ladowanieHistorii ? 'Ładowanie…' : '📊 Historia'}
             </button>
-            <button className="powrot" onClick={onWyloguj}>Wyloguj</button>
+            {!header && <button className="powrot" onClick={onWyloguj}>Wyloguj</button>}
           </>}
         </div>
 {!employee && <div

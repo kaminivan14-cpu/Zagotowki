@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import App from '../App'
+import ModuleShell from '../orders/ModuleShell'
 import LoginScreen from './LoginScreen'
 import { initialPasswordRedirect, supabase } from '../supabase'
 import { invalidPasswordLink } from './passwordRecovery'
@@ -109,5 +109,5 @@ export default function AuthGate() {
   if (loading) return <div className="app auth-screen" role="status">Sprawdzanie sesji…</div>
   if (!session) return <LoginScreen key="login" />
   if (!employee) return <div className="app auth-screen"><h1>ZAGOTÓWKI</h1><p role="alert">{error}</p><button onClick={() => refresh.current()}>Sprawdź ponownie</button><button onClick={signOut}>Wyloguj / zmień użytkownika</button></div>
-  return <App key={employeeContext(employee)} pracownik={employee} onSignOut={signOut} />
+  return <ModuleShell key={employeeContext(employee)} pracownik={employee} onSignOut={signOut} />
 }

@@ -77,7 +77,7 @@ export default function PlanningScreen({
           >
             Zmień lokal
           </button>
-          {['administrator', 'manager'].includes(pracownik?.role) && (
+          {['owner', 'administrator', 'manager'].includes(pracownik?.role) && (
   <button
     className="powrot"
     onClick={pobierzPracownikow}
@@ -128,7 +128,7 @@ export default function PlanningScreen({
     }}
   />
 </div>
-        {['administrator', 'manager', 'su-chef'].includes(pracownik?.role) && (
+        {['owner', 'administrator', 'manager', 'su-chef'].includes(pracownik?.role) && (
           <button className="powrot" onClick={onListaPlanow} disabled={zapisywanie}
             style={{ marginBottom: '20px' }}>← Lista planów</button>
         )}

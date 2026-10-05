@@ -10,8 +10,11 @@
     "test:migration": "node tests/plan-items-migration.mjs",
     "dev": "vite",
     "build": "vite build",
+    "build:uat": "vite build --mode uat",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:tasks:db": "node tests/tasks-database.mjs",
+    "test:tasks:browser": "playwright test tests/browser/tasks.spec.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

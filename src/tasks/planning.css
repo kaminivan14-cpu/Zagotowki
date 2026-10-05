@@ -1,0 +1,55 @@
+.tasks-app .planning-main { max-width:1440px; }
+.tasks-planning .planning-subtitle { color:#63748b; margin-top:4px; }
+.tasks-planning .planning-entry { margin:14px 0; }
+.tasks-planning .planning-entry button { font-size:14px; }
+.tasks-planning .planning-employee { font-size:14px; margin:12px 0; }
+.tasks-planning .planning-info { background:#eaf2ff; color:#355780; padding:12px 16px; border-radius:10px; font-size:14px; }
+.tasks-planning .planning-period { display:inline-flex; flex-wrap:wrap; padding:4px; border:1px solid #dce6f2; border-radius:10px; background:#fff; gap:4px; margin:8px 0 16px; }
+.tasks-planning .planning-period button { border:0; font-size:14px; background:#f0f5fb; }
+.tasks-planning .planning-period button[aria-pressed=true],.tasks-planning .planning-sidebar .primary { background:#1766d4; color:white; border-color:#1766d4; }
+.tasks-planning .planning-help { color:#65778c; font-size:12px; }
+.tasks-planning .planning-layout { display:grid; grid-template-columns:minmax(0,1fr) 285px; gap:20px; align-items:start; }
+.tasks-planning .planning-days { display:grid; gap:10px; min-width:0; }
+.tasks-planning .planning-day { display:grid; grid-template-columns:125px minmax(0,1fr) 145px; align-items:start; gap:12px; border:1px solid #dde6ef; background:white; padding:14px; border-radius:12px; }
+.tasks-planning .planning-day-heading { display:flex; flex-direction:column; gap:4px; color:#64748b; font-size:12px; }
+.tasks-planning .planning-day-heading h3 { font-size:21px; margin:0; text-transform:capitalize; }
+.tasks-planning .planning-day-heading time { font-size:14px; color:#36516e; }
+.tasks-planning .planning-day-heading small { font-size:11px; }
+.tasks-planning .planning-day-heading progress { height:5px; width:100%; accent-color:#4a8f78; }
+.tasks-planning .load-near progress { accent-color:#be821d; }
+.tasks-planning .load-overloaded progress { accent-color:#c04855; }
+.tasks-planning .load-overloaded .planning-load-state { color:#a52b40; }
+.tasks-planning .load-near .planning-load-state { color:#856014; }
+.tasks-planning .planning-day-add { padding:8px; font-size:13px; color:#1761be; background:#f4f8ff; border-color:#dce7f8; }
+.tasks-planning .planning-balance { min-height:32px; padding:4px 0; border:0; border-radius:0; font-size:11px; text-align:left; color:#65778c; }
+.tasks-planning .planning-task { display:flex; gap:10px; align-items:center; min-width:0; padding:6px 8px; border-bottom:1px solid #edf1f6; }
+.tasks-planning .planning-task:last-child { border-bottom:0; }
+.tasks-planning .planning-marker { flex:0 0 8px; width:8px; height:8px; border-radius:50%; background:#397ee0; }
+.tasks-planning .priority-high > .planning-marker { background:#d74b5b; }.tasks-planning .priority-low > .planning-marker { background:#2e9473; }.tasks-planning .priority-critical > .planning-marker { background:#a32038; }
+.tasks-planning .planning-task-copy { min-width:0; flex:1; }
+.tasks-planning .planning-title { border:0; background:transparent; border-radius:4px; padding:4px 0; min-height:36px; text-align:left; font-size:14px; font-weight:600; overflow-wrap:anywhere; }
+.tasks-planning .planning-task-meta { display:flex; gap:6px 10px; flex-wrap:wrap; font-size:12px; color:#62748a; align-items:center; }
+.tasks-planning .planning-category { border-radius:5px; padding:3px 5px; background:#edf0f4; color:#526477; font-size:11px; }
+.tasks-planning .category-0 { background:#eaf2fb; color:#346089; }.tasks-planning .category-1 { background:#e9f4ef; color:#386c53; }.tasks-planning .category-2 { background:#f2edfa; color:#73548c; }
+.tasks-planning .planning-priority { display:inline-block; font-size:11px; font-weight:600; padding:5px 8px; border-radius:6px; background:#eaf2ff; color:#265a9c; }
+.tasks-planning .planning-priority.priority-high { background:#fcecef; color:#b03246; }.tasks-planning .planning-priority.priority-low { background:#fcf4de; color:#866017; }.tasks-planning .planning-priority.priority-critical { background:#a5263d; color:white; }
+.tasks-planning .planning-empty { color:#8190a1; font-size:13px; padding:8px; }
+.tasks-planning .planning-sidebar { display:grid; gap:14px; background:transparent; color:inherit; padding:0; min-width:0; }
+.tasks-planning .planning-sidebar > section { background:white; border:1px solid #dde6ef; border-radius:12px; padding:16px; }
+.tasks-planning .planning-sidebar h3 { margin:0 0 14px; font-size:19px; }
+.tasks-planning .planning-sidebar dl { margin:0; font-size:13px; }.tasks-planning .planning-sidebar dl div { display:flex; justify-content:space-between; gap:14px; padding:10px 0; border-bottom:1px solid #edf1f6; }
+.tasks-planning .planning-sidebar dt { color:#63748b; }.tasks-planning .planning-sidebar dd { margin:0; text-align:right; }
+.tasks-planning .planning-sidebar button { display:block; width:100%; margin:8px 0; font-size:13px; text-align:left; }
+.tasks-planning .planning-sidebar small { display:block; margin-top:8px; color:#65778c; font-size:11px; }
+.tasks-planning .planning-priority-totals { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }.tasks-planning .planning-priority-totals div { display:flex; align-items:center; gap:8px; font-size:12px; }.tasks-planning .planning-priority-totals strong { font-size:18px; }
+.tasks-planning .planning-category-totals { list-style:none; padding:0; font-size:13px; }.tasks-planning .planning-category-totals li { display:flex; justify-content:space-between; gap:8px; padding:6px 0; }
+.tasks-planning .planning-save { font-size:13px; padding:10px; border-radius:6px; background:#edf5f0; color:#35634a; }
+.tasks-planning .planning-unplanned { margin-top:24px; padding:16px; border:1px solid #dde6ef; border-radius:12px; background:white; }.tasks-planning .planning-unplanned > h3 { margin-top:0; }
+@media(max-width:1100px){.tasks-planning .planning-layout { grid-template-columns:1fr; }.tasks-planning .planning-sidebar { grid-template-columns:repeat(3,minmax(0,1fr)); }}
+@media(max-width:800px){.tasks-planning .planning-sidebar { grid-template-columns:1fr; }.tasks-planning .planning-day { grid-template-columns:110px minmax(0,1fr); }.tasks-planning .planning-day-add { grid-column:2; justify-self:start; }}
+@media(max-width:600px){.tasks-planning .planning-day { grid-template-columns:1fr; }.tasks-planning .planning-day-heading { display:grid; grid-template-columns:1fr 1fr; }.tasks-planning .planning-day-add { grid-column:1; justify-self:stretch; }.tasks-planning .planning-task { flex-wrap:wrap; }.tasks-planning .planning-task-copy { flex-basis:70%; }.tasks-planning .planning-unplanned .planning-task > button { margin-left:18px; }.tasks-planning .planning-period { display:flex; }.tasks-planning .planning-period button { flex:1; }}
+.tasks-planning { line-height:1.4; }
+.tasks-planning .planning-entry .planning-employee { margin:0 0 0 auto; }
+.tasks-planning .planning-day-heading { line-height:1.35; }
+.tasks-planning .planning-sidebar dt { flex-shrink:0; }
+@media(max-width:600px){.tasks-planning .planning-entry .planning-employee { margin:0; width:100%; }}

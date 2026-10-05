@@ -1,0 +1,37 @@
+.tasks-app { color-scheme: light; color: #172b26; text-align: left; padding: 16px; background: #f4f5f7; }
+.tasks-app .tasks-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; border-radius: 12px; padding: 20px; }
+.tasks-app .tasks-header h1 { color: white; font-size: 28px; margin: 0; }
+.tasks-app .tasks-header p { color: #d5e3dc; }
+.tasks-app main { max-width: 1100px; padding: 24px 0; }
+.tasks-app h2,.tasks-app h3,.tasks-app h4 { color: #172b26; font-weight: 700; line-height: 1.3; margin: 12px 0; }
+.tasks-app h2 { font-size: 26px; }.tasks-app h3 { font-size: 19px; }
+.tasks-app p { margin: 10px 0; }.tasks-app p:empty { display: none; }
+.tasks-app nav,.tasks-app .task-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.tasks-app nav { padding: 14px 0; border-bottom: 1px solid #c2d1c8; }
+.tasks-app button,.tasks-app input,.tasks-app select,.tasks-app textarea { font: inherit; color: #172b26; background: white; border: 1px solid #899f94; border-radius: 8px; padding: 10px 14px; min-height: 46px; max-width: 100%; }
+.tasks-app button { font-weight: 600; cursor: pointer; touch-action: manipulation; }.tasks-app button:hover:not(:disabled) { background: #e8f0ec; }
+.tasks-app .primary,.tasks-app button[aria-pressed=true] { background: #215649; color: white; border-color: #215649; }.tasks-app .primary:hover:not(:disabled){background:#163f34}
+.tasks-app button:disabled { opacity: .6; cursor: wait; }.tasks-app :is(button,input,select,textarea):focus-visible { outline: 3px solid #1769aa; outline-offset: 3px; }
+.tasks-app label { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 12px 0; }
+.tasks-app input[type=checkbox] { min-height: 24px; width: 24px; accent-color: #215649; }
+.tasks-app textarea { width: 100%; min-height: 90px; }.tasks-app fieldset { border: 0; padding: 0; min-width: 0; }
+.tasks-app form { margin: 20px 0; padding: 16px; border: 1px solid #c2d1c8; border-radius: 10px; background: white; }
+.tasks-app .task-day { padding: 16px 0; border-bottom: 1px solid #c2d1c8; }.tasks-app .task-week { margin-bottom: 24px; }
+.tasks-app .task-card { background: white; border: 1px solid #c2d1c8; border-radius: 10px; padding: 16px; margin: 12px 0; }
+.tasks-app .task-card h3 { margin-top: 0; }.tasks-app .task-title { border: 0; padding: 0; min-height: 32px; text-align: left; }
+.tasks-app .task-work { max-width: 860px; margin: 0 auto; }.tasks-app .task-work .task-actions button { min-height: 64px; font-size: 20px; }
+.tasks-app .task-description { white-space: pre-wrap; overflow-wrap: anywhere; }.tasks-app progress { width: 100%; max-width: 360px; accent-color: #215649; }
+.tasks-app [role=alert]:not(:empty),.tasks-app .task-warning,.tasks-app aside { background: #fff3cd; color: #624708; padding: 12px; border-radius: 8px; }
+.tasks-app .task-calendar { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 8px; margin: 20px 0; }.tasks-app .task-calendar article { background: white; border: 1px solid #c2d1c8; padding: 8px; border-radius: 8px; overflow-wrap: anywhere; }.tasks-app .task-calendar h3 { font-size: 15px; }.tasks-app .task-calendar p { font-size: 13px; }
+.tasks-app .task-table { overflow-x: auto; }.tasks-app table { border-collapse: collapse; width: 100%; background: white; }.tasks-app th,.tasks-app td { padding: 12px; border-bottom: 1px solid #c2d1c8; text-align: left; }
+.tasks-app .task-timeline { padding-left: 24px; }.tasks-app .task-timeline li { padding: 8px 0; }
+.tasks-app .tasks-dialog { width: min(720px,94vw); max-height: 90vh; border: 1px solid #899f94; border-radius: 12px; padding: 0; }.tasks-app .tasks-dialog .tasks-app { min-height: auto; }.tasks-app .tasks-dialog::backdrop { background: #11182788; }
+@media(max-width:900px){.tasks-app .task-calendar { grid-template-columns: repeat(2,minmax(0,1fr)); }}
+@media(max-width:600px){.tasks-app{padding:10px}.tasks-app .tasks-header{flex-wrap:wrap}.tasks-app nav button{flex:1 1 40%}.tasks-app .task-actions button{flex:1 1 auto}.tasks-app label{align-items:stretch;flex-direction:column}.tasks-app input,.tasks-app select{width:100%}.tasks-app input[type=checkbox]{width:24px}}
+.tasks-app button[aria-pressed=true]:hover:not(:disabled) { background: #163f34; color: white; }
+.tasks-app .task-datetime-field {display:flex;flex-direction:column;gap:4px;min-width:0;max-width:100%}
+.tasks-app .task-datetime-preview {display:block;color:#43576e;font-size:13px;line-height:1.4;font-variant-numeric:tabular-nums}
+/* One-task execution view; other Tasks tabs retain their layouts. */
+.task-execution{width:min(100%,840px);margin:0 auto;padding:16px 0 32px}.execution-date{color:#536760;font-size:.95rem}.execution-welcome,.execution-empty,.execution-task{background:#fff;border:1px solid #d4dfda;border-radius:18px;padding:clamp(18px,4vw,36px)}.execution-welcome,.execution-empty{padding-block:48px}.tasks-app .execution-cta{min-height:64px;padding:16px 24px;font-size:1.1rem;width:100%}.execution-task h2{font-size:clamp(1.5rem,4vw,2rem);overflow-wrap:anywhere}.execution-state{color:#245c4d;font-weight:700}.execution-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:20px 0;border-block:1px solid #e0e7e3}.execution-meta dt{font-size:.85rem;color:#536760}.execution-meta dd{margin:4px 0;overflow-wrap:anywhere}.execution-checklist label{display:flex;align-items:center;gap:14px;min-height:52px}.execution-secondary{display:flex;flex-wrap:wrap;gap:10px;margin:24px 0}.execution-task details{margin:20px 0}.execution-task summary{min-height:44px;cursor:pointer}.execution-task footer{border-top:1px solid #e0e7e3;padding-top:24px}.task-execution :focus-visible{outline:3px solid #177ac6;outline-offset:3px}@media(max-width:480px){.execution-meta{grid-template-columns:1fr}.task-execution{padding-top:0}}
+
+.tasks-app .execution-task>header{background:transparent;color:inherit;padding:16px 0;margin:0;display:block}.tasks-app .execution-task>header p{color:#536760}.tasks-app .execution-task>header .execution-state{color:#245c4d}.tasks-app .execution-task>header h2{color:#1f2937}.tasks-app .execution-checklist label{flex-direction:row;align-items:center}

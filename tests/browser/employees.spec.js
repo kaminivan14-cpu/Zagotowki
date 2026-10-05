@@ -18,7 +18,8 @@ async function setup(page) {
     if (url.hostname !== 'auth-tests.supabase.co') return route.abort()
     let data = []
     const path = url.pathname
-    if (path.endsWith('/auth_employee_profile')) data = [employees[0]]
+    if (path.endsWith('/auth_capabilities')) data = ['production.access']
+    else if (path.endsWith('/auth_employee_profile')) data = [employees[0]]
     else if (path.endsWith('/Locations')) data = [{id:1,name:'Lokal A',active:true}]
     else if (path.endsWith('/auth_list_employees')) data = employees
     else if (path.endsWith('/auth_employee_lifecycle')) {
@@ -47,7 +48,7 @@ async function setup(page) {
 const card = page => page.locator('.produkt').filter({has:page.getByText('Manager A',{exact:true})})
 test('employee actions: cancel, deactivate, activate, archive, restore and no duplicate submission', async ({page}) => {
   const {calls} = await setup(page); await page.goto('/')
-  await page.getByRole('button',{name:'👥 Pracownicy'}).click()
+  await page.getByText('Narzędzia ▾',{exact:true}).click();await page.getByRole('button',{name:'Pracownicy',exact:true}).click()
   await expect(card(page)).toBeVisible()
   await card(page).getByRole('button',{name:'Dezaktywuj',exact:true}).click()
   await page.getByRole('dialog').getByRole('button',{name:'Anuluj'}).click(); expect(calls).toHaveLength(0)
@@ -76,7 +77,7 @@ test('employee actions: cancel, deactivate, activate, archive, restore and no du
 })
 test('failed archive keeps employee and confirmation, with generic error', async ({page}) => {
   const state=await setup(page); state.fail(); await page.goto('/')
-  await page.getByRole('button',{name:'👥 Pracownicy'}).click()
+  await page.getByText('Narzędzia ▾',{exact:true}).click();await page.getByRole('button',{name:'Pracownicy',exact:true}).click()
   await card(page).getByRole('button',{name:'Usuń',exact:true}).click()
   await page.getByRole('dialog').getByRole('button',{name:'Usuń konto'}).click()
   await expect(page.getByRole('dialog').getByRole('alert')).toContainText('Nie udało się')
@@ -90,4 +91,36 @@ test('plan request orders by plan date then creation and id, keeping location re
   await expect(page.getByRole('heading',{name:'📋 Zaplanowane plany'})).toBeVisible()
   const dates = await page.locator('.produkty .produkt strong').allTextContents()
   expect(dates[0]).toContain('30.09.2026'); expect(dates[1]).toContain('29.09.2026')
+})
+
+test('inline PIN keeps employee context, prevents duplicate reset and preserves retry ID on network uncertainty',async({page})=>{
+ await setup(page);const attempts=[]
+ await page.route('**/functions/v1/manage-employee-pin',async route=>{
+  attempts.push(route.request().postDataJSON())
+  await new Promise(r=>setTimeout(r,100))
+  if(attempts.length===1) return route.abort()
+  if(attempts.length===2) return route.fulfill({status:409,json:{code:'PIN_UNAVAILABLE',retry_same_operation:false,request_id:'11111111-1111-4111-8111-111111111111'}})
+  return route.fulfill({json:{success:true}})
+ })
+ await page.goto('/');await page.getByText('Narzędzia ▾',{exact:true}).click();await page.getByRole('button',{name:'Pracownicy',exact:true}).click()
+ await card(page).getByRole('button',{name:'Nadaj / resetuj PIN',exact:true}).click()
+ const form=card(page).getByRole('form',{name:'PIN: Manager A'})
+ await expect(form.getByText('manager · Lokal A')).toBeVisible()
+ await form.getByLabel('Nowy PIN').fill('0091')
+ await form.getByRole('button',{name:'Nadaj / resetuj PIN',exact:true}).evaluate(b=>{b.click();b.click()})
+ await expect(form.getByRole('alert')).toContainText('ten sam PIN')
+ expect(attempts).toHaveLength(1)
+ await form.getByLabel('Nowy PIN').fill('0091');await form.getByRole('button',{name:'Nadaj / resetuj PIN',exact:true}).click()
+ await expect(form.getByRole('alert')).toContainText('Ten PIN jest już zajęty')
+ expect(attempts[1].operation_id).toBe(attempts[0].operation_id)
+ await form.getByLabel('Nowy PIN').fill('0092');await form.getByRole('button',{name:'Nadaj / resetuj PIN',exact:true}).click()
+ await expect(form).toHaveCount(0);await expect(page.getByText('PIN został nadany.')).toBeVisible()
+ expect(attempts[2].operation_id).not.toBe(attempts[1].operation_id)
+})
+for(const width of [1024,768,1440,390]) test(`Employees PIN visual audit ${width}`,async({page})=>{
+ await page.setViewportSize({width,height:900});await page.emulateMedia({colorScheme:'dark'});await setup(page);await page.goto('/')
+ await page.getByText('Narzędzia ▾',{exact:true}).click();await page.getByRole('button',{name:'Pracownicy',exact:true}).click();await card(page).getByRole('button',{name:'Nadaj / resetuj PIN',exact:true}).click()
+ await expect(card(page).getByRole('form',{name:'PIN: Manager A'})).toBeVisible()
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true)
+ await page.screenshot({path:`tmp/pin-audit.local/employees-${width}.png`,fullPage:true})
 })

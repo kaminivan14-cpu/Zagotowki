@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabase'
 import { calculateRequirements, createRequirementsRecipeLoader } from '../productionRequirements'
-import { employeeCanViewPlan, managementRoles } from '../planAccess'
+import { employeeCanViewPlan, managementRoles, isProductionWorker } from '../planAccess'
 
 const formatQuantity = (value) => value > 0 && value < 0.001
   ? '< 0,001' : new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 3 }).format(value)
@@ -16,8 +16,8 @@ export default function RequirementsScreen({ planId, pracownik, wybranyLokal, on
       const { data: plan, error: planError } = await supabase.from('Plans')
         .select('id, location_id, plan_date, status').eq('id', planId).single()
       if (planError) throw planError
-      const allowed = pracownik.role === 'employee' ? employeeCanViewPlan(pracownik, plan)
-        : managementRoles.includes(pracownik.role) && (pracownik.role === 'administrator' ||
+      const allowed = isProductionWorker(pracownik) ? employeeCanViewPlan(pracownik, plan)
+        : managementRoles.includes(pracownik.role) && (['owner', 'administrator'].includes(pracownik.role) ||
           (pracownik.location_id != null && String(pracownik.location_id) === String(plan.location_id)))
       if (!allowed || String(plan.location_id) !== String(wybranyLokal.id)) {
         throw new Error('Plan nie jest dostępny w tym lokalu lub dla tego pracownika.')

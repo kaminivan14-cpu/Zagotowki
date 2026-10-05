@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import assert from 'node:assert/strict'
 import { productionFixture } from './fixtures/production-schema.mjs'
-const database=`upgrade_test_${Date.now()}`,container='zagotowki-upgrade-test'
+const database=`upgrade_test_${Date.now()}`,container=process.env.TEST_PG_CONTAINER || 'zagotowki-upgrade-test'
 function sql(query, db=database) {
  return new Promise((resolve,reject)=>{
   const p=spawn('docker',['exec','-i',container,'psql','-U','postgres','-d',db,'-X','-qAt','-v','ON_ERROR_STOP=1'])
