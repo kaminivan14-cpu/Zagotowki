@@ -204,6 +204,34 @@ try {
  await denied('SET ROLE anon; SELECT * FROM public."Plans"')
  equal(await sql(`${as(1)} SELECT count(*) FROM public.auth_employee_profile()`),`${uid(1)}\n1`)
 
+ if (process.env.INVITE_BACKEND_ONLY === '1') {
+ const before = await sql(`SELECT jsonb_agg(to_jsonb(e) ORDER BY id) FROM public."Employees" e`)
+ await sql(await read('08_invitation_backend.sql'))
+ equal(await sql(`SELECT jsonb_agg(to_jsonb(e) ORDER BY id) FROM public."Employees" e`),before)
+ await denied(`SET ROLE authenticated;SELECT * FROM app_private.employee_invitations`)
+ await denied(`SET ROLE anon;SELECT * FROM public.auth_email_access()`)
+ await denied(`${as(2)} SELECT * FROM public.auth_email_access()`)
+ await denied(`SET ROLE authenticated;SELECT public.auth_invite_command('${uid(1)}',2,'begin')`)
+ equal(JSON.parse(await sql(`SET ROLE service_role; SELECT public.auth_invite_command('${uid(1)}',2,'begin','unused@example.invalid',gen_random_uuid())`)).state,'linked')
+ for (const [index,role] of ['administrator','manager','director','expert','specialist'].entries()) {
+  const id=200+index, op=randomUUID(), auth=uid(id), email=`invite-${id}@example.invalid`
+  await sql(`INSERT INTO public."Employees"(id,name,role,location_id,active) VALUES(${id},'Synthetic email','${role}',1,true)`)
+  const invoke=(action,extra='')=>sql(`SET ROLE service_role; SELECT public.auth_invite_command('${uid(1)}',${id},'${action}',p_operation=>'${op}'${extra})`).then(JSON.parse)
+  const results=await Promise.all([invoke('begin',`,p_email=>'${email}'`),invoke('begin',`,p_email=>'${email}'`)])
+  equal(results.map(x=>x.state).sort(),['pending','reserved'])
+  equal(await sql(`SELECT count(*) FROM app_private.employee_invitations WHERE employee_id=${id}`),'1')
+  await denied(`SET ROLE service_role; SELECT public.auth_invite_command('${uid(2)}',${id},'complete',p_operation=>'${op}',p_auth_user=>'${auth}')`)
+  await sql(`INSERT INTO auth.users(id,email,email_confirmed_at,encrypted_password) VALUES('${auth}','${email}',now(),'synthetic-marker')`)
+  equal(await invoke('complete',`,p_auth_user=>'${auth}'`),{state:'linked'})
+  equal(await invoke('complete',`,p_auth_user=>'${auth}'`),{state:'linked'})
+  equal(await sql(`${as(1)} SELECT access_state FROM public.auth_email_access() WHERE employee_id=${id}`),`${uid(1)}\nactive`)
+  equal(await sql(`SELECT count(*) FROM app_private.employee_invitations WHERE employee_id=${id} AND actor_employee_id=1 AND status='linked' AND finished_at IS NOT NULL`),'1')
+ }
+ await sql(`INSERT INTO public."Employees"(id,name,role,location_id,active) VALUES(250,'Conflict','manager',1,true)`)
+ equal(JSON.parse(await sql(`SET ROLE service_role; SELECT public.auth_invite_command('${uid(1)}',250,'begin','invite-200@example.invalid',gen_random_uuid())`)).state,'exists')
+ equal(await sql(`SELECT auth_user_id IS NULL FROM public."Employees" WHERE id=250`),'t')
+ equal(await sql(`SELECT jsonb_agg(to_jsonb(e) ORDER BY id) FROM public."Employees" e WHERE id<200`),before)
+ } else {
  // New migration runs on the complete legacy Production upgrade, preserving history/hashes.
  await sql(await readFile('supabase/migrations/202610070001_manager_email_auth.sql','utf8'))
  await unmodified()
@@ -246,6 +274,8 @@ try {
  }
  await denied(`SELECT public.auth_invite_command('${uid(50)}',3,'begin','test-denied@example.invalid',gen_random_uuid())`)
  await unmodified()
+
+ }
 
  // Start an independent synthetic login scenario after baseline rate-limit tests.
  await sql('TRUNCATE app_private.pin_attempts,app_private.pin_sources')

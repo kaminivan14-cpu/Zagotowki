@@ -1,5 +1,41 @@
 # Manager email authentication rollout
 
+## Production invitation-only recovery — 2026-10-05
+
+The deployed frontend was ahead of its backend. Read-only comparison found that
+both UAT and Production lacked `auth_email_access`, `auth_invite_command`, and
+`app_private.employee_invitations`. Their invite-employee v1 bundles were identical.
+Production uses `app_private.production_module_releases`, not the CLI migration table.
+
+Applied `supabase/upgrades/production/08_invitation_backend.sql` on Production only,
+recorded as `employee_invitation_v1`. This creates the private RLS audit/reservation
+table, unique pending-per-employee index, and two RPCs. It changes no existing
+Employees/Auth rows, PIN eligibility, existing functions, existing grants or policies.
+Only active owner/administrator callers can invite active email-role employees;
+only service_role can execute the command, and Edge verifies the caller JWT.
+The existing invite-employee was updated from v1 to v2 to use this reservation flow.
+No secrets, Auth URL configuration, other Edge functions, frontend or main changed.
+
+Do **not** run the combined `202610070001_manager_email_auth.sql` on this Production
+baseline: its invitation objects now exist. Any remaining PIN or test-account cleanup
+must be reconciled into a separate reviewed upgrade. No test-account cleanup was run.
+Existing technical Auth links still require explicit identity cleanup before invitation;
+they are not silently replaced. ID 12 is eligible for invitation; ID 2 remains linked
+to technical Auth; ID 8 remains inactive/linked. No employee record was merged or added.
+
+Evidence: encrypted backup `backups/production-gate-20261005T204708Z`, with metadata,
+SHA256 checksums and full local restore verification. Canonical comparison passed
+with the documented local GraphQL grants and verified extension owner/grantor drift.
+The exact upgrade also passed on that restored copy as postgres with Employees
+unchanged. Local tests: 298 upgrade checks, 125 Node tests, 20 browser tests,
+Orders 33 + 189 database checks, Tasks 164, Worktime 58, Processes 66; lint/build:uat PASS.
+Production smoke: administrator access-state RPC PASS; correct-origin preflight 204,
+foreign origin 403, unauthenticated POST 401. No real invitation email was sent.
+Retry/concurrency and linking are covered with synthetic local accounts; live email
+delivery/acceptance remains a manual smoke after the frontend PR is reviewed.
+
+The following original full-rollout plan is historical and must not be replayed unchanged.
+
 Branch: feature/manager-email-auth. Production project: ssheqxdgsmndiutthxvd.
 No new manager account or email is created during cleanup. No UAT rollout requested.
 
