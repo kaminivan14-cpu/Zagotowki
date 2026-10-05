@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test'
 import {readFile,mkdir} from 'node:fs/promises'
 const sample=JSON.parse(await readFile('tests/fixtures/new-menu-process.json','utf8'))
-async function setup(page,{admin=true}={}){
+async function setup(page,{admin=true,accessError=false}={}){
  let invited=false
  const calls=[],user={id:'20000000-0000-4000-8000-000000000001',email:'admin@example.invalid',aud:'authenticated',role:'authenticated'},caps=['tasks.access','tasks.create.self','worktime.self',...(admin?['tasks.admin','employees.manage','employees.read','dictionaries.manage','dictionaries.read','processes.read','processes.manage','processes.launch']:[])]
  const exp=Math.floor(Date.now()/1000)+3600,b=v=>Buffer.from(JSON.stringify(v)).toString('base64url')
@@ -15,6 +15,7 @@ async function setup(page,{admin=true}={}){
   if(name==='user')data=user
   else if(name==='auth_employee_profile')data=[{...employees[0],auth_user_id:user.id}]
   else if(name==='auth_capabilities')data=caps
+  else if(name==='auth_email_access'&&accessError)return r.fulfill({status:404,json:{code:'PGRST202',message:'missing RPC'}})
   else if(name==='auth_email_access')data=[{employee_id:6,access_state:invited?'invited':'none',can_invite:!invited}]
   else if(name==='invite-employee'){invited=true;data={success:true}}
   else if(name==='worktime_current')data=null
@@ -73,5 +74,18 @@ for(const width of [375,768,1440])test(`email invite for manager in Admin ${widt
  await dialog.getByRole('button',{name:'Надіслати запрошення'}).click()
  await expect(row.getByText('Запрошено',{exact:true})).toBeVisible()
  await expect(row.getByRole('button',{name:'Запросити',exact:true})).toHaveCount(0)
+ expect(calls.filter(c=>c.name==='invite-employee')).toHaveLength(1)
+})
+
+test('invitation remains available in Actions on access RPC failure and success survives failed refresh',async({page})=>{
+ const calls=await setup(page,{accessError:true})
+ await page.getByRole('button',{name:'\u0410\u0434\u043c\u0456\u043d \u043f\u0430\u043d\u0435\u043b\u044c',exact:true}).click()
+ const row=page.getByRole('row').filter({hasText:'\u041e\u043b\u0435\u043d\u0430'})
+ const actions=row.getByRole('cell').last()
+ await actions.getByRole('button',{name:'\u0417\u0430\u043f\u0440\u043e\u0441\u0438\u0442\u0438',exact:true}).click()
+ const dialog=page.getByRole('dialog');await dialog.getByLabel('Email',{exact:true}).fill('controlled@example.invalid')
+ await dialog.getByRole('button',{name:'\u041d\u0430\u0434\u0456\u0441\u043b\u0430\u0442\u0438 \u0437\u0430\u043f\u0440\u043e\u0448\u0435\u043d\u043d\u044f'}).click()
+ await expect(actions.getByText('\u0417\u0430\u043f\u0440\u043e\u0448\u0435\u043d\u043e',{exact:true})).toBeVisible()
+ await expect(actions.getByRole('button',{name:'\u0417\u0430\u043f\u0440\u043e\u0441\u0438\u0442\u0438',exact:true})).toHaveCount(0)
  expect(calls.filter(c=>c.name==='invite-employee')).toHaveLength(1)
 })
