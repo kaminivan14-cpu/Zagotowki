@@ -3,7 +3,7 @@ const uid = '00000000-0000-0000-0000-000000000001'
 async function setup(page) {
   const employees = [
     { id: 1, name: 'Admin', role: 'administrator', active: true, location_id: null, auth_user_id: uid, archived_at: null },
-    { id: 2, name: 'Manager A', role: 'manager', active: true, location_id: 1, auth_user_id: 'test-linked', archived_at: null },
+    { id: 2, name: 'Manager A', role: 'su-chef', active: true, location_id: 1, auth_user_id: 'test-linked', archived_at: null },
   ]
   const calls = []; let fail = false
   await page.addInitScript(uid => {
@@ -105,7 +105,7 @@ test('inline PIN keeps employee context, prevents duplicate reset and preserves 
  await page.goto('/');await page.getByText('Narzędzia ▾',{exact:true}).click();await page.getByRole('button',{name:'Pracownicy',exact:true}).click()
  await card(page).getByRole('button',{name:'Nadaj / resetuj PIN',exact:true}).click()
  const form=card(page).getByRole('form',{name:'PIN: Manager A'})
- await expect(form.getByText('manager · Lokal A')).toBeVisible()
+ await expect(form.getByText('su-chef · Lokal A')).toBeVisible()
  await form.getByLabel('Nowy PIN').fill('0091')
  await form.getByRole('button',{name:'Nadaj / resetuj PIN',exact:true}).evaluate(b=>{b.click();b.click()})
  await expect(form.getByRole('alert')).toContainText('ten sam PIN')

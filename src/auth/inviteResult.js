@@ -3,6 +3,7 @@
 const partialInviteError = 'Zaproszenie wysłano, ale konto wymaga ręcznego powiązania. Nie ponawiaj zaproszenia.'
 const genericMessage = 'Nie udało się potwierdzić zaproszenia. Sprawdź dostępność funkcji invite-employee, CORS i konfigurację Auth. Ten błąd nie potwierdza istnienia konta.'
 const knownFailures = {
+  INVITE_ALREADY_PENDING: 'Zaproszenie lub powiązanie już istnieje. Odśwież stan dostępu; nie wysyłaj ponownie.',
   AUTH_ACCOUNT_EXISTS: 'Konto Auth już istnieje. Administrator bazy musi zweryfikować tożsamość i powiązania przed połączeniem z pracownikiem.',
   INVITE_EMAIL_NOT_AUTHORIZED: 'Dostawca poczty nie dopuszcza tego odbiorcy. Administrator UAT musi skonfigurować SMTP.',
   INVITE_RATE_LIMIT: 'Limit wysyłania zaproszeń. Spróbuj ponownie później.',

@@ -2,6 +2,7 @@ import {test,expect} from '@playwright/test'
 import {readFile,mkdir} from 'node:fs/promises'
 const sample=JSON.parse(await readFile('tests/fixtures/new-menu-process.json','utf8'))
 async function setup(page,{admin=true}={}){
+ let invited=false
  const calls=[],user={id:'20000000-0000-4000-8000-000000000001',email:'admin@example.invalid',aud:'authenticated',role:'authenticated'},caps=['tasks.access','tasks.create.self','worktime.self',...(admin?['tasks.admin','employees.manage','employees.read','dictionaries.manage','dictionaries.read','processes.read','processes.manage','processes.launch']:[])]
  const exp=Math.floor(Date.now()/1000)+3600,b=v=>Buffer.from(JSON.stringify(v)).toString('base64url')
  await page.addInitScript(s=>localStorage.setItem('sb-auth-tests-auth-token',JSON.stringify(s)),{access_token:`${b({alg:'HS256'})}.${b({sub:user.id,exp,role:'authenticated'})}.test`,refresh_token:'test',expires_at:exp,expires_in:3600,token_type:'bearer',user})
@@ -14,6 +15,8 @@ async function setup(page,{admin=true}={}){
   if(name==='user')data=user
   else if(name==='auth_employee_profile')data=[{...employees[0],auth_user_id:user.id}]
   else if(name==='auth_capabilities')data=caps
+  else if(name==='auth_email_access')data=[{employee_id:6,access_state:invited?'invited':'none',can_invite:!invited}]
+  else if(name==='invite-employee'){invited=true;data={success:true}}
   else if(name==='worktime_current')data=null
   else if(name==='tasks_context')data={employee_id:1,today:'2026-10-04',capabilities:caps,categories:categories.filter(c=>c.active),category_history:categories,departments,settings:{company_timezone:'Europe/Warsaw'}}
   else if(name==='tasks_assignable_people')data=employees
@@ -59,3 +62,16 @@ test('required photo upload uses private storage and existing result command',as
  });await page.reload();await expect(page.getByRole('heading',{name:'Фото результату',exact:true})).toBeVisible();await page.getByLabel('Файл для завантаження').setInputFiles({name:'photo.png',mimeType:'image/png',buffer:Buffer.from('synthetic-test-image')});await expect(page.getByRole('button',{name:'photo.png',exact:true})).toBeVisible();await page.getByRole('button',{name:'Зберегти результат',exact:true}).click();await expect(page.getByText('Результат збережено',{exact:true})).toBeVisible();expect(calls.find(c=>c.p_action==='file_register').p_args.object_key).toMatch(/^20000000-0000-4000-8000-000000000001\//);expect(saved.file_id).toBe(file.id);await page.getByRole('button',{name:'Закінчити завдання',exact:true}).click();await expect(page.getByRole('heading',{name:'На сьогодні доступних завдань немає'})).toBeVisible()
 })
 test('designated reviewer sees Ukrainian result confirmation action',async({page})=>{await setup(page);let approved=false;await page.route('**/rest/v1/rpc/tasks_result_inbox',r=>r.fulfill({contentType:'application/json',body:JSON.stringify(approved?[]:[{id:77,title:'Підтвердити ціну',version:4,value:{number:42}}])}));await page.route('**/rest/v1/rpc/tasks_command',async r=>{const p=r.request().postDataJSON();expect(p).toMatchObject({p_action:'result_approve',p_args:{task_id:77,version:4}});approved=true;await r.fulfill({contentType:'application/json',body:'{}'})});await page.reload();await page.getByText('Підтвердження результатів (1)',{exact:true}).click();await page.getByRole('button',{name:'Підтвердити результат',exact:true}).click();await expect(page.getByText('Підтвердження результатів (1)',{exact:true})).toHaveCount(0)})
+
+for(const width of [375,768,1440])test(`email invite for manager in Admin ${width}`,async({page})=>{
+ await page.setViewportSize({width,height:1000});const calls=await setup(page)
+ await page.getByRole('button',{name:'Адмін панель',exact:true}).click()
+ const row=page.getByRole('row').filter({hasText:'Олена'})
+ await expect(row.getByText('Немає доступу',{exact:true})).toBeVisible()
+ await row.getByRole('button',{name:'Запросити',exact:true}).click()
+ const dialog=page.getByRole('dialog');await dialog.getByLabel('Email',{exact:true}).fill('manager@example.invalid')
+ await dialog.getByRole('button',{name:'Надіслати запрошення'}).click()
+ await expect(row.getByText('Запрошено',{exact:true})).toBeVisible()
+ await expect(row.getByRole('button',{name:'Запросити',exact:true})).toHaveCount(0)
+ expect(calls.filter(c=>c.name==='invite-employee')).toHaveLength(1)
+})

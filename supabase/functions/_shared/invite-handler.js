@@ -26,30 +26,39 @@ export function invitationHandler({ createClient, env }) {
       if (!/^\d+$/.test(String(employee_id)) || typeof email !== 'string' || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
         return reply(400, { error: 'Nieprawidłowy pracownik lub e-mail.' })
       }
-      const args = { p_actor: user.id, p_employee_id: employee_id }
+      const args = { p_actor: user.id, p_employee: employee_id, p_operation: crypto.randomUUID() }
       // Rechecked in the final transaction in case permissions changed while sending the invitation.
-      const { error: permissionError } = await client.rpc('auth_link_employee', args)
+      const { data: reservation, error: permissionError } = await client.rpc('auth_invite_command', { ...args, p_action: 'begin', p_email: email.trim().toLowerCase() })
       if (permissionError) return reply(403, { error: 'Brak uprawnień do zaproszenia.' })
+      if (reservation?.state !== 'reserved') return reply(409, { code: reservation?.state === 'exists' ? 'AUTH_ACCOUNT_EXISTS' : 'INVITE_ALREADY_PENDING', error: 'Konto jest połączone lub zaproszenie wymaga sprawdzenia. Nie wysyłaj ponownie.' })
+      const fail = async code => {
+        await client.rpc('auth_invite_command', { ...args, p_action: 'failed', p_result: code })
+      }
+      console.info('employee-invite', { operation: args.p_operation, actor: user.id, employee: employee_id, stage: 'reserved' })
       const redirect = new URL(appUrl)
       redirect.searchParams.set('auth', 'password')
       const { data, error: inviteError } = await client.auth.admin.inviteUserByEmail(email.trim(), { redirectTo: redirect.href })
       if (inviteError || !data?.user) {
         // Only a documented Auth conflict means an existing account. Never link by email.
         if (['email_exists', 'user_already_exists'].includes(inviteError?.code)) {
+          await fail('AUTH_ACCOUNT_EXISTS')
           return reply(409, { code: 'AUTH_ACCOUNT_EXISTS', error: 'Konto Auth już istnieje. Administrator bazy musi zweryfikować tożsamość i powiązania przed połączeniem z pracownikiem.' })
         }
         if (inviteError?.code === 'email_address_not_authorized') {
+          await fail('INVITE_EMAIL_NOT_AUTHORIZED')
           return reply(503, { code: 'INVITE_EMAIL_NOT_AUTHORIZED', error: 'Dostawca poczty nie dopuszcza tego odbiorcy. Administrator UAT musi skonfigurować SMTP.' })
         }
         if (['over_email_send_rate_limit', 'over_request_rate_limit'].includes(inviteError?.code)) {
+          await fail('INVITE_RATE_LIMIT')
           return reply(429, { code: 'INVITE_RATE_LIMIT', error: 'Limit wysyłania zaproszeń. Spróbuj ponownie później.' })
         }
         return reply(502, { code: 'INVITE_PROVIDER_FAILED', error: 'Usługa Auth nie potwierdziła wysłania zaproszenia. Administrator powinien sprawdzić logi Auth i konfigurację SMTP.' })
       }
-      const { error: linkError } = await client.rpc('auth_link_employee', { ...args, p_auth_user_id: data.user.id })
+      const { error: linkError } = await client.rpc('auth_invite_command', { ...args, p_action: 'complete', p_auth_user: data.user.id })
       // Never delete an Auth user as compensation: they may have existed before this request.
       // Unlinked accounts have no application access. See the recovery runbook.
       if (linkError) return reply(409, { error: 'Zaproszenie wysłano, ale konto wymaga ręcznego powiązania. Nie ponawiaj zaproszenia.' })
+      console.info('employee-invite', { operation: args.p_operation, employee: employee_id, stage: 'linked' })
       return reply(200, { success: true })
     } catch {
       return reply(500, { error: 'Nie udało się obsłużyć zaproszenia.' })

@@ -6,7 +6,7 @@ function session() {
   const b64 = v => Buffer.from(JSON.stringify(v)).toString('base64url')
   return { access_token: `${b64({ alg: 'HS256' })}.${b64({ sub: user.id, exp, role: 'authenticated' })}.test`, refresh_token: 'test-refresh', expires_at: exp, expires_in: 3600, token_type: 'bearer', user }
 }
-async function setup(page, { loggedIn = false, legacy = false, active = true } = {}) {
+async function setup(page, { loggedIn = false, legacy = false, active = true, role = 'employee' } = {}) {
   const calls = []
   await page.addInitScript(({ saved, legacy }) => {
     if (saved && !sessionStorage.getItem('seeded')) {
@@ -24,7 +24,7 @@ async function setup(page, { loggedIn = false, legacy = false, active = true } =
     if (url.pathname === '/auth/v1/token') body = session()
     else if (url.pathname === '/auth/v1/user') body = user
     else if (['/auth/v1/logout', '/auth/v1/recover'].includes(url.pathname)) body = {}
-    else if (url.pathname === '/rest/v1/rpc/auth_employee_profile') body = active ? [{ id: 1, auth_user_id: user.id, name: 'Kucharz testowy', role: 'employee', location_id: 1, active: true }] : []
+    else if (url.pathname === '/rest/v1/rpc/auth_employee_profile') body = active ? [{ id: 1, auth_user_id: user.id, name: 'Kucharz testowy', role, location_id: 1, active: true }] : []
     else if (url.pathname === '/rest/v1/rpc/auth_capabilities') body = ['production.access']
     else if (url.pathname === '/rest/v1/Locations') body = [{ id: 1, name: 'Lokal A', active: true }]
     else if (url.pathname === '/rest/v1/Products') body = []
@@ -232,7 +232,7 @@ test('recovery email network error is actionable', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Wyślij link' })).toBeEnabled()
 })
 
-for (const [role, pin] of [['manager','0001'],['su-chef','0001'],['employee','0001'],['crafter','0001'],['sushi-master','0001'],['shift-manager','0001'],['manager','000001'],['su-chef','00000001']]) {
+for (const [role, pin] of [['su-chef','0001'],['employee','0001'],['crafter','0001'],['sushi-master','0001'],['shift-manager','0001'],['su-chef','00000001']]) {
   test(`PIN ${role} (${pin.length} digits): leading zero, real SDK setSession, reload, refresh and logout`, async ({ page }) => {
     const calls = await setup(page)
     let active = true
@@ -281,4 +281,22 @@ test('PIN denial clears input and never creates a parallel employee session', as
   await expect(page.getByLabel('PIN', { exact: true })).toHaveValue('')
   expect(await page.evaluate(() => sessionStorage.getItem('pracownik'))).toBeNull()
   expect(await page.evaluate(() => localStorage.getItem('sb-auth-tests-auth-token'))).toBeNull()
+})
+
+for (const role of ['administrator','manager','director','expert','specialist']) test(`email/password login ${role}`, async ({page}) => {
+ const calls=await setup(page,{role});await page.goto('/')
+ await page.getByLabel('E-mail',{exact:true}).fill(user.email)
+ await page.getByLabel('Hasło',{exact:true}).fill('synthetic-password-123')
+ await page.getByRole('button',{name:'Zaloguj',exact:true}).click()
+ await expect(page.locator('.module-identity')).toContainText('Kucharz testowy')
+ expect(calls.some(c=>c.path==='/auth/v1/token')).toBe(true)
+})
+
+test('rejected manager PIN never establishes a browser session',async({page})=>{
+ const calls=await setup(page)
+ await page.route('**/api/pin-login',route=>route.fulfill({status:401,json:{error:'Nieprawidłowy PIN lub konto niedostępne.'}}))
+ await page.goto('/');await page.getByRole('button',{name:'Pracownik — logowanie PIN'}).click()
+ await page.getByLabel('PIN',{exact:true}).fill('0001');await page.getByRole('button',{name:'Zaloguj',exact:true}).click()
+ await expect(page.getByText('Nieprawidłowy PIN lub konto niedostępne.',{exact:true})).toBeVisible()
+ expect(calls.some(c=>c.path.startsWith('/rest/'))).toBe(false)
 })
