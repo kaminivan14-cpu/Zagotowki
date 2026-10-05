@@ -13,7 +13,7 @@ function fixture(options = {}) {
       } },
     },
     rpc: async (name, args) => {
-      calls.push([name, args]); return { error: options.permissionError || (args.p_auth_user_id && options.linkError) }
+      calls.push([name, args]); return { data: { state: options.state || 'reserved' }, error: options.permissionError || (args.p_auth_user && options.linkError) }
     },
   }) })
   const request = (method = 'POST', requestOrigin = origin, token = 'test-token') => handler(new Request('https://uat.example/functions/v1/invite-employee', {
@@ -42,7 +42,7 @@ test('new invite uses verified actor, fixed redirect, and rechecks permissions f
   const f = fixture(); assert.equal((await f.request()).status, 200)
   assert.equal(f.calls[0][1].p_actor, 'verified-actor')
   assert.equal(f.calls[1][2].redirectTo, `${origin}/?auth=password`)
-  assert.equal(f.calls[2][1].p_auth_user_id, 'invited-user')
+  assert.equal(f.calls[2][1].p_auth_user, 'invited-user')
   assert.equal(f.calls[2][1].p_actor, 'verified-actor')
 })
 test('existing Auth, SMTP restrictions and rate limits are distinct; none link the employee', async () => {
@@ -55,10 +55,17 @@ test('existing Auth, SMTP restrictions and rate limits are distinct; none link t
   ]) {
     const f = fixture({ inviteError: { code } }); const res = await f.request()
     assert.equal(res.status, status); assert.equal((await res.json()).code, expected)
-    assert.equal(f.calls.length, 2)
+    assert.equal(f.calls.filter(c=>c[0]==='invite').length, 1)
   }
 })
 test('failure after email delivery explicitly forbids reinvitation', async () => {
   const res = await fixture({ linkError: true }).request()
   assert.equal(res.status, 409); assert.match((await res.json()).error, /Nie ponawiaj zaproszenia/)
+})
+
+test('already pending/linked/existing account never calls invite provider', async () => {
+  for (const state of ['pending', 'linked', 'exists']) {
+    const f = fixture({ state }); assert.equal((await f.request()).status, 409)
+    assert.equal(f.calls.filter(c => c[0] === 'invite').length, 0)
+  }
 })

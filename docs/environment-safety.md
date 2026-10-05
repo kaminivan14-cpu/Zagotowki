@@ -74,3 +74,30 @@ Validation: 91 unit tests passed; UAT build passed. Actual Vite builds rejected
 UAT→PROD, Preview→PROD, and Production→UAT combinations. Correct Preview→UAT and
 Production→PROD local builds passed; these did not deploy or access either DB.
 Existing >500 kB bundle warning remains. No new commits created in this step.
+
+## Global Vercel env cleanup (manager-email-auth)
+
+Desired model, NOT a confirmation of the live Vercel inventory:
+
+| Variable | Production | Preview (all branches) |
+| --- | --- | --- |
+| VITE_SUPABASE_URL | https://ssheqxdgsmndiutthxvd.supabase.co | https://meuzkduxttjcuiynsnaa.supabase.co |
+| VITE_SUPABASE_ANON_KEY | Production public/publishable key | UAT public/publishable key |
+| PIN_PROXY_SECRET | Secret matching Production pin-login | Secret matching UAT pin-login |
+| APP_URL | https://zagotowki.vercel.app | Not needed after dynamic-origin proxy is deployed |
+
+VITE_SUPABASE_ANON_KEY takes precedence over VITE_SUPABASE_PUBLISHABLE_KEY in both src/supabase.js and build-environment.mjs. A nonempty ANON_KEY prevents fallback; an empty/missing one does not. Remove the legacy PUBLISHABLE_KEY only after checking the global public key for BOTH targets. A publishable key prefix alone does not prove its project identity; check the source project. Never use service_role/sb_secret_ in VITE_* variables.
+
+The PIN proxy derives exact Preview origins from VERCEL_URL and VERCEL_BRANCH_URL, both provided by Vercel without a protocol. No request Host/Origin reflection or wildcard is used. Production still uses explicit APP_URL. Legacy APP_URL/PIN_MANAGEMENT_ORIGINS fallback remains only when no VERCEL_URL exists. Enable access to System Environment Variables in Vercel project settings before removing Preview APP_URL. No per-branch settings are required for this proxy when the system variables are available.
+
+Manual cleanup when no Vercel API credential is available:
+1. Project zagotowki → Settings → Environment Variables. Inspect target AND Git branch of each entry, plus linked Shared Environment Variables.
+2. Verify the global values in the table above (Preview must apply to all branches). Keep working Production values unchanged.
+3. Remove only the replaced Preview overrides for feature/orders and release/orders-tasks-prod, one identified entry at a time. Do not delete a combined Production/Preview entry without preserving its necessary Production scope.
+4. Remove legacy VITE_SUPABASE_PUBLISHABLE_KEY only after step 2. Do not remove unrelated env by name/age alone.
+5. After the dynamic-origin commit, remove redundant Preview APP_URL/PIN_MANAGEMENT_ORIGINS entries; keep Production APP_URL. Enable system variables. Confirm main remains the Production branch.
+6. Deploy only feature/manager-email-auth to Preview (new push or Redeploy with current env), inspect its SHA and environment, then check Vercel and Application checks on that SHA. Env edits alone do not repair an old deployment.
+
+Separate limitation: Supabase Edge invitation/management CORS and Auth redirect allowlists are not Vercel variables. New branch builds and the server PIN proxy can use global UAT config, but invitation/reset/password callback flows on arbitrary Preview origins still require an independently valid Supabase configuration. No Supabase changes are authorized in this cleanup.
+
+Reference: https://vercel.com/docs/environment-variables/system-environment-variables

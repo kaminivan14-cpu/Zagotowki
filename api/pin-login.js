@@ -1,5 +1,6 @@
+import { vercelPinEnvironment } from '../scripts/lib/vercel-pin-environment.mjs'
 import { isIP } from 'node:net'
-import { trustedEnvironment, managementOrigin, PROD_URL, PIN_ERROR, validLoginPin, exactKeys, hmac, signedMessage } from '../supabase/functions/_shared/pin-protocol.js'
+import { managementOrigin, PROD_URL, PIN_ERROR, validLoginPin, exactKeys, hmac, signedMessage } from '../supabase/functions/_shared/pin-protocol.js'
 
 // Temporary: server logs only; remove after the runtime configuration is verified.
 function logInvalidConfiguration(config, secret) {
@@ -32,14 +33,14 @@ export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
   const reply = (status, error) => res.status(status).json({ error })
   const secret = process.env.PIN_PROXY_SECRET
-  const environment = ({ preview: 'uat', production: 'production' })[process.env.VERCEL_ENV]
-  const config = trustedEnvironment(environment, process.env.VITE_SUPABASE_URL, process.env.APP_URL)
+  const runtime = vercelPinEnvironment(process.env)
+  const config = runtime?.config
   if (!config || !secret || secret.length < 32) {
     logInvalidConfiguration(config, secret)
     return reply(503, 'Logowanie PIN niedostępne.')
   }
-  // Preview uses the same explicit UAT allowlist as PIN management. Production ignores it.
-  const origin = managementOrigin(config, req.headers.origin, process.env.PIN_MANAGEMENT_ORIGINS)
+  // Preview accepts exact platform deployment/branch origins. Production remains unchanged.
+  const origin = managementOrigin(config, req.headers.origin, runtime.additionalOrigins)
   if (req.headers.origin && req.headers.origin !== origin) return reply(403, PIN_ERROR)
   if (req.method !== 'POST') return reply(405, 'Wymagany POST.')
   const ip = req.headers['x-vercel-forwarded-for']

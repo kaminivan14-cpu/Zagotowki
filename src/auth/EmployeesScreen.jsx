@@ -1,8 +1,9 @@
+import { pinRoles } from './loginRoles'
+import EmailInvite from './EmailInvite'
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../supabase'
 import { canManageEmployee, roleLabels } from './session'
 import ManageEmployeePin from './ManageEmployeePin'
-import { invitationFailure } from './inviteResult'
 
 export default function EmployeesScreen({ pracownik, lokale, onPowrot }) {
   const [filter, setFilter] = useState('all')
@@ -13,14 +14,11 @@ export default function EmployeesScreen({ pracownik, lokale, onPowrot }) {
   const [pinEmployee, setPinEmployee] = useState(null)
   const [employees, setEmployees] = useState([])
   const [form, setForm] = useState(null)
-  const [invite, setInvite] = useState(null)
-  const [email, setEmail] = useState('')
   const [actionBusy, setBusy] = useState(false)
   const [pinBusy, setPinBusy] = useState(false)
   const busy = actionBusy || pinBusy
   const [message, setMessage] = useState('')
   const [revision, setRevision] = useState(0)
-  const [pendingLinks, setPendingLinks] = useState([])
   useEffect(() => {
     let alive = true
     supabase.rpc('auth_list_employees').then(({ data, error }) => {
@@ -37,7 +35,7 @@ export default function EmployeesScreen({ pracownik, lokale, onPowrot }) {
     try {
       const { error } = await supabase.rpc('auth_employee_lifecycle', { p_employee_id: employee.id, p_action: action })
       if (error) throw error
-      setConfirmation(null); setForm(null); setPinEmployee(null); setInvite(null)
+      setConfirmation(null); setForm(null); setPinEmployee(null)
       setRevision(x => x + 1)
       setMessage(action === 'restore' ? 'Przywrócono pracownika jako nieaktywnego.' : 'Zapisano zmianę konta.')
     } catch { console.error('employee-lifecycle', { code: 'COMMAND_FAILED' }); setMessage('Nie udało się zmienić konta pracownika. Spróbuj ponownie.') }
@@ -57,29 +55,9 @@ export default function EmployeesScreen({ pracownik, lokale, onPowrot }) {
       setForm(null); setRevision(x => x + 1); setMessage('Zapisano pracownika.')
     } catch { console.error('employee-account', { code: 'COMMAND_FAILED' }); setMessage('Nie udało się zapisać operacji. Sprawdź dane i uprawnienia, a następnie spróbuj ponownie.') } finally { actionPending.current = false; setBusy(false) }
   }
-  const sendInvite = async (event) => {
-    event.preventDefault()
-    if (busy || actionPending.current) return
-    actionPending.current = true
-    setBusy(true); setMessage('')
-    try {
-      const { data, error } = await supabase.functions.invoke('invite-employee', { body: { employee_id: invite.id, email: email.trim() } })
-      const failure = await invitationFailure({ data, error })
-      if (failure) {
-        if (failure.partial) {
-          setPendingLinks(ids => [...ids, invite.id])
-          setInvite(null); setEmail('')
-        }
-        setMessage(failure.message)
-        return
-      }
-      setInvite(null); setEmail(''); setRevision(x => x + 1)
-      setMessage('Wysłano zaproszenie i połączono konto z pracownikiem.')
-    } catch { console.error('employee-account', { code: 'COMMAND_FAILED' }); setMessage('Nie udało się zapisać operacji. Sprawdź dane i uprawnienia, a następnie spróbuj ponownie.') } finally { actionPending.current = false; setBusy(false) }
-  }
   return <div className="app employees-screen"><header><h1>Pracownicy</h1><p>Zalogowany jako: {pracownik.name} · {pracownik.role}</p><button disabled={busy} onClick={onPowrot}>← Powrót</button></header>
     <main>
-      <button disabled={busy} onClick={() => { setPinEmployee(null); setInvite(null); setForm({ name: '', role: 'crafter', location_id: pracownik.location_id || '', active: true }) }}>Dodaj pracownika</button>
+      <button disabled={busy} onClick={() => { setPinEmployee(null); setForm({ name: '', role: 'crafter', location_id: pracownik.location_id || '', active: true }) }}>Dodaj pracownika</button>
       <p role="status">{message}</p>
       <label>Widok pracowników<select aria-label="Widok pracowników" disabled={busy} value={filter} onChange={e => setFilter(e.target.value)}>
         <option value="all">Pracownicy — wszyscy niearchiwalni</option><option value="active">Aktywni</option><option value="inactive">Nieaktywni</option>
@@ -106,17 +84,12 @@ export default function EmployeesScreen({ pracownik, lokale, onPowrot }) {
         <label><span>Aktywny</span><input type="checkbox" checked={form.active} onChange={e => setForm({ ...form, active: e.target.checked })} /></label>
         <button disabled={busy}>Zapisz</button><button type="button" disabled={busy} onClick={() => setForm(null)}>Anuluj</button>
       </form>}
-      {invite && <form className="produkt auth-form" onSubmit={sendInvite}>
-        <h2>Zaproszenie: {invite.name}</h2><label>E-mail pracownika<input type="email" required value={email} onChange={e => setEmail(e.target.value)} /></label>
-        <p>Sprawdź adres — jego właściciel otrzyma dostęp jako ten pracownik.</p>
-        <button disabled={busy}>Wyślij zaproszenie</button><button type="button" disabled={busy} onClick={() => setInvite(null)}>Anuluj</button>
-      </form>}
       <div className="produkty">{employees.filter(e => filter === 'archived' ? Boolean(e.archived_at) : !e.archived_at && (filter === 'all' || (filter === 'active' ? e.active : !e.active))).map(e => <div className="produkt employee-card" key={e.id}>
-        <h2>{e.name}</h2><p>{e.role} · {lokale.find(l => String(l.id) === String(e.location_id))?.name || (['owner', 'administrator'].includes(e.role) ? 'Wszystkie lokale' : 'Brak lokalu')}</p>
+        <h2>{e.name}</h2>{['owner','administrator'].includes(pracownik.role) && <EmailInvite employee={e} revision={revision}/>}<p>{e.role} · {lokale.find(l => String(l.id) === String(e.location_id))?.name || (['owner', 'administrator'].includes(e.role) ? 'Wszystkie lokale' : 'Brak lokalu')}</p>
         <p className={`employee-state ${e.active ? 'is-active' : 'is-inactive'}`}>{e.archived_at ? 'Archiwalny' : e.active ? 'Aktywny' : 'Nieaktywny'} · {e.auth_user_id ? 'Konto połączone' : 'Brak konta logowania'}</p>
-        <div className="employee-actions">{['owner', 'administrator'].includes(pracownik.role) && !e.archived_at && ['manager', 'su-chef', 'shift-manager', 'sushi-master', 'crafter', 'employee'].includes(e.role) && <><button className="primary-action" aria-expanded={pinEmployee?.id === e.id} disabled={busy || !e.active} onClick={() => { setInvite(null); setForm(null); setPinEmployee(e) }}>Nadaj / resetuj PIN</button>{!e.active && <p>Nadanie PIN-u wymaga aktywnego konta.</p>}</>}
-        {!e.archived_at && canManageEmployee(pracownik, e) && <><button disabled={busy} onClick={() => { setPinEmployee(null); setInvite(null); setForm({ ...e }) }}>Edytuj</button>
-          {!e.auth_user_id && e.active && <button disabled={busy || pendingLinks.includes(e.id)} onClick={() => { setPinEmployee(null); setForm(null); setEmail(''); setInvite(e) }}>Zaproś do aplikacji</button>}</>}
+        <div className="employee-actions">{['owner', 'administrator'].includes(pracownik.role) && !e.archived_at && pinRoles.includes(e.role) && <><button className="primary-action" aria-expanded={pinEmployee?.id === e.id} disabled={busy || !e.active} onClick={() => { setForm(null); setPinEmployee(e) }}>Nadaj / resetuj PIN</button>{!e.active && <p>Nadanie PIN-u wymaga aktywnego konta.</p>}</>}
+        {!e.archived_at && canManageEmployee(pracownik, e) && <><button disabled={busy} onClick={() => { setPinEmployee(null); setForm({ ...e }) }}>Edytuj</button>
+          </>}
         {['owner', 'administrator'].includes(pracownik.role) && canManageEmployee(pracownik, e) && (e.archived_at
           ? <button disabled={busy} onClick={() => lifecycle(e, 'restore')}>Przywróć</button>
           : <><button disabled={busy} onClick={() => e.active ? setConfirmation({ employee: e, action: 'deactivate' }) : lifecycle(e, 'activate')}>{e.active ? 'Dezaktywuj' : 'Aktywuj'}</button>
