@@ -1,0 +1,7 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {organizationGroups,initials} from '../src/tasks/organization/model.js'
+const data={employees:[{id:1,name:'Власник',role:'owner'},{id:2,name:'Директор',role:'director'},{id:3,name:'Менеджер',role:'manager'},{id:4,name:'Працівник',role:'specialist'},{id:5,name:'Без відділу',role:'specialist'}],departments:[{id:1,name:'Дані'},{id:2,name:'Порожній'}],assignments:[{employee_id:2,department_id:1},{employee_id:3,department_id:1,manager_employee_id:2},{employee_id:4,department_id:1,manager_employee_id:3}],directors:[{department_id:1,employee_id:2}]}
+test('owners, departments, recursive roots and unassigned people derive from canonical IDs',()=>{const g=organizationGroups(data);assert.deepEqual(g.owners.map(x=>x.id),[1]);assert.deepEqual(g.groups[0].roots.map(x=>x.id),[2]);assert.equal(g.groups[0].members.length,3);assert.equal(g.groups[0].director.id,2);assert.equal(g.groups[1].director,undefined);assert.equal(g.groups[2].members[0].id,5)})
+test('invalid draft cycles remain reachable for correction without infinite traversal',()=>{const d=structuredClone(data);d.assignments[0].manager_employee_id=4;const g=organizationGroups(d);assert.equal(g.groups[0].roots.length,1)})
+test('initials support Ukrainian and missing names',()=>{assert.equal(initials(' Денис Черняєв '),'ДЧ');assert.equal(initials(''),'')})
