@@ -27,6 +27,7 @@ async function setup(page,{admin=true,accessError=false}={}){
   else if(name==='tasks_admin_directory')data={employees,categories,departments,locations,reporting_lines:[],scope_grants:[],audit:[]}
   else if(name==='tasks_admin_state')data={scope_grants:[],reporting_lines:[],capacity:[],recurring:[]}
   else if(name==='organization_structure')data={version_id:args.p_version||null,today:'2026-10-04',can_manage:true,versions:orgVersions,employees,departments,assignments:orgAssignments,directors:orgDirectors,events:[]}
+  else if(name==='organization_move_department'){const p=args.p_args;orgAssignments=orgAssignments.map(a=>a.employee_id===p.employee_id?{...a,department_id:p.department_id}:a);data={id:100}}
   else if(name==='organization_command'){
    const p=args.p_args,a=args.p_action
    if(a==='create')orgVersions.push({id:1,name:p.name,status:'draft',effective_status:'draft',revision:1,created_at:'2026-10-04T10:00:00Z'})
@@ -87,4 +88,46 @@ test('organization mutation network retry retains operation UUID',async({page})=
  const dialog=page.getByRole('dialog');await dialog.getByLabel('Назва версії',{exact:true}).fill('Retry');await dialog.getByRole('button',{name:'Зберегти',exact:true}).click()
  await dialog.getByRole('button',{name:'Повторити',exact:true}).click();await expect(dialog).toHaveCount(0)
  expect(attempts).toHaveLength(2);expect(attempts[0]).toEqual(attempts[1])
+})
+
+for(const width of [375,768,1440])test(`organization current move and unassigned ${width}`,async({page})=>{
+ await page.setViewportSize({width,height:1000});const calls=await setup(page)
+ await page.getByRole('button',{name:'Адмін панель',exact:true}).click();await page.getByRole('button',{name:'Структура',exact:true}).click()
+ await expect(page.getByRole('button',{name:'Поточна структура',exact:true})).toHaveAttribute('aria-pressed','true')
+ await expect(page.locator('.org-empty-departments').getByText('Виробничий',{exact:true})).toBeVisible()
+ await page.getByRole('button',{name:'Змінити відділ: Олена',exact:true}).click()
+ await page.getByRole('dialog').getByLabel('Відділ',{exact:true}).selectOption('2');await page.getByRole('dialog').getByRole('button',{name:'Зберегти',exact:true}).click()
+ await expect(page.getByRole('dialog')).toHaveCount(0)
+ const department=page.locator('.org-department').filter({has:page.locator('summary strong').getByText('Виробничий',{exact:true})})
+ await expect(department.getByText('Олена',{exact:true})).toBeVisible()
+ await expect(page.locator('.org-person strong').getByText('Олена',{exact:true})).toHaveCount(1)
+ await page.getByRole('button',{name:'Змінити відділ: Олена',exact:true}).click()
+ await page.getByRole('dialog').getByLabel('Відділ',{exact:true}).selectOption('');await page.getByRole('dialog').getByRole('button',{name:'Зберегти',exact:true}).click()
+ await expect(page.locator('.org-unassigned strong').getByText('Олена',{exact:true})).toBeVisible()
+ expect(calls.filter(c=>c.name==='organization_move_department').at(-1).args.p_args.department_id).toBeNull()
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
+ await mkdir('tmp/org-tree/screenshots',{recursive:true});await page.screenshot({path:`tmp/org-tree/screenshots/${width}.png`,fullPage:true})
+})
+test('employee photo uploads, retries same operation, deletes old only after attach',async({page})=>{
+ await setup(page);const calls=[];let failed=true
+ await page.route('**/storage/v1/**',async r=>{calls.push({kind:'storage',method:r.request().method(),url:r.request().url()});if(r.request().url().includes('/object/sign/'))return r.fulfill({json:{signedURL:'/object/sign/employee-avatars/mock?token=synthetic'}});return r.fulfill({json:{Key:'test'}})})
+ await page.route('**/rest/v1/rpc/employee_avatar_set',async r=>{calls.push({kind:'set',args:r.request().postDataJSON()});if(failed){failed=false;return r.fulfill({status:503,json:{message:'Synthetic retry'}})}return r.fulfill({json:{path:r.request().postDataJSON().p_path,old_path:r.request().postDataJSON().p_expected}})})
+ await page.getByRole('button',{name:'Адмін панель',exact:true}).click()
+ await page.getByRole('row').filter({hasText:'Олена'}).getByRole('button',{name:'Редагувати',exact:true}).click()
+ const dialog=page.getByRole('dialog'),png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j9xoAAAAASUVORK5CYII=','base64')
+ await dialog.getByLabel('Додати / змінити фото').setInputFiles({name:'face.png',mimeType:'image/png',buffer:png})
+ await dialog.getByRole('button',{name:'Повторити фото',exact:true}).click();await expect(dialog.getByText('Фото збережено',{exact:true})).toBeVisible()
+ const attempts=calls.filter(c=>c.kind==='set');expect(attempts).toHaveLength(2);expect(attempts[0].args).toEqual(attempts[1].args)
+ expect(calls.filter(c=>c.kind==='storage'&&c.method==='POST'&&!c.url.includes('/sign/'))).toHaveLength(1)
+ await dialog.getByRole('button',{name:'Видалити фото',exact:true}).click();await expect(dialog.getByRole('button',{name:'Видалити фото',exact:true})).toHaveCount(0)
+ await expect.poll(()=>calls.some(c=>c.kind==='storage'&&c.method==='DELETE')).toBe(true)
+ expect(calls.findIndex(c=>c.kind==='set'&&c.args.p_path===null)).toBeLessThan(calls.findIndex(c=>c.kind==='storage'&&c.method==='DELETE'))
+})
+test('employee creation keeps the same Employee open for photo attachment',async({page})=>{
+ const calls=await setup(page);await page.getByRole('button',{name:'Адмін панель',exact:true}).click();await page.getByRole('button',{name:'Додати працівника',exact:true}).click()
+ await page.getByRole('dialog').getByLabel('Ім’я',{exact:true}).fill('Нова людина')
+ await page.getByRole('dialog').getByRole('button',{name:'Зберегти й додати фото',exact:true}).click()
+ await expect(page.getByRole('dialog').getByLabel('Додати / змінити фото')).toBeVisible()
+ await expect(page.getByRole('dialog').getByLabel('Ім’я',{exact:true})).toHaveValue('Нова людина')
+ expect(calls.filter(c=>c.name==='tasks_command'&&c.args.p_action==='admin_employee_save')).toHaveLength(1)
 })

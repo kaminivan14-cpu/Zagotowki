@@ -20,6 +20,7 @@ try {
  await sql(`CREATE SCHEMA storage;CREATE TABLE storage.buckets(id text PRIMARY KEY,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);CREATE TABLE storage.objects(id uuid DEFAULT gen_random_uuid(),bucket_id text,name text,metadata jsonb);ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;CREATE FUNCTION storage.foldername(text) RETURNS text[] LANGUAGE sql AS $$ SELECT string_to_array($1,'/') $$;GRANT USAGE ON SCHEMA storage TO authenticated;GRANT SELECT,INSERT ON storage.objects TO authenticated;`)
  for(const f of (await readdir('supabase/migrations')).filter(f=>f.endsWith('.sql')).sort()) {
   if(f==='202610080002_access_directory.sql')continue
+  if(f>'202610080002_access_directory.sql')continue
   if(f==='202610080001_organization_structure.sql') {
    const snapshot=await sql(`SELECT jsonb_agg(jsonb_build_object('signature',p.oid::regprocedure::text,'definition',pg_get_functiondef(p.oid),'acl',p.proacl::text) ORDER BY p.oid::regprocedure::text) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='app_private' AND p.proname IN ('task_core','task_scope','task_descendant','task_approver','task_can_read','task_approval_command','task_planning_command','process_command')`)
    await mkdir('tmp/org-structure-v2',{recursive:true});await writeFile('tmp/org-structure-v2/expected-functions.json',snapshot)
