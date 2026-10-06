@@ -1,12 +1,12 @@
 import {test,expect} from '@playwright/test'
 import {readFile,mkdir} from 'node:fs/promises'
 const sample=JSON.parse(await readFile('tests/fixtures/new-menu-process.json','utf8'))
-async function setup(page,{admin=true,accessError=false}={}){
+async function setup(page,{admin=true,accessError=false,productionDepartment=false}={}){
  let invited=false
  const calls=[],user={id:'20000000-0000-4000-8000-000000000001',email:'admin@example.invalid',aud:'authenticated',role:'authenticated'},caps=['tasks.access','tasks.create.self','worktime.self',...(admin?['tasks.admin','employees.manage','employees.read','dictionaries.manage','dictionaries.read','processes.read','processes.manage','processes.launch']:[])]
  const exp=Math.floor(Date.now()/1000)+3600,b=v=>Buffer.from(JSON.stringify(v)).toString('base64url')
  await page.addInitScript(s=>localStorage.setItem('sb-auth-tests-auth-token',JSON.stringify(s)),{access_token:`${b({alg:'HS256'})}.${b({sub:user.id,exp,role:'authenticated'})}.test`,refresh_token:'test',expires_at:exp,expires_in:3600,token_type:'bearer',user})
- let employees=[{id:1,name:'Іван',role:'owner',active:true,linked:true,department_id:1,location_id:1,capabilities:caps},{id:6,name:'Олена',role:'manager',active:true,linked:true,department_id:1,location_id:1,capabilities:['tasks.access']}],categories=[{id:1,name:'Операційні',sort_order:1,active:true,parent_id:null}],versions=[{id:1,template_id:1,number:1,status:'draft',revision:1,definition:structuredClone(sample)}],templates=[{id:1,name:sample.name}],instances=[]
+ let employees=[{id:1,name:'Іван',role:'owner',active:true,linked:true,department_id:1,location_id:1,capabilities:caps},{id:6,name:'Олена',role:'manager',active:true,linked:true,department_id:productionDepartment?2:1,location_id:1,capabilities:['tasks.access']}],categories=[{id:1,name:'Операційні',sort_order:1,active:true,parent_id:null}],versions=[{id:1,template_id:1,number:1,status:'draft',revision:1,definition:structuredClone(sample)}],templates=[{id:1,name:sample.name}],instances=[]
  const departments=[{id:1,code:'marketing',name:'Маркетинг',active:true},{id:2,code:'production',name:'Виробничий',active:true}],locations=[{id:1,name:'Локал A'}]
  await page.routeWebSocket(/.*/,s=>s.close())
  await page.route('**/*',async r=>{
@@ -23,6 +23,7 @@ async function setup(page,{admin=true,accessError=false}={}){
   else if(name==='tasks_assignable_people')data=employees
   else if(name==='tasks_execution_state')data={current:null,next:null,critical:[],locations,task_count:0,planned_minutes:0,capacity_minutes:360}
   else if(name==='tasks_result_inbox')data=[]
+  else if(name==='organization_structure')data={can_manage:true,assignments:employees.map(e=>({employee_id:e.id,department_id:e.department_id,manager_employee_id:null}))}
   else if(name==='tasks_admin_directory')data={employees,categories,departments,locations,reporting_lines:[],scope_grants:[],audit:[]}
   else if(name==='tasks_processes')data={templates,versions,instances}
   else if(name==='tasks_command'){
@@ -40,8 +41,8 @@ async function setup(page,{admin=true,accessError=false}={}){
 }
 async function shot(page,name){await mkdir('tmp/tasks-admin.local',{recursive:true});await page.screenshot({path:`tmp/tasks-admin.local/${name}.png`,fullPage:true})}
 for(const width of [375,768,1024,1440])test(`admin employees dictionaries and process editor ${width}`,async({page})=>{
- await page.setViewportSize({width,height:1000});const calls=await setup(page);await page.getByRole('button',{name:'Адмін панель',exact:true}).click();await expect(page.getByRole('heading',{name:'Працівники',exact:true})).toBeVisible();await shot(page,`employees-${width}`)
- await page.getByRole('button',{name:'Редагувати',exact:true}).last().click();const d=page.getByRole('dialog');await d.getByLabel('Відділ',{exact:true}).selectOption('2');await d.getByLabel('Виробнича роль',{exact:true}).selectOption('su-chef');await expect(d.getByLabel('Роль у системі')).toHaveValue('manager');await d.getByRole('button',{name:'Зберегти',exact:true}).click();await expect(d).toHaveCount(0);expect(calls.find(c=>c.args.p_action==='admin_employee_save').args.p_args).toMatchObject({role:'manager',production_role:'su-chef'})
+ await page.setViewportSize({width,height:1000});const calls=await setup(page,{productionDepartment:true});await page.getByRole('button',{name:'Адмін панель',exact:true}).click();await expect(page.getByRole('heading',{name:'Працівники',exact:true})).toBeVisible();await shot(page,`employees-${width}`)
+ await page.getByRole('button',{name:'Редагувати',exact:true}).last().click();const d=page.getByRole('dialog');await expect(d.getByLabel('Відділ',{exact:true})).toBeDisabled();await d.getByLabel('Виробнича роль',{exact:true}).selectOption('su-chef');await expect(d.getByLabel('Роль у системі')).toHaveValue('manager');await d.getByRole('button',{name:'Зберегти',exact:true}).click();await expect(d).toHaveCount(0);expect(calls.find(c=>c.args.p_action==='admin_employee_save').args.p_args).toMatchObject({role:'manager',production_role:'su-chef'})
  await page.getByRole('button',{name:'Довідники',exact:true}).click();await page.getByRole('button',{name:'Деактивувати',exact:true}).click();await expect(page.getByRole('button',{name:'Відновити',exact:true})).toBeVisible();await page.getByRole('button',{name:'Відновити',exact:true}).click()
  await page.getByRole('button',{name:'Процеси',exact:true}).click();await expect(page.getByRole('heading',{name:'Введення нового меню',exact:true})).toBeVisible();await page.getByRole('button',{name:'Створити процес',exact:true}).click();await d.getByLabel('Назва',{exact:true}).fill('Тестовий процес');await d.getByRole('button',{name:'+ Додати етап',exact:true}).click();await d.getByLabel('Назва етапу',{exact:true}).fill('Підготовка');await d.getByRole('button',{name:'+ Додати завдання',exact:true}).click();await d.getByText('Нове завдання',{exact:true}).click();await d.getByLabel('Назва завдання',{exact:true}).fill('Перевірити');await shot(page,`editor-${width}`);await d.getByRole('button',{name:'Зберегти чернетку',exact:true}).click();await expect(d.getByRole('button',{name:'Опублікувати версію',exact:true})).toBeEnabled();await d.getByRole('button',{name:'Опублікувати версію',exact:true}).click();await expect(d).toHaveCount(0)
  const card=page.locator('.process-summary').filter({has:page.getByRole('heading',{name:'Тестовий процес',exact:true})});await card.getByRole('button',{name:'Запустити',exact:true}).click();await expect(d.getByLabel('Дата старту')).toHaveValue('04.10.2026');await d.getByLabel('Підтверджую створення реальних завдань').check();await d.getByRole('button',{name:'Запустити процес',exact:true}).click();await expect(d).toHaveCount(0);await expect(page.getByRole('button',{name:'Переглянути процес'})).toBeVisible();await shot(page,`instance-${width}`);expect(calls.find(c=>c.args.p_action==='process_launch').args.p_args.starts_on).toBe('2026-10-04');expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
@@ -65,7 +66,7 @@ test('required photo upload uses private storage and existing result command',as
 test('designated reviewer sees Ukrainian result confirmation action',async({page})=>{await setup(page);let approved=false;await page.route('**/rest/v1/rpc/tasks_result_inbox',r=>r.fulfill({contentType:'application/json',body:JSON.stringify(approved?[]:[{id:77,title:'Підтвердити ціну',version:4,value:{number:42}}])}));await page.route('**/rest/v1/rpc/tasks_command',async r=>{const p=r.request().postDataJSON();expect(p).toMatchObject({p_action:'result_approve',p_args:{task_id:77,version:4}});approved=true;await r.fulfill({contentType:'application/json',body:'{}'})});await page.reload();await page.getByText('Підтвердження результатів (1)',{exact:true}).click();await page.getByRole('button',{name:'Підтвердити результат',exact:true}).click();await expect(page.getByText('Підтвердження результатів (1)',{exact:true})).toHaveCount(0)})
 
 for(const width of [375,768,1440])test(`email invite for manager in Admin ${width}`,async({page})=>{
- await page.setViewportSize({width,height:1000});const calls=await setup(page)
+ await page.setViewportSize({width,height:1000});const calls=await setup(page,{productionDepartment:true})
  await page.getByRole('button',{name:'Адмін панель',exact:true}).click()
  const row=page.getByRole('row').filter({hasText:'Олена'})
  await expect(row.getByText('Немає доступу',{exact:true})).toBeVisible()

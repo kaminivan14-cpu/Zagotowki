@@ -95,6 +95,24 @@ Manual UAT smoke still requires an administrator session. Verify a controlled ph
 upload, replacement, removal, reload and broken-image initials. Never use real
 Production employee data for synthetic tests.
 
+## Current department consistency (2026-10-07)
+
+Admin Employees now reads effective assignments from the same organization_structure
+RPC as the current tree. Department filters, employee cards and manager labels use
+those assignments, including explicit nulls. Returning to Employees reloads both
+reads. No migration, physical legacy-field synchronization or new permissions.
+
+For existing employees, the profile's department/manager fields are read-only.
+“Змінити відділ” opens the existing audited current-move dialog for that employee;
+it requires organization management permission. Save pending profile edits before
+using this action. Manager changes remain in structure versions. Ordinary profile
+saves preserve the original legacy structural inputs, so editing a name after a
+move cannot overwrite the effective department or trip ORG_USE_VERSION.
+
+Regression covers employee-to-structure navigation, immediate list refresh,
+reload, subsequent profile save at 375/768/1440, and PostgreSQL profile save after
+an actual versioned move. Existing current/future/history tests remain enabled.
+
 ## UAT execution record (2026-10-06)
 
 Migrations 202610080003 and 202610080004 applied only to meuzkduxttjcuiynsnaa after

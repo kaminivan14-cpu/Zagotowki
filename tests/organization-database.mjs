@@ -114,6 +114,12 @@ try {
  const move=(args,op=randomUUID(),actor=1)=>rpc(actor,'organization_move_department',`${literal(args)},'${op}'`)
  const moved=await move(moveArgs,moveOp);eq(await move(moveArgs,moveOp),moved)
  eq(await sql('SELECT department_id IS NULL FROM app_private.org_assignments(app_private.task_today()) WHERE employee_id=6'),'t')
+ // Profile edits keep legacy structural inputs unchanged after a versioned move.
+ const profile=JSON.parse(await sql(`SELECT jsonb_build_object('id',e.id,'name',e.name,'role',e.role,'active',e.active,'location_id',e.location_id,'department_id',e.department_id,'production_role',e.production_role,'manager_id',(SELECT manager_employee_id FROM public."Employee_reporting_lines" WHERE employee_id=e.id AND effective_from<=app_private.task_today() AND (effective_to IS NULL OR effective_to>app_private.task_today()) ORDER BY effective_from DESC LIMIT 1)) FROM public."Employees" e WHERE id=6`))
+ await command(1,'admin_employee_save',{...profile,name:'Profile after move'})
+ eq(await sql('SELECT department_id IS NULL FROM app_private.org_assignments(app_private.task_today()) WHERE employee_id=6'),'t')
+ eq((await rpc(1,'tasks_admin_directory')).employees.find(e=>e.id===6).name,'Profile after move')
+
  await denied(move(moveArgs),/ORG_VERSION_CONFLICT/)
  await denied(move({...moveArgs,expected_version_id:moved.id},randomUUID(),4),/TASKS_DENIED/)
  const back=await move({employee_id:6,department_id:Number(dep),expected_version_id:moved.id})

@@ -16,10 +16,10 @@ export function PersonAvatar({person}){
  const source=person.avatar_path?(url?.path===person.avatar_path?url.value:null):person.avatar_url
  return <span className="org-avatar" aria-hidden="true">{source&&failed!==source?<img src={source} alt="" onError={()=>setFailed(source)}/>:initials(person.name)}</span>
 }
-export default function OrganizationScreen({context}){
+export default function OrganizationScreen({context,initialEmployeeId,onInitialEmployeeOpened}){
  const [tab,setTab]=useState('current'),[selected,setSelected]=useState(''),[data,setData]=useState(null),[revision,setRevision]=useState(0),[error,setError]=useState(''),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[success,setSuccess]=useState(''),[dialog,setDialog]=useState(null),[retry,setRetry]=useState(()=>{try{const saved=JSON.parse(sessionStorage.getItem(operationKey(`org:${context.employee_id}`)));return saved?{action:saved.action,args:saved.args}:null}catch{return null}})
- const lock=useRef(false)
- useEffect(()=>{let live=true;read('organization_structure',{p_version:tab==='current'?null:Number(selected)||null}).then(d=>{if(live){setData(d);setError('')}}).catch(e=>{if(live)setError(errorText(e))}).finally(()=>{if(live)setLoading(false)});return()=>{live=false}},[selected,tab,revision])
+ const lock=useRef(false),initialEmployee=useRef(initialEmployeeId),opened=useRef(onInitialEmployeeOpened)
+ useEffect(()=>{let live=true;read('organization_structure',{p_version:tab==='current'?null:Number(selected)||null}).then(d=>{if(live){setData(d);setError('');if(initialEmployee.current&&d.can_manage){const id=initialEmployee.current;initialEmployee.current=null;setDialog({kind:'move_department',...d.assignments.find(a=>a.employee_id===id),employee_id:id});opened.current?.()}}}).catch(e=>{if(live)setError(errorText(e))}).finally(()=>{if(live)setLoading(false)});return()=>{live=false}},[selected,tab,revision])
  useEffect(()=>{if(data){const {issues}=organizationGroups(data);if(issues.length)console.warn('Organization relation issues',issues)}},[data])
  const act=async(action,args)=>{
   if(lock.current)return;lock.current=true;setBusy(true);setError('')
