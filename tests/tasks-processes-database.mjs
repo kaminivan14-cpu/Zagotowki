@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import { readFile, readdir } from 'node:fs/promises'
+import { readFile, readdir, mkdir, writeFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import assert from 'node:assert/strict'
 // Keep queue fixtures around local noon, independently of the wall-clock test run.
@@ -21,7 +21,12 @@ try {
  CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
  GRANT USAGE ON SCHEMA auth TO anon,authenticated,service_role; GRANT EXECUTE ON FUNCTION auth.uid() TO anon,authenticated,service_role; CREATE PUBLICATION supabase_realtime;`)
  await sql(`CREATE SCHEMA storage;CREATE TABLE storage.buckets(id text PRIMARY KEY,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);CREATE TABLE storage.objects(id uuid DEFAULT gen_random_uuid(),bucket_id text,name text,metadata jsonb);ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;CREATE FUNCTION storage.foldername(text) RETURNS text[] LANGUAGE sql AS $$ SELECT string_to_array($1,'/') $$;GRANT USAGE ON SCHEMA storage TO authenticated;GRANT SELECT,INSERT ON storage.objects TO authenticated;`)
- for(const f of (await readdir('supabase/migrations')).filter(f=>f.endsWith('.sql')).sort()) await sql(await readFile(`supabase/migrations/${f}`,'utf8'))
+ for(const f of (await readdir('supabase/migrations')).filter(f=>f.endsWith('.sql')).sort()) {
+  if(f==='202610090001_process_workspace.sql'){
+   await mkdir('tmp/process-ui',{recursive:true});await writeFile('tmp/process-ui/expected-baseline.json',await sql(`SELECT jsonb_agg(jsonb_build_object('signature',p.oid::regprocedure::text,'definition',pg_get_functiondef(p.oid),'acl',p.proacl::text) ORDER BY p.oid::regprocedure::text) FROM pg_proc p WHERE p.oid IN ('app_private.process_validate(jsonb,boolean)'::regprocedure,'app_private.process_command(text,jsonb,uuid)'::regprocedure,'public.tasks_processes()'::regprocedure)`))
+  }
+  await sql(await readFile(`supabase/migrations/${f}`,'utf8'))
+ }
  await sql(`UPDATE public."Task_module_settings" SET company_timezone='${testZone}';
  INSERT INTO public."Locations"(id,name,active) VALUES(1,'Synthetic A',true),(2,'Synthetic B',true);
  INSERT INTO auth.users(id,email) SELECT ('20000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,'tasks-'||n||'@example.invalid' FROM generate_series(1,11)n;
@@ -137,5 +142,24 @@ try {
  eq((await rpc(1,'tasks_processes')).instances.find(i=>i.id===newMenu.instance_id).tasks.length,32)
  eq(await sql(`SELECT count(*) FROM public."Task_admin_events" WHERE entity='category' AND action IN ('created','deactivated','reactivated')`),'3')
  await denied(sql('SET ROLE anon;SELECT public.tasks_processes()'),/permission denied/)
+
+ const workspace={name:'Workspace RACI',start_offset_days:3,sequential_stages:true,stages:[{key:'a',name:'First stage',tasks:[step('a','A',{duration_days:0.5,raci:{accountable:[{type:'employee',id:1}],consulted:[],informed:[{type:'employee',id:4}]}}),step('b','B')]},{key:'b',name:'Second stage',tasks:[step('c','C')]}]}
+ for(const field of [{start_offset_days:-1},{start_offset_days:0.5}])await denied(asAdmin('process_create',{definition:{...workspace,...field}}),/INVALID_PROCESS_TIMING/)
+ const invalid=structuredClone(workspace);invalid.stages[0].tasks[0].raci.informed=[{type:'employee',id:999999}]
+ await denied(asAdmin('process_create',{definition:invalid}),/INVALID_RACI/)
+ invalid.stages[0].tasks[0].raci.informed=[];invalid.stages[0].tasks[0].duration_days=-1
+ await denied(asAdmin('process_create',{definition:invalid}),/INVALID_PROCESS_TIMING/)
+ const stageCycle=structuredClone(workspace);stageCycle.stages[0].tasks[0].depends_on=['c']
+ await denied(asAdmin('process_create',{definition:stageCycle}),/DEPENDENCY_CYCLE/)
+ const w=await asAdmin('process_create',{definition:workspace});await asAdmin('process_publish',{version_id:w.version_id,revision:1})
+ const wi=await asAdmin('process_launch',{version_id:w.version_id,starts_on:today,default_employee_id:6}),ws=() => rpc(1,'tasks_processes').then(d=>d.instances.find(i=>i.id===wi.instance_id).tasks)
+ let wt=await ws();const last=wt.find(t=>t.step_key==='c');eq(last.blocked,true);eq(last.dependencies.length,2)
+ eq(wt.find(t=>t.step_key==='a').step.raci,workspace.stages[0].tasks[0].raci)
+ await denied(command(6,'mark_completed',{task_id:last.id,version:(await rpc(6,'tasks_details',last.id)).task.version,confirmed:true}),/DEPENDENCY/)
+ for(const key of ['a','b']){const t=(await ws()).find(t=>t.step_key===key);await command(6,'mark_completed',{task_id:t.id,version:(await rpc(6,'tasks_details',t.id)).task.version,confirmed:true});if(key==='a')eq((await ws()).find(t=>t.id===last.id).blocked,true)}
+ eq((await ws()).find(t=>t.id===last.id).blocked,false)
+ const nv=await asAdmin('process_version',{version_id:w.version_id});eq((await rpc(1,'tasks_processes')).versions.find(v=>v.id===nv.version_id).definition,workspace)
+ eq((await ws()).length,3)
+ await denied(sql(`SET ROLE authenticated;SELECT app_private.process_effective_definition('{}'::jsonb)`),/permission denied/)
  console.log(`Tasks processes PostgreSQL PASS (${checks} checks)`)
 } finally {await sql(`DROP DATABASE ${database} WITH (FORCE)`,'postgres')}
