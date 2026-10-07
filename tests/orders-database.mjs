@@ -180,6 +180,7 @@ try{
  eq(finished.items.find(i=>i.item_type==='set').lifecycle,'done')
  eq((await read(3,'orders_notifications','1')).some(n=>n.order_id===setOrder),false)
  await (await import('./order-ingest-database-cases.mjs')).verifyIngest({sql,command,read,eq,denied,lit})
+ await (await import('./order-routing-database-cases.mjs')).verifyRouting({sql,read,eq,denied,lit})
  for(const state of ["active=false","active=false,archived_at=now()"]){await sql(`UPDATE public."Employees" SET ${state} WHERE id=4`);await denied(read(4,'orders_board','1'),/Brak aktywnego/)}
  console.log(`PASS ${checks} PostgreSQL checks; real concurrent claim: 1 PASS + 1 CONFLICT; changed credential hashes during role migration: 0`)
 }finally{await sql(`DROP DATABASE ${db}`,'postgres')}

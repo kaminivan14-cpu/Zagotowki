@@ -1,6 +1,6 @@
 # External Orders API v1
 
-Deployment status: **Production backend deployed and smoke PASS; frontend comments update awaiting GitHub/Vercel rollout**.
+Deployment status: **Production endpoint; location routing rollout tracked in order-location-routing.md**.
 
 Target: Production Supabase `ssheqxdgsmndiutthxvd`.
 Production endpoint: `https://ssheqxdgsmndiutthxvd.supabase.co/functions/v1/order-ingest`.
@@ -13,6 +13,7 @@ Server-to-server only. Obtain the secret separately; never embed it in a browser
 ```json
 {
   "sbid": "SB-123456",
+  "location": "podgorna",
   "items": [
     {"sku": "ABC-001", "title": "Salmon Roll", "quantity": 2, "comment": "bez cebuli"}
   ],
@@ -25,9 +26,19 @@ Server-to-server only. Obtain the secret separately; never embed it in a browser
 - `quantity` is an integer 1–10000; omitted means 1. Numeric strings and null are invalid.
 - Optional item comment: string up to 2000 characters. Optional order comment: string up to 4000. Omitted means empty string.
 - Maximum UTF-8 request body: 256 KiB. Unsupported fields are rejected, not silently discarded.
+- Required `location`: `podgorna`, `czerwca`, `pulaski` or `damrota`. Leading/trailing whitespace is removed and case is ignored; `Pułaski` is also accepted as `pulaski`. Missing, empty, non-string, unknown or unmapped location returns HTTP 400 `unsupported location` without creating an order. Inactive mapped location returns HTTP 503.
 - No SKU lookup and no product creation. Unknown SKUs are accepted. Repeated SKUs remain separate lines.
 - Title and comments are preserved and rendered as text. Line order is significant for idempotency.
-- Location is server configuration, currently `1 / SB_Wroclaw`. Clients must not supply it.
+- Routing is resolved on the backend using these mappings (no internal IDs in requests):
+
+| External location | Restaurant |
+|---|---|
+| podgorna | SB_Podgorna |
+| czerwca | SB_Poznań 2.0 |
+| pulaski | SB_Wrocław |
+| damrota | SB_Katowice |
+
+Existing internal location names are retained exactly; display spelling above does not rename them. The former single-location environment setting is no longer used by the endpoint.
 - Sets/parent/line_id/type extensions are reserved for a later API version; the existing database parent/item model is retained.
 
 ## Responses
@@ -40,7 +51,7 @@ Identical retry: HTTP 200 with the original received_at:
 ```json
 {"success":true,"sbid":"SB-123456","received_at":"2026-10-07T12:00:00+00:00","duplicate":true}
 ```
-The server compares normalized content; omitted quantity equals 1 and omitted comments equal empty strings. JSON object key order does not matter. A changed title, SKU, quantity, comment or item order conflicts: HTTP 409. Existing data is never overwritten.
+The server compares normalized content; omitted quantity equals 1 and omitted comments equal empty strings. JSON object key order does not matter. Location aliases normalize to the same code. Reusing an SBID with another location conflicts and never moves the order. For orders received before routing, retries must now include the code of the original restaurant. A changed title, SKU, quantity, comment or item order also conflicts: HTTP 409. Existing data is never overwritten.
 
 Errors return `{"success":false,"error":"short public message"}`. `X-Request-Id` identifies the attempt.
 
