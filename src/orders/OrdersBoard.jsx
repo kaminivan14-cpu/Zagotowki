@@ -55,6 +55,7 @@ function ItemRow({item,order,has,employee,shift,disabled,selection,setSelection,
  return <section className="compact-item"><div className="compact-title">
   {has('orders.work') && <input type="checkbox" aria-label={L.select(item.name)} checked={Number(selection[item.id])>0} disabled={disabled || !shift || !work} onChange={e=>setSelection(old=>({...old,[item.id]:e.target.checked?item.available:0}))}/>}
   <strong>{item.name}</strong><span>{item.quantity} {L.units}</span></div>
+  {item.comment && <p className="order-external-comment">{item.comment}</p>}
   <p className="compact-counters">{L.left}: <strong>{item.available}</strong> · {L.issued}: {item.issued}/{item.quantity}</p>
   {work && <div className="compact-actions"><button className="start-item" disabled={disabled || !shift} onClick={()=>claim(item.available)}>{L.start}</button>
    {item.available>1 && <><span>{L.part}</span>{[1,2,5].filter(n=>n<item.available).map(n=><button key={n} disabled={disabled || !shift} onClick={()=>claim(n)}>{n}</button>)}<button disabled={disabled || !shift} onClick={()=>claim(item.available)}>{L.allQuantity}</button>{item.available>5 && <button disabled={disabled || !shift} onClick={()=>setCustom(!custom)}>{L.other}</button>}</>}

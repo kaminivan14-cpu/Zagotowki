@@ -11,3 +11,7 @@ verify_jwt = false
 [functions.manage-employee-pin]
 # getUser validates the bearer; SQL rechecks the current active administrator.
 verify_jwt = false
+
+[functions.order-ingest]
+# Server-to-server bearer secret verified inside the function, never a browser API.
+verify_jwt = false

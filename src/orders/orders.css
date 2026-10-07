@@ -153,3 +153,5 @@
 .orders-app .urgency-filters button[aria-pressed=true] { background:#245a48; color:white; }
 .order-column .order-prep { font-size:13px; margin:6px 0; }
 .order-column .order-prep.estimated { color:#586660; }
+
+.order-external-comment { white-space: pre-wrap; overflow-wrap: anywhere; font-weight: 600; }

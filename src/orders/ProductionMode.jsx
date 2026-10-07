@@ -47,6 +47,7 @@ function TaskCard({ task, disabled, run }) {
   }
   return <section data-work-key={task.key} className="production-task" aria-label={`${task.name} — ${task.status}`}>
     <div className="compact-title"><strong>{task.name}</strong><span>×{task.quantity}</span></div><span className="order-status">{task.status}</span>
+    {task.comment && <p className="order-external-comment">{task.comment}</p>}
     {confirmRelease ? <div className="production-confirm" role="group" aria-label="Potwierdź oddanie zadania"><p>Oddać {task.quantity} szt. do wspólnej puli?</p><button disabled={disabled} onClick={async () => { if (await run('release', task.release)) setConfirmRelease(false) }}>Tak, oddaj zadanie</button><button disabled={disabled} onClick={() => setConfirmRelease(false)}>Zostaw u mnie</button></div> : <>
       <button className="production-primary" disabled={disabled} onClick={() => available ? take(task.quantity) : run(task.action, task.args)}>{label}</button>
       {available && <button disabled={disabled} aria-expanded={split} onClick={() => { setSplit(!split); setCustom(false); setDigits('') }}>{split ? 'Zamknij podział' : 'Podziel'}</button>}

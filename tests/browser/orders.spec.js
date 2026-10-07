@@ -349,3 +349,20 @@ for(const width of [375,768,1440])test(`shared urgency order, filter, timer and 
  await page.keyboard.press('Escape');await expect(page.getByRole('button',{name:'Pracownicy',exact:true})).toBeHidden()
  await page.getByText('Konto ▾',{exact:true}).click();await expect(page.getByRole('button',{name:'Wyloguj',exact:true})).toBeVisible()
 })
+
+for(const width of [375,768,1440])test(`external title and comments in both Kitchen modes ${width}`,async({page})=>{
+ await page.setViewportSize({width,height:1000})
+ const s=state()
+ s.orders=[{id:1,display_number:'ORDER-1',integration_sbid:'SB-123456',location_id:1,status:'TO_DO',comment:'general order comment',sent_to_kitchen_at:now(),items:[{id:11,name:'External Salmon <b>literal</b>',item_type:'product',is_external:true,external_sku:'UNKNOWN',quantity:2,available:2,issued:0,comment:'bez cebuli',assignments:[]}]}]
+ s.shifts=[{id:99,employee_id:4,location_id:1,started_at:now()}]
+ await setup(page,s,4,'sushi-master');await enter(page)
+ for(const mode of ['Tryb ogólny','Tryb operacyjny']){
+  await page.getByRole('button',{name:mode,exact:true}).click()
+  const card=page.locator('.order-column:visible')
+  await expect(card.getByText('general order comment',{exact:true})).toBeVisible()
+  await expect(card.getByText('bez cebuli',{exact:true})).toBeVisible()
+  await expect(card.getByText('External Salmon <b>literal</b>',{exact:true})).toBeVisible()
+  await expect(card.locator('b')).toHaveCount(0)
+  await expect(card.getByText('SB-123456',{exact:true})).toBeVisible()
+ }
+})

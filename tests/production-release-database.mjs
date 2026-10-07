@@ -162,6 +162,7 @@ try {
  checks++
  equal(await sql('SELECT count(*) FROM public."Employees" e JOIN test_snapshot s ON s.id=e.id WHERE e.pin_hash IS DISTINCT FROM s.original->>\'pin_hash\''),'0')
  await sql(await productionReleaseSql())
+ await sql(await readFile(new URL('../supabase/migrations/202610100001_order_ingest.sql',import.meta.url),'utf8'))
  equal(await sql("SELECT public FROM storage.buckets WHERE id='tasks-private'"),'f')
  equal(await sql('SELECT count(*) FROM app_private.production_module_releases'),'1')
  await denied(await productionReleaseSql())

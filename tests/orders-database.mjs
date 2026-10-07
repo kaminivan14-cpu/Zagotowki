@@ -51,6 +51,7 @@ try{
  await sql(await readFile('supabase/migrations/202610030001_orders_board.sql','utf8'))
  await sql(await readFile('supabase/migrations/202610030002_orders_uat_generator.sql','utf8'))
  await sql(await readFile('supabase/migrations/202610040001_worktime.sql','utf8'))
+ await sql(await readFile('supabase/migrations/202610100001_order_ingest.sql','utf8'))
  const seed=await readFile('supabase/seeds/orders-uat.sql','utf8')
  await denied(sql(seed),/UAT target/)
  await sql("SET app.orders_seed_project_ref='meuzkduxttjcuiynsnaa';"+seed)
@@ -178,6 +179,7 @@ try{
  eq(finished.status,'COMPLETED');eq(finished.lifecycle,'done');eq(finished.items.find(i=>i.item_type==='drink').issued,0)
  eq(finished.items.find(i=>i.item_type==='set').lifecycle,'done')
  eq((await read(3,'orders_notifications','1')).some(n=>n.order_id===setOrder),false)
+ await (await import('./order-ingest-database-cases.mjs')).verifyIngest({sql,command,read,eq,denied,lit})
  for(const state of ["active=false","active=false,archived_at=now()"]){await sql(`UPDATE public."Employees" SET ${state} WHERE id=4`);await denied(read(4,'orders_board','1'),/Brak aktywnego/)}
  console.log(`PASS ${checks} PostgreSQL checks; real concurrent claim: 1 PASS + 1 CONFLICT; changed credential hashes during role migration: 0`)
 }finally{await sql(`DROP DATABASE ${db}`,'postgres')}
