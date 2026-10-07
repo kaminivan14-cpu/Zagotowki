@@ -5,13 +5,12 @@ const secret='x'.repeat(40)
 const request=(body,extra={})=>new Request('http://localhost',{method:'POST',headers:{Authorization:`Bearer ${secret}`,'Content-Type':'application/json',...extra},body})
 test('authenticated request sends intact payload to atomic RPC; public response and request ID',async()=>{
  let args
- const handler=createHandler({secret,location:'1',rpc:async(name,a)=>{assert.equal(name,'order_ingest');args=a;return {http_status:200,body:{success:true,duplicate:true}}}})
- const body={sbid:'SB-1',items:[{sku:'unknown',title:'<script>not HTML</script>',quantity:2,comment:'bez cebuli'}],comment:'order'}
- const res=await handler(request(JSON.stringify(body)));assert.equal(res.status,200);assert.deepEqual(args.p_payload,body);assert.equal(args.p_location,1);assert.ok(res.headers.get('x-request-id'));assert.equal(res.headers.get('access-control-allow-origin'),null)
+ const handler=createHandler({secret,location:'1',rpc:async(name,a)=>{assert.equal(name,'order_ingest_routed');args=a;return {http_status:200,body:{success:true,duplicate:true}}}})
+ const body={sbid:'SB-1',location:' PULASKI ',items:[{sku:'unknown',title:'<script>not HTML</script>',quantity:2,comment:'bez cebuli'}],comment:'order'}
+ const res=await handler(request(JSON.stringify(body)));assert.equal(res.status,200);assert.deepEqual(args.p_payload,body);assert.equal('p_location' in args,false);assert.ok(res.headers.get('x-request-id'));assert.equal(res.headers.get('access-control-allow-origin'),null)
 })
 for(const [name,make,config,status] of [
  ['unauthorized',()=>request('{}',{Authorization:'Bearer wrong'}),{},401],
- ['missing location',()=>request('{}'),{location:''},503],
  ['bad secret configuration',()=>request('{}'),{secret:'short'},503],
  ['invalid JSON',()=>request('{'),{},400],
  ['oversized body',()=>request('x'.repeat(262145)),{},413],

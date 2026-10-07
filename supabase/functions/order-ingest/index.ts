@@ -7,4 +7,4 @@ const rpc=async(name:string,args:unknown)=>{
  if(!res.ok){const error=await res.json().catch(()=>({}));console.error(JSON.stringify({stage:'rpc',name,status:res.status,code:error.code}));throw Object.assign(new Error('RPC failed'),{code:error.code})}
  return res.status===204?null:res.json();
 };
-Deno.serve(createHandler({secret:Deno.env.get('ORDERS_INTEGRATION_SECRET'),location:Deno.env.get('ORDERS_INTEGRATION_LOCATION_ID'),rpc}));
+Deno.serve(createHandler({secret:Deno.env.get('ORDERS_INTEGRATION_SECRET'),rpc}));
