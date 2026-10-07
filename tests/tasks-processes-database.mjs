@@ -25,6 +25,9 @@ try {
   if(f==='202610090001_process_workspace.sql'){
    await mkdir('tmp/process-ui',{recursive:true});await writeFile('tmp/process-ui/expected-baseline.json',await sql(`SELECT jsonb_agg(jsonb_build_object('signature',p.oid::regprocedure::text,'definition',pg_get_functiondef(p.oid),'acl',p.proacl::text) ORDER BY p.oid::regprocedure::text) FROM pg_proc p WHERE p.oid IN ('app_private.process_validate(jsonb,boolean)'::regprocedure,'app_private.process_command(text,jsonb,uuid)'::regprocedure,'public.tasks_processes()'::regprocedure)`))
   }
+  if(f==='202610110001_process_wizard.sql'){
+   await mkdir('tmp/process-wizard',{recursive:true});await writeFile('tmp/process-wizard/expected-baseline.json',await sql(`SELECT jsonb_agg(jsonb_build_object('signature',p.oid::regprocedure::text,'definition',pg_get_functiondef(p.oid),'acl',p.proacl::text) ORDER BY p.oid::regprocedure::text) FROM pg_proc p WHERE p.oid IN ('app_private.process_validate(jsonb,boolean)'::regprocedure,'app_private.process_command(text,jsonb,uuid)'::regprocedure,'public.tasks_processes()'::regprocedure,'app_private.process_workspace_validate(jsonb)'::regprocedure,'app_private.task_validate_args(text,jsonb)'::regprocedure)`))
+  }
   await sql(await readFile(`supabase/migrations/${f}`,'utf8'))
  }
  await sql(`UPDATE public."Task_module_settings" SET company_timezone='${testZone}';
@@ -161,5 +164,35 @@ try {
  const nv=await asAdmin('process_version',{version_id:w.version_id});eq((await rpc(1,'tasks_processes')).versions.find(v=>v.id===nv.version_id).definition,workspace)
  eq((await ws()).length,3)
  await denied(sql(`SET ROLE authenticated;SELECT app_private.process_effective_definition('{}'::jsonb)`),/permission denied/)
+ // Wizard uses existing roles, immutable versions and central Tasks.
+ const sk=randomUUID(),ta=randomUUID(),tb=randomUUID(),tc=randomUUID();
+ const wd={schema_version:2,name:'Wizard',goal:'Goal',expected_result:'Result',instruction:'Instruction',responsible_role:'owner',involved_roles:['specialist'],launch_type:'manual',sequential_stages:false,stages:[{key:sk,name:'Stage',tasks:[step(ta,'A',{responsible_role:'specialist',estimated_minutes:15}),step(tb,'B',{responsible_role:'specialist',estimated_minutes:15}),step(tc,'C',{responsible_role:'specialist',estimated_minutes:15,depends_on:[ta,tb],raci:{informed:[{type:'role',id:'owner'}]}})]}]};
+ const wt0=await asAdmin('process_create',{definition:wd});
+ await asAdmin('process_publish',{version_id:wt0.version_id,revision:1});
+ const wa={version_id:wt0.version_id,starts_on:today,deadline:today,name:'Concrete run',role_assignments:{owner:1,specialist:6}};
+ await denied(asAdmin('process_launch',{...wa,role_assignments:{owner:1,specialist:4}}),/PROCESS_ROLE_ASSIGNMENT_REQUIRED/);
+ await denied(asAdmin('process_launch',{...wa,role_assignments:{owner:1}}),/PROCESS_ROLE_ASSIGNMENT_REQUIRED/);
+ const wop=randomUUID(),wr=await Promise.all([asAdmin('process_launch',wa,wop),asAdmin('process_launch',wa,wop)]);eq(wr[0],wr[1]);
+ const wid=wr[0].instance_id,wi0=()=>rpc(1,'tasks_processes').then(d=>d.instances.find(i=>i.id===wid));
+ let ix=await wi0();eq(ix.name,'Concrete run');eq(ix.tasks.length,3);eq(ix.tasks.find(t=>t.step_key===tc).blocked,true);eq(ix.execution_snapshot.stages[0].tasks[2].raci.informed,[{type:'employee',id:1}]);
+ const immutable=structuredClone(ix.execution_snapshot);const nv0=await asAdmin('process_version',{version_id:wt0.version_id});
+ await asAdmin('process_save',{version_id:nv0.version_id,revision:1,definition:{...wd,name:'Changed future'}});eq((await wi0()).execution_snapshot,immutable);
+ await denied(asAdmin('process_rate',{instance_id:wid,rating:4}),/PROCESS_NOT_FINISHED/);
+ for(const key of [ta,tb,tc]){
+  const before=(await wi0()).tasks.find(t=>t.step_key===key);const detail=await rpc(6,'tasks_details',String(before.id));
+  await command(6,'mark_completed',{task_id:before.id,version:detail.task.version,confirmed:true});
+  if(key===ta)eq((await wi0()).tasks.find(t=>t.step_key===tc).blocked,true);
+  if(key===tb)eq((await wi0()).tasks.find(t=>t.step_key===tc).blocked,false);
+ }
+ eq((await wi0()).tasks.every(t=>t.status==='completed'),true);
+ await asAdmin('process_rate',{instance_id:wid,rating:4.5,rating_comment:'Good'});eq(Number((await wi0()).rating),4.5);
+ await denied(command(6,'process_rate',{instance_id:wid,rating:5}),/TASKS_DENIED/);
+ await denied(asAdmin('process_rate',{instance_id:wid,rating:5.5}),/check constraint/);
+ await asAdmin('process_archive',{template_id:wt0.template_id});await denied(asAdmin('process_launch',wa),/PROCESS_ARCHIVED/);eq((await wi0()).execution_snapshot,immutable);
+ for(const patch of [{responsible_role:'invented'},{owner_employee_id:1}])await denied(asAdmin('process_create',{definition:{...wd,...patch}}),/PROCESS_INVALID_ROLE|PROCESS_TEMPLATE_ROLES_ONLY/);
+ const bad=await asAdmin('process_create',{definition:{...wd,goal:''}});await denied(asAdmin('process_publish',{version_id:bad.version_id,revision:1}),/PROCESS_REQUIRED_FIELDS/);
+ const auto=await asAdmin('process_create',{definition:{...wd,launch_type:'automatic'}});await denied(asAdmin('process_publish',{version_id:auto.version_id,revision:1}),/PROCESS_AUTOMATION_UNAVAILABLE/);
+ for(const depends_on of [[ta],[tc]]){const bad=structuredClone(wd);bad.stages[0].tasks[0].depends_on=depends_on;await denied(asAdmin('process_create',{definition:bad}),/INVALID_DEPENDENCY|DEPENDENCY_CYCLE/)}
+ eq((await rpc(1,'tasks_processes')).roles.includes('specialist'),true);
  console.log(`Tasks processes PostgreSQL PASS (${checks} checks)`)
 } finally {await sql(`DROP DATABASE ${database} WITH (FORCE)`,'postgres')}
