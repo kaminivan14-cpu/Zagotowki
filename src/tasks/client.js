@@ -1,3 +1,4 @@
+import { orgLabels } from './organization/labels'
 import { supabase } from '../supabase'
 import { operationKey, prepareOperation } from './operations'
 export { operationKey } from './operations'
@@ -18,6 +19,8 @@ export async function mutate(employee, action, args, storage = sessionStorage) {
  }
 }
 export const errors = {
+ ...orgLabels.errors,
+ PROCESS_REQUIRED_FIELDS:'Заповніть мету, результат, інструкцію, ролі й тривалість. При запуску вкажіть назву та дедлайн.',PROCESS_TEMPLATE_ROLES_ONLY:'У шаблоні обирайте ролі. Працівників призначають під час запуску.',PROCESS_INVALID_ROLE:'Оберіть роль з чинного довідника.',PROCESS_ROLE_ASSIGNMENT_REQUIRED:'Призначте активного працівника відповідної ролі з доступом до роботи для кожної ролі.',PROCESS_AUTOMATION_UNAVAILABLE:'Автоматичний запуск ще не налаштовано. Збережіть чернетку або оберіть запуск вручну.',PROCESS_ARCHIVED:'Цей шаблон архівований.',PROCESS_NOT_FINISHED:'Оцінити можна лише завершений процес.',
  INVALID_ASSIGNEE:'Виконавець має бути активним, із підключеним обліковим записом і доступом до роботи.',INVALID_LOCATION:'Оберіть активну локацію.',INVALID_PROCESS:'Перевірте назву, етапи та дані процесу.',EMPTY_PROCESS:'Додайте хоча б один етап.',EMPTY_STAGE:'Додайте завдання до кожного етапу.',INVALID_PROCESS_STEP:'Перевірте поля завдань у шаблоні.',INVALID_DEPENDENCY:'Залежність вказує на відсутнє завдання.',PROCESS_VERSION_IMMUTABLE:'Опублікована версія незмінна. Створіть нову версію.',PROCESS_VERSION_CONFLICT:'Версію вже змінено. Відкрийте її повторно.',PROCESS_NOT_PUBLISHED:'Спочатку опублікуйте версію.',PROCESS_ASSIGNEE_REQUIRED:'Оберіть доступних виконавців для всіх завдань.',PROCESS_APPROVER_REQUIRED:'Оберіть іншого активного працівника для підтвердження.',RESULT_APPROVAL_REQUIRED:'Очікується підтвердження результату іншою особою.',RESULT_REQUIRED:'Спочатку додайте обов’язковий результат.',INVALID_RESULT:'Перевірте формат результату.',INVALID_ATTACHMENT:'Не вдалося перевірити файл. Повторіть завантаження.',STORAGE_UNAVAILABLE:'Сховище файлів ще не налаштовано.',INVALID_MANAGER:'Оберіть активного керівника.',REPORTING_CYCLE:'Підпорядкування не може утворювати цикл.',INVALID_DEPARTMENT:'Оберіть активний відділ.',INACTIVE_CATEGORY:'Оберіть активну категорію.',
 
  ACTIVE_TASK_EXISTS: 'Спочатку завершіть або призупиніть поточне завдання.',

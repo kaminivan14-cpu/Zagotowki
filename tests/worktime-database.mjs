@@ -17,6 +17,7 @@ try {
  CREATE SCHEMA auth; CREATE TABLE auth.users(id uuid PRIMARY KEY,email text UNIQUE,raw_app_meta_data jsonb DEFAULT '{}');
  CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
  GRANT USAGE ON SCHEMA auth TO anon,authenticated,service_role; GRANT EXECUTE ON FUNCTION auth.uid() TO anon,authenticated,service_role; CREATE PUBLICATION supabase_realtime;`)
+ await sql(`CREATE SCHEMA storage;CREATE TABLE storage.buckets(id text PRIMARY KEY,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);CREATE TABLE storage.objects(id uuid DEFAULT gen_random_uuid(),bucket_id text,name text,metadata jsonb);`)
  for(const f of (await readdir('supabase/migrations')).filter(f=>f.endsWith('.sql')).sort()) {
  if(f==='202610040001_worktime.sql') {await mkdir('tmp/worktime.local',{recursive:true});await writeFile('tmp/worktime.local/expected-before.json',await sql(await readFile('tests/fixtures/worktime-schema-audit.sql','utf8')))}
  await sql(await readFile(`supabase/migrations/${f}`,'utf8'))
