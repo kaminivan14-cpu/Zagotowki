@@ -1,6 +1,6 @@
 export function moduleAllowed(environment, role, module, capabilities) {
   return capabilities.includes(`${module}.access`) &&
-    (environment !== 'production' || module === 'production' || ['administrator', 'manager'].includes(role))
+    (environment !== 'production' || module === 'production' || module === 'audit' || ['administrator', 'manager'].includes(role))
 }
 export function generatorAllowed(environment, capabilities) {
   return environment === 'uat' && capabilities.includes('orders.test.generate')
