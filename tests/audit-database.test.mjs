@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { auditDatabase, uid } from './helpers/audit-db.mjs'
 test('AUDYT database: migration chain, authorization, lifecycle, snapshots, retries, files and conflicts',async t=>{
@@ -10,6 +11,10 @@ test('AUDYT database: migration chain, authorization, lifecycle, snapshots, retr
  await as(null,'anon');await assert.rejects(read('templates'),/permission denied/)
  await assert.rejects(rpc('start',{}),/permission denied/)
  await as(3);await assert.rejects(read('templates'),/Brak aktywnego/)
+ await db.exec("RESET ROLE; DELETE FROM app_private.role_permissions WHERE role='crafter' AND permission='audit.access'")
+ await as(1);await assert.rejects(read('templates'),/AUDIT_DENIED/)
+ await assert.rejects(rpc('template_save',{id:randomUUID(),name:'Denied',questions:['Q']}),/AUDIT_DENIED/)
+ await db.exec("RESET ROLE; INSERT INTO app_private.role_permissions(role,permission) VALUES('crafter','audit.access')")
  await as(1)
  assert.equal((await read('locations')).length,2)
  assert.ok((await db.query('SELECT public.auth_capabilities() AS c')).rows.some(r=>r.c==='audit.access'))
@@ -74,4 +79,9 @@ test('AUDYT database: migration chain, authorization, lifecycle, snapshots, retr
  assert.equal((await db.query('DELETE FROM storage.objects WHERE name=$1 RETURNING name',[dp.path])).rows.length,1)
  assert.equal((await read('templates')).length,1)
  assert.equal((await read('history',null,'completed')).length,1)
+ await db.exec('RESET ROLE')
+ await db.exec(await readFile('supabase/migrations/202610130001_audit.sql','utf8'))
+ await as(2)
+ assert.equal((await read('history',null,'completed')).length,1)
+ assert.equal((await read('detail',a.id)).answers[0].comment,'Persistent comment')
 })
