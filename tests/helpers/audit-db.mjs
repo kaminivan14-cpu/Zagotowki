@@ -1,7 +1,7 @@
 import { readFile, readdir } from 'node:fs/promises'
 import { PGlite } from '@electric-sql/pglite'
 export const uid=n=>`30000000-0000-4000-8000-${String(n).padStart(12,'0')}`
-export async function auditDatabase(){
+export async function auditDatabase({r2=false}={}){
  const db=new PGlite()
  await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;
  CREATE SCHEMA auth; CREATE TABLE auth.users(id uuid PRIMARY KEY,email text UNIQUE,raw_app_meta_data jsonb DEFAULT '{}');
@@ -17,11 +17,12 @@ export async function auditDatabase(){
  CREATE FUNCTION extensions.gen_salt(text,integer DEFAULT 6) RETURNS text LANGUAGE sql AS $$ SELECT 'test-only'::text $$;
  CREATE FUNCTION extensions.digest(text,text) RETURNS bytea LANGUAGE sql AS $$ SELECT convert_to($1,'UTF8') $$;`)
  for(const file of (await readdir('supabase/migrations')).filter(x=>x.endsWith('.sql')).sort()){
+  if(!r2&&file==='202610140001_audit_r2.sql')continue
   let sql=await readFile(`supabase/migrations/${file}`,'utf8')
   sql=sql.replace('CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;','')
   try{await db.exec(sql)}catch(e){throw Error(`Migration ${file}: ${e.message}`)}
  }
- await db.exec(await readFile('supabase/storage/audit-photo-policies.sql','utf8'))
+ if(!r2)await db.exec(await readFile('supabase/storage/audit-photo-policies.sql','utf8'))
  await db.exec(`INSERT INTO public."Locations"(id,name,active) VALUES(1,'Synthetic A',true),(2,'Synthetic B',true);
  INSERT INTO auth.users(id,email) VALUES('${uid(1)}','one@example.invalid'),('${uid(2)}','two@example.invalid'),('${uid(3)}','inactive@example.invalid');
  INSERT INTO public."Employees"(id,name,role,location_id,active,auth_user_id) VALUES(1,'Synthetic one','employee',1,true,'${uid(1)}'),(2,'Synthetic two','manager',2,true,'${uid(2)}'),(3,'Inactive','employee',1,false,'${uid(3)}');`)

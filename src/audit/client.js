@@ -1,5 +1,4 @@
 import { supabase } from '../supabase'
-export const bucket = 'audit-photos'
 export async function read(kind, id = null, status = 'active') {
  const { data, error } = await supabase.rpc('audit_read', { p_kind: kind, p_id: id, p_status: status })
  if(error) throw error
@@ -10,21 +9,26 @@ export async function command(action, args, operation) {
  if(error) throw error
  return data
 }
-export async function cleanup() {
- const paths = await read('cleanup')
- if(paths.length) {
-  const { error } = await supabase.storage.from(bucket).remove(paths)
-  if(error) throw error
+async function photos(body) {
+ const {data,error}=await supabase.functions.invoke('audit-photos',{body})
+ if(error){
+  let message=error.message
+  try { message=(await error.context.json()).error||message } catch { /* Network error has no response. */ }
+  throw Error(message)
  }
+ return data
 }
-export async function upload(photo, file) {
- const { error } = await supabase.storage.from(bucket).upload(photo.path, new Blob([file], { type: photo.mime }), { contentType: photo.mime, upsert: false })
- // A lost upload response can leave the immutable object in Storage; ready validates its metadata.
- if(error && !['409','400'].includes(String(error.statusCode))) throw error
- if(error && !/already exists|duplicate/i.test(error.message)) throw error
+export async function cleanup() { return photos({action:'cleanup'}) }
+export async function completePhoto(photo,version) {
+ const data=await photos({action:'complete',photo_id:photo.id,version})
+ return data.audit
 }
-export async function photoUrl(path) {
- const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 300)
- if(error) throw error
- return data.signedUrl
+export async function upload(photo,file,version) {
+ const data=await photos({action:'upload',photo_id:photo.id,version})
+ if(data.audit)return data.audit
+ const response=await fetch(data.url,{method:'PUT',headers:data.headers,body:file,signal:AbortSignal.timeout(120000)})
+ // Conditional writes prevent replacement. A lost successful response can be retried safely.
+ if(!response.ok&&response.status!==412)throw Error('Przesyłanie zdjęcia nie powiodło się. Ponów operację.')
+ return completePhoto(photo,version)
 }
+export async function photoUrl(id) { return (await photos({action:'download',photo_id:id})).url }

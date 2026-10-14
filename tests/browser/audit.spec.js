@@ -1,21 +1,44 @@
+import { createHandler } from '../../supabase/functions/audit-photos/handler.mjs'
 import { test, expect } from '@playwright/test'
 import { auditDatabase, uid } from '../helpers/audit-db.mjs'
 const user={id:uid(1),email:'audit@example.invalid',aud:'authenticated',role:'authenticated'}
 function session(){const exp=Math.floor(Date.now()/1000)+3600,b64=v=>Buffer.from(JSON.stringify(v)).toString('base64url');return {access_token:`${b64({alg:'HS256'})}.${b64({sub:user.id,exp,role:'authenticated'})}.test`,refresh_token:'test-refresh',expires_at:exp,expires_in:3600,token_type:'bearer',user}}
 async function setup(page){
- const db=await auditDatabase(),state={failSave:false,loseStart:false,failUpload:false,caps:['audit.access'],calls:[],files:new Map()}
+ const db=await auditDatabase({r2:true}),state={failSave:false,loseStart:false,failUpload:false,caps:['audit.access'],calls:[],files:new Map()}
  await db.exec(`SET request.jwt.claim.sub='${user.id}'; SET ROLE authenticated;`)
  const command=async(action,args,operation=crypto.randomUUID())=>(await db.query('SELECT public.audit_command($1,$2::jsonb,$3::uuid) AS value',[action,JSON.stringify(args),operation])).rows[0].value
  await command('template_save',{id:crypto.randomUUID(),name:'Kontrola testowa',questions:['Czy sala jest czysta?','Czy sprzęt działa?']})
+ const handler=createHandler({origins:['http://127.0.0.1:5173'],authenticate:async()=>user.id,
+  rpc:async args=>{
+   await db.exec('RESET ROLE; SET ROLE service_role')
+   try{return (await db.query('SELECT public.audit_photo_service($1,$2::uuid,$3::uuid,$4,$5::jsonb) AS value',[args.p_action,args.p_actor,args.p_photo,args.p_version,JSON.stringify(args.p_verified)])).rows[0].value}
+   finally{await db.exec('RESET ROLE; SET ROLE authenticated')}
+  },r2:{
+   putUrl:async p=>({url:`https://audit-r2.test/${p.path}`,headers:{'Content-Type':p.mime,'If-None-Match':'*'}}),
+   getUrl:async p=>`https://audit-r2.test/${p.path}`,
+   inspect:async p=>{const file=state.files.get(p.path);if(!file)throw Error('AUDIT_PHOTO_MISSING');return new Uint8Array(file)},
+   remove:async p=>{state.files.delete(p.path)},
+  }})
+ let queue=Promise.resolve()
  await page.addInitScript(saved=>{localStorage.setItem('sb-auth-tests-auth-token',JSON.stringify(saved))},session())
  await page.routeWebSocket(/.*/,s=>s.close())
  await page.route('**/*',async route=>{
   const req=route.request(),url=new URL(req.url())
   if(url.origin==='http://127.0.0.1:5173')return route.continue()
+  if(url.hostname==='audit-r2.test'){
+   const path=url.pathname.slice(1)
+   if(req.method()==='PUT'){
+    if(state.failUpload)return route.fulfill({status:503,body:'Upload failed'})
+    if(state.files.has(path))return route.fulfill({status:412,body:''})
+    state.files.set(path,req.postDataBuffer());return route.fulfill({status:200,body:''})
+   }
+   return route.fulfill({contentType:'image/jpeg',body:state.files.get(path)})
+  }
   if(url.hostname!=='auth-tests.supabase.co')return route.abort()
+  const previous=queue;let release;queue=new Promise(resolve=>{release=resolve});await previous
+  try {
   const name=url.pathname.split('/').at(-1)
-  const isObject=url.pathname.includes('/storage/v1/object/')
-  const args=isObject&&req.method()==='POST'&&!url.pathname.includes('/sign/')?{}:req.postDataJSON()||{}
+  const args=req.postDataJSON()||{}
   state.calls.push({name,args})
   let body
   try{
@@ -28,22 +51,15 @@ async function setup(page){
     if(args.p_action==='save'&&state.failSave)return route.fulfill({status:503,json:{message:'Test connection failure'}})
     body=await command(args.p_action,args.p_args,args.p_operation)
     if(args.p_action==='start'&&state.loseStart){state.loseStart=false;return route.fulfill({status:503,json:{message:'Lost response'}})}
-   }else if(url.pathname.includes('/storage/v1/object/sign/')){
-    const path=url.pathname.split('/audit-photos/')[1];body={signedURL:`/object/authenticated/audit-photos/${path}`}
-   }else if(isObject&&req.method()==='POST'){
-    if(state.failUpload)return route.fulfill({status:503,json:{message:'Upload failed'}})
-    const path=url.pathname.split('/audit-photos/')[1]
-    const p=(await db.query(`SELECT public.audit_read('history') AS value`)).rows[0].value
-    let photo
-    for(const a of p){const d=(await db.query(`SELECT public.audit_read('detail',$1) AS value`,[a.id])).rows[0].value;photo||=d.photos.find(x=>x.path===path)}
-    await db.query(`INSERT INTO storage.objects(bucket_id,name,metadata) VALUES('audit-photos',$1,$2::jsonb) ON CONFLICT DO NOTHING`,[path,JSON.stringify({mimetype:photo.mime,size:photo.bytes})])
-    body={Key:`audit-photos/${path}`}
-   }else if(isObject&&req.method()==='DELETE'){
-    for(const path of args.prefixes)await db.query('DELETE FROM storage.objects WHERE name=$1',[path]);body=[]
-   }else if(isObject&&req.method()==='GET')return route.fulfill({contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aR6kAAAAASUVORK5CYII=','base64')})
+   }else if(name==='audit-photos'){
+    if(args.action==='complete'&&state.failComplete)return route.fulfill({status:503,json:{error:'Potwierdzenie przerwane'}})
+    const response=await handler(new Request(req.url(),{method:'POST',headers:req.headers(),body:req.postData()}))
+    return route.fulfill({status:response.status,headers:Object.fromEntries(response.headers),body:await response.text()})
+   }
    else throw Error(`Unexpected request ${url.pathname}`)
    return route.fulfill({status:200,json:body})
   }catch(e){return route.fulfill({status:400,json:{message:e.message,code:e.code}})}
+  } finally { release() }
  })
  return {...state,state,db,command,close:()=>db.close()}
 }
@@ -95,14 +111,16 @@ test('template reorder, preview and withdrawal; cancelled start creates nothing'
 test('photo upload failure blocks completion, retry persists, reload shows thumbnail, draft removal cleans storage',async({page})=>{
  const f=await setup(page);try{
  await start(page);f.state.failUpload=true
- const file={name:'test.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aR6kAAAAASUVORK5CYII=','base64')}
+ const buffer=await page.evaluate(async()=>{const c=document.createElement('canvas');c.width=3000;c.height=2000;const x=c.getContext('2d');x.fillStyle='red';x.fillRect(0,0,c.width,c.height);return Array.from(new Uint8Array(await (await new Promise(r=>c.toBlob(r,'image/png'))).arrayBuffer()))})
+ const file={name:'test.png',mimeType:'image/png',buffer:Buffer.from(buffer)}
  await page.getByLabel('Galeria',{exact:true}).first().setInputFiles(file)
- await expect(page.getByRole('alert')).toContainText('Upload failed');await expect(page.getByRole('button',{name:'Zakończ audyt',exact:true})).toBeDisabled()
+ await expect(page.getByRole('alert')).toContainText('Przesyłanie zdjęcia nie powiodło się');await expect(page.getByRole('button',{name:'Zakończ audyt',exact:true})).toBeDisabled()
  f.state.failUpload=false;await page.getByRole('button',{name:'Ponów operację'}).click();await expect(page.getByRole('button',{name:'Powiększ zdjęcie'})).toBeVisible();await saved(page)
+ const stored=(await f.db.query("SELECT public.audit_read('history') AS value")).rows[0].value[0];const detail=(await f.db.query("SELECT public.audit_read('detail',$1) AS value",[stored.id])).rows[0].value;expect(detail.photos[0]).toMatchObject({width:1920,height:1280,mime:'image/jpeg',state:'ready'});expect(detail.photos[0].bytes).toBeLessThan(file.buffer.length)
  await page.getByRole('button',{name:'Zapisz i wyjdź'}).click();await page.reload();await page.getByRole('button',{name:'Historia audytów',exact:false}).click();await page.getByRole('button',{name:'Kontynuuj audyt'}).click();await expect(page.getByRole('button',{name:'Powiększ zdjęcie'})).toBeVisible()
  await page.getByRole('button',{name:'Powiększ zdjęcie'}).click();await expect(page.getByRole('dialog')).toBeVisible();await page.keyboard.press('Escape')
  await page.getByRole('button',{name:'Usuń audyt w trakcie'}).click();await page.getByRole('button',{name:'Tak, usuń',exact:true}).click();await expect(page.getByText('Brak audytów w tym widoku.')).toBeVisible()
- expect((await f.db.query('SELECT * FROM storage.objects')).rows).toHaveLength(0)
+ expect(f.state.files.size).toBe(0)
  }finally{await f.close()}
 })
 
@@ -118,4 +136,40 @@ test('module ordering, keyboard modal and narrow/enlarged text layout',async({pa
  for(const width of [320,390]){await page.setViewportSize({width,height:844});await page.evaluate(()=>document.documentElement.style.fontSize='24px');expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)}
  await page.screenshot({path:info.outputPath('audit-large-text.png'),fullPage:true})
  }finally{await f.close()}
+})
+
+test('photo preparation decodes HEIC and respects JPEG EXIF orientation',async({page})=>{
+ await page.goto('/')
+ const {readFile}=await import('node:fs/promises')
+ const heic=Array.from(await readFile('tests/fixtures/audit/synthetic.heic'))
+ const result=await page.evaluate(async heic=>{
+  const {preparePhoto}=await import('/src/audit/preparePhoto.js')
+  const converted=await preparePhoto(new File([new Uint8Array(heic)],'test.heic',{type:'image/heic'}))
+  const c=document.createElement('canvas');c.width=80;c.height=40;c.getContext('2d').fillRect(0,0,80,40)
+  const jpg=new Uint8Array(await (await new Promise(r=>c.toBlob(r,'image/jpeg'))).arrayBuffer())
+  // EXIF little-endian orientation=6: rotate 90 degrees clockwise.
+  const exif=new Uint8Array([255,225,0,34,69,120,105,102,0,0,73,73,42,0,8,0,0,0,1,0,18,1,3,0,1,0,0,0,6,0,0,0,0,0,0,0])
+  const oriented=await preparePhoto(new File([jpg.slice(0,2),exif,jpg.slice(2)],'rotate.jpg',{type:'image/jpeg'}))
+  const broken=await preparePhoto(new File([jpg.slice(0,5)],'broken.jpg')).then(()=>false,()=>true)
+  return {heic:{width:converted.width,height:converted.height,mime:converted.mime},jpeg:{width:oriented.width,height:oriented.height},broken}
+ },heic)
+ expect(result).toEqual({heic:{width:80,height:40,mime:'image/jpeg'},jpeg:{width:40,height:80},broken:true})
+})
+
+
+test('pending upload can be confirmed after reloading audit without choosing the file again',async({page})=>{
+ const f=await setup(page);try {
+  await start(page);f.state.failComplete=true
+  const bytes=await page.evaluate(async()=>{const c=document.createElement('canvas');c.width=40;c.height=20;return Array.from(new Uint8Array(await (await new Promise(r=>c.toBlob(r,'image/png'))).arrayBuffer()))})
+  await page.getByLabel('Galeria',{exact:true}).first().setInputFiles({name:'retry.png',mimeType:'image/png',buffer:Buffer.from(bytes)})
+  await expect(page.getByRole('alert')).toContainText('Potwierdzenie przerwane')
+  expect(f.state.files.size).toBe(1)
+  await page.getByRole('button',{name:'Otwórz aktualną wersję',exact:true}).click()
+  await page.getByRole('button',{name:'Odrzuć lokalne zmiany i otwórz'}).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  f.state.failComplete=false
+  await page.getByRole('button',{name:'Sprawdź zapis zdjęcia'}).click()
+  await expect(page.getByRole('button',{name:'Powiększ zdjęcie'})).toBeVisible();await saved(page)
+  expect(f.state.files.size).toBe(1)
+ } finally {await f.close()}
 })

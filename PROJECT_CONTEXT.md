@@ -164,3 +164,14 @@ pracowników oraz realny test sesji i izolacji lokali. Szczegóły i bramki bezp
 - Nowa migracja `202610130001_audit.sql` oraz obowiązkowy osobny krok `supabase/storage/audit-photo-policies.sql`. Istniejące konta i lokale, bez nowych ról.
 - Testy: 153 jednostkowe/bazy, 5 Playwright AUDYT, 74 regresyjne przeglądarkowe — pozytywne. Kompilacja UAT i lint pozytywne; bez hosted Auth/Storage i fizycznego aparatu.
 - Instrukcja uruchomienia, szczegóły bezpieczeństwa, limity zdjęć i zakres pozostałej akceptacji UAT: `docs/audit-mvp.md`.
+
+
+## AUDYT: R2, 2026-10-14 (lokalnie, bez wdrożenia)
+
+- Gałąź `codex/audyt-r2`, oparta na `codex/audyt-mvp`.
+- Użytkownik potwierdził brak wdrożenia AUDYT i frontendu UAT oraz kompresję do 1920 px.
+- Prywatny bucket R2 `zagotowki-audyt-uat`, jurysdykcja EU; kluczy nie ma w repo ani rozmowie.
+- Zdjęcia JPEG po kompresji telefonu; HEIC/HEIF konwertowane lokalnie, dekoder ładowany na żądanie.
+- Edge Function `audit-photos`: Auth `/user`, service-only SQL, podpisane PUT/GET, kontrola SHA-256 i wymiarów, sprzątanie.
+- Migracja `202610140001_audit_r2.sql` wymaga pustej tabeli zdjęć. Nie stosować starego pliku polityk Storage dla AUDYT.
+- Instrukcja sekretów, CORS, wdrożenia i ograniczeń: `docs/audit-r2.md`. Zdalne R2/Supabase nie były testowane ani modyfikowane.

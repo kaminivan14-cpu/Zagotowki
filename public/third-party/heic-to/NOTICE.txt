@@ -1,0 +1,10 @@
+HEIC conversion uses heic-to 1.5.2, copyright Hopper Gee, LGPL-3.0.
+The library is unmodified and loaded separately only when converting HEIC/HEIF.
+License: ./LICENSE.txt
+Source and build instructions: https://github.com/hoppergee/heic-to
+Exact distributed npm package (includes src/ and build script):
+https://registry.npmjs.org/heic-to/-/heic-to-1.5.2.tgz
+Underlying libheif: https://github.com/strukturag/libheif (LGPL-3.0).
+Users may modify/replace the library and debug those modifications under its license.
+Application source imports heic-to/csp dynamically in src/audit/preparePhoto.js;
+rebuild using npm ci followed by npm run build:uat after replacing the dependency.

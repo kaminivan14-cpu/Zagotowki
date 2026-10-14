@@ -1,12 +1,13 @@
+import { preparePhoto } from './preparePhoto'
 import { useEffect, useRef, useState } from 'react'
-import { cleanup, read, upload } from './client'
-import { answerLabels, auditName, auditTime, editable, metrics, missing, validatePhoto } from './model'
+import { cleanup, completePhoto, read, upload } from './client'
+import { answerLabels, auditName, auditTime, editable, metrics, missing } from './model'
 import useOperation from './useOperation'
 import Dialog from './Dialog'
 import Photo from './Photo'
 
 export default function AuditForm({ initial, employee, locations, onExit, registerGuard }) {
- const [audit,setAudit]=useState(initial),[dirty,setDirty]=useState(false),[modal,setModal]=useState(null),[photoError,setPhotoError]=useState('')
+ const [audit,setAudit]=useState(initial),[dirty,setDirty]=useState(false),[modal,setModal]=useState(null),[photoError,setPhotoError]=useState(''),[photoStage,setPhotoStage]=useState('')
  const current=useRef(initial),changed=useRef(false),op=useOperation()
  const canEdit=editable(audit,employee), blocked=op.busy||!!op.error
  const set=(value)=>{current.current=value;setAudit(value)}
@@ -45,23 +46,32 @@ export default function AuditForm({ initial, employee, locations, onExit, regist
   if(files.length+a.photos.filter(p=>p.question===question).length>10){setPhotoError('Maksymalnie 10 zdjęć przy jednym pytaniu.');return}
   const save=captureSave(), entries=files.map(file=>({file,id:crypto.randomUUID()}))
   void op.run(async call=>{
-   const validated=await Promise.all(entries.map(async entry=>({...entry,mime:await validatePhoto(entry.file)})))
-   await save(call)
-   for(const entry of validated){
-    const next=await call('photo_reserve',{id:a.id,version:current.current.version,question,photo_id:entry.id,mime:entry.mime,bytes:entry.file.size})
-    set(next)
-    // A stable reservation ID survives retries and lost upload responses.
-    const photo=next.photos.find(p=>p.id===entry.id)
-    await upload(photo,entry.file)
-    set(await call('photo_ready',{id:a.id,version:next.version,photo_id:photo.id}))
-   }
+   try {
+    await save(call)
+    for(const entry of entries){
+     setPhotoStage('Przygotowywanie zdjęcia…')
+     entry.prepared ||= await preparePhoto(entry.file)
+     const {blob,...metadata}=entry.prepared
+     const next=await call('photo_reserve',{id:a.id,version:current.current.version,question,photo_id:entry.id,...metadata})
+     set(next)
+     const photo=next.photos.find(p=>p.id===entry.id)
+     setPhotoStage('Przesyłanie zdjęcia…')
+     set(await upload(photo,blob,next.version))
+    }
+   } finally { setPhotoStage('') }
   })
  }
- const retryPhoto=(photo,file)=>{const save=captureSave();return op.run(async call=>{
-  const mime=await validatePhoto(file)
-  if(mime!==photo.mime||file.size!==photo.bytes)throw Error('Wybierz ten sam plik lub usuń zdjęcie i dodaj nowe.')
-  await save(call);await upload(photo,file)
-  set(await call('photo_ready',{id:audit.id,version:current.current.version,photo_id:photo.id}))
+ const retryPhoto=(photo,file)=>{const save=captureSave();let prepared;return op.run(async call=>{
+  try {
+   setPhotoStage('Przygotowywanie zdjęcia…')
+   prepared ||= await preparePhoto(file)
+   if(prepared.sha256!==photo.sha256)throw Error('Wybierz ten sam plik lub usuń zdjęcie i dodaj nowe.')
+   await save(call);setPhotoStage('Przesyłanie zdjęcia…')
+   set(await upload(photo,prepared.blob,current.current.version))
+  } finally { setPhotoStage('') }
+ })}
+ const checkPhoto=photo=>{const save=captureSave();return op.run(async call=>{
+  await save(call);set(await completePhoto(photo,current.current.version))
  })}
  const removePhoto=photo=>{const save=captureSave();return op.run(async call=>{
   await save(call)
@@ -79,6 +89,7 @@ export default function AuditForm({ initial, employee, locations, onExit, regist
    {canEdit&&<p role="status">{op.error?'Błąd zapisu':dirty||op.busy?'Zapisywanie…':'Zapisano'}</p>}
   </section>
   {op.error&&<section role="alert" className="audit-error"><p>{op.error}</p><button disabled={op.busy} onClick={op.retry}>Ponów operację</button><button disabled={op.busy} onClick={()=>setModal('reload')}>Otwórz aktualną wersję</button></section>}
+  {photoStage&&<p role="status">{photoStage}</p>}
   {photoError&&<p role="alert">{photoError}</p>}
   <section className="audit-card">
    {canEdit?<label>Lokal<select value={audit.location_id||''} disabled={blocked} onChange={e=>{const loc=locations.find(l=>String(l.id)===e.target.value);update({location_id:loc?.id||null,location_name:loc?.name||null})}}><option value="">Wybierz lokal</option>{locations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></label>:<p>Lokal: {audit.location_name||'Nie wybrano'}</p>}
@@ -89,11 +100,11 @@ export default function AuditForm({ initial, employee, locations, onExit, regist
    {canEdit?<div className="audit-answers">{Object.entries(answerLabels).map(([v,label])=><button key={v} disabled={blocked} aria-pressed={audit.answers[i].answer===v} onClick={()=>update({answers:audit.answers.map((x,j)=>j===i?{...x,answer:x.answer===v?null:v}:x)})}>{audit.answers[i].answer===v?'✓ ':''}{label}</button>)}</div>:<p>Odpowiedź: <strong>{answerLabels[audit.answers[i].answer]||'Brak'}</strong></p>}
    {canEdit?<label>Komentarz (opcjonalnie)<textarea disabled={blocked} maxLength={200} value={audit.answers[i].comment} onChange={e=>update({answers:audit.answers.map((x,j)=>j===i?{...x,comment:e.target.value}:x)})}/><small>{audit.answers[i].comment.length}/200</small></label>:audit.answers[i].comment&&<p>Komentarz: {audit.answers[i].comment}</p>}
    <p>Zdjęcia: {audit.photos.filter(p=>p.question===i).length}/10</p>
-   {canEdit&&<><p className="audit-hint">JPG, PNG, WebP, HEIC/HEIF, do 10 MB. HEIC może wymagać otwarcia oryginału.</p><div className="audit-actions">
+   {canEdit&&<><p className="audit-hint">JPG, PNG, WebP, HEIC/HEIF, do 10 MB. Przed wysłaniem zmniejszamy zdjęcia do 1920 px i zapisujemy jako JPG. Oryginały nie są przechowywane.</p><div className="audit-actions">
     <label className="audit-file">Galeria<input disabled={blocked} type="file" multiple accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" onChange={e=>{const files=Array.from(e.target.files);e.target.value='';if(files.length)addPhotos(files,i)}}/></label>
     <label className="audit-file">Aparat<input disabled={blocked} type="file" accept="image/*" capture="environment" onChange={e=>{const files=Array.from(e.target.files);e.target.value='';if(files.length)addPhotos(files,i)}}/></label>
    </div></>}
-   <div className="audit-photos">{audit.photos.filter(p=>p.question===i).map(p=><Photo key={p.id} photo={p} busy={op.busy} onDelete={canEdit?()=>{op.clear();void removePhoto(p)}:undefined} onRetry={canEdit?f=>{op.clear();void retryPhoto(p,f)}:undefined}/>)}</div>
+   <div className="audit-photos">{audit.photos.filter(p=>p.question===i).map(p=><Photo key={p.id} photo={p} busy={op.busy} onCheck={canEdit?()=>{op.clear();void checkPhoto(p)}:undefined} onDelete={canEdit?()=>{op.clear();void removePhoto(p)}:undefined} onRetry={canEdit?f=>{op.clear();void retryPhoto(p,f)}:undefined}/>)}</div>
   </section>)}
   {canEdit&&<><ul>{requirements.map(m=><li key={m}>{m}</li>)}</ul><div className="audit-actions">
    <button disabled={blocked} onClick={()=>void exit()}>Zapisz i wyjdź</button>

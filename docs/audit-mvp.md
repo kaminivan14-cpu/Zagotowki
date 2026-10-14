@@ -1,5 +1,7 @@
 # AUDYT — implementacja MVP, 13.10.2026
 
+> Aktualizacja 14.10.2026: obsługę zdjęć zastępuje R2 i kompresja. Bieżąca instrukcja: [audit-r2.md](audit-r2.md). Poniższy opis Storage dokumentuje poprzednią wersję; nie wykonuj jego kroku 4 dla wersji R2.
+
 Zmiany są lokalne, na gałęzi `codex/audyt-mvp`. Nie wykonano push, wdrożenia ani operacji na zdalnych bazach UAT/PROD. Aplikacja została pobrana do osobnego katalogu `Zagotowki`; pierwotne pliki użytkownika pozostają nietknięte.
 
 ## Zakres

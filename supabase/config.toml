@@ -15,3 +15,7 @@ verify_jwt = false
 [functions.order-ingest]
 # Server-to-server bearer secret verified inside the function, never a browser API.
 verify_jwt = false
+
+[functions.audit-photos]
+# Auth /user verifies the JWT; service-only SQL rechecks the active author and audit status.
+verify_jwt = false
