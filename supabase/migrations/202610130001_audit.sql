@@ -2,11 +2,11 @@
 BEGIN;
 INSERT INTO app_private.role_permissions(role,permission)
 SELECT DISTINCT role,'audit.access' FROM app_private.role_permissions ON CONFLICT DO NOTHING;
-CREATE TABLE public.audit_templates (
+CREATE TABLE IF NOT EXISTS public.audit_templates (
  id uuid PRIMARY KEY, name text NOT NULL CHECK(length(btrim(name)) BETWEEN 1 AND 200),
  questions jsonb NOT NULL, version integer NOT NULL DEFAULT 1, deleted boolean NOT NULL DEFAULT false
 );
-CREATE TABLE public.audits (
+CREATE TABLE IF NOT EXISTS public.audits (
  id uuid PRIMARY KEY, template_id uuid NOT NULL, template_name text NOT NULL, questions jsonb NOT NULL,
  author_id uuid NOT NULL, manager text NOT NULL, started_at timestamptz NOT NULL DEFAULT now(),
  location_id bigint REFERENCES public."Locations"(id), location_name text,
@@ -14,15 +14,15 @@ CREATE TABLE public.audits (
  status text NOT NULL DEFAULT 'active' CHECK(status IN ('active','completed','deleted')),
  completed_at timestamptz, CHECK((status='completed')=(completed_at IS NOT NULL))
 );
-CREATE INDEX audits_history ON public.audits(status,started_at DESC);
-CREATE TABLE public.audit_photos (
+CREATE INDEX IF NOT EXISTS audits_history ON public.audits(status,started_at DESC);
+CREATE TABLE IF NOT EXISTS public.audit_photos (
  id uuid PRIMARY KEY, audit_id uuid NOT NULL REFERENCES public.audits(id), question integer NOT NULL,
  path text UNIQUE NOT NULL, mime text NOT NULL, bytes integer NOT NULL CHECK(bytes BETWEEN 1 AND 10485760),
  state text NOT NULL DEFAULT 'pending' CHECK(state IN ('pending','ready','deleted')), created_at timestamptz NOT NULL DEFAULT now()
 );
-CREATE INDEX audit_photos_parent ON public.audit_photos(audit_id,question);
+CREATE INDEX IF NOT EXISTS audit_photos_parent ON public.audit_photos(audit_id,question);
 -- Idempotent mutations also handle lost HTTP responses. Retained after soft deletion.
-CREATE TABLE app_private.audit_operations (
+CREATE TABLE IF NOT EXISTS app_private.audit_operations (
  actor uuid NOT NULL, operation uuid NOT NULL, action text NOT NULL, args jsonb NOT NULL, result jsonb NOT NULL,
  PRIMARY KEY(actor,operation)
 );
@@ -31,20 +31,20 @@ ALTER TABLE public.audits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_photos ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.audit_templates,public.audits,public.audit_photos,app_private.audit_operations FROM PUBLIC,anon,authenticated,service_role;
 INSERT INTO storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
-VALUES('audit-photos','audit-photos',false,10485760,ARRAY['image/jpeg','image/png','image/webp','image/heic','image/heif']);
+VALUES('audit-photos','audit-photos',false,10485760,ARRAY['image/jpeg','image/png','image/webp','image/heic','image/heif']) ON CONFLICT(id) DO NOTHING;
 
-CREATE FUNCTION app_private.audit_actor() RETURNS public."Employees"
+CREATE OR REPLACE FUNCTION app_private.audit_actor() RETURNS public."Employees"
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE e public."Employees"; BEGIN
  e:=app_private.actor();
- IF e.archived_at IS NOT NULL THEN RAISE EXCEPTION 'AUDIT_DENIED' USING ERRCODE='42501'; END IF;
+ IF e.archived_at IS NOT NULL OR NOT app_private.has_permission('audit.access') THEN RAISE EXCEPTION 'AUDIT_DENIED' USING ERRCODE='42501'; END IF;
  RETURN e;
 END $$;
-CREATE FUNCTION app_private.audit_detail(p_id uuid) RETURNS jsonb
+CREATE OR REPLACE FUNCTION app_private.audit_detail(p_id uuid) RETURNS jsonb
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
  SELECT to_jsonb(a)||jsonb_build_object('photos',(SELECT coalesce(jsonb_agg(p ORDER BY p.created_at,p.id),'[]') FROM public.audit_photos p WHERE p.audit_id=a.id AND p.state<>'deleted')) FROM public.audits a WHERE id=p_id
 $$;
-CREATE FUNCTION public.audit_read(p_kind text,p_id uuid DEFAULT NULL,p_status text DEFAULT 'active') RETURNS jsonb
+CREATE OR REPLACE FUNCTION public.audit_read(p_kind text,p_id uuid DEFAULT NULL,p_status text DEFAULT 'active') RETURNS jsonb
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
 BEGIN
  PERFORM app_private.audit_actor();
@@ -56,7 +56,7 @@ BEGIN
  END IF;
  RAISE EXCEPTION 'AUDIT_NOT_FOUND';
 END $$;
-CREATE FUNCTION public.audit_command(p_action text,p_args jsonb,p_operation uuid) RETURNS jsonb
+CREATE OR REPLACE FUNCTION public.audit_command(p_action text,p_args jsonb,p_operation uuid) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE actor public."Employees"; a public.audits; t public.audit_templates; p public.audit_photos;
  op app_private.audit_operations; result jsonb; q jsonb; item jsonb; meta jsonb; loc public."Locations";
@@ -148,7 +148,7 @@ BEGIN
  RETURN result;
 END $$;
 -- Row locking serializes Storage mutations with completion/deletion. No overwrite policy.
-CREATE FUNCTION public.audit_photo_access(p_path text,p_mode text) RETURNS boolean
+CREATE OR REPLACE FUNCTION public.audit_photo_access(p_path text,p_mode text) RETURNS boolean
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE e public."Employees"; a public.audits; p public.audit_photos; BEGIN
  e:=app_private.audit_actor();
