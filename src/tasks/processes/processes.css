@@ -25,3 +25,4 @@
 .process-band-heading>div{min-height:64px;box-sizing:border-box}
 .process-band-heading small{max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .process-graph-node small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.process-connector-hit{touch-action:none}

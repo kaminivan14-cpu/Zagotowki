@@ -46,3 +46,15 @@ Requires push of this release commit to the existing Preview branch. Confirm
 Vercel environment=Preview and deployed SHA matches the commit. The previous
 Preview requires Vercel authentication; authenticated live UAT smoke is not
 covered by the local mocked tests. No Production deploy or main merge authorized.
+
+## Follow-up: direct arrow dragging
+
+Removed repeated add-task buttons from diagram stage headers; Step 2 task
+creation is unchanged. An explicit dependency now starts target rewiring by
+pressing and dragging the black connector itself (line or arrow-tip hit area).
+A click without movement still selects the edge; the existing handle and
+keyboard interaction remain available. Pan/read-only/implicit stage rules
+remain protected. Escape cancels an in-flight pointer operation.
+
+Validation: 5 focused browser tests PASS, including direct arrow drag at
+375/768/1440 and form/save synchronization; 11 model tests, lint, build:uat PASS.
