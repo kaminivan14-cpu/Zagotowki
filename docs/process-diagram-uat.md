@@ -58,3 +58,20 @@ remain protected. Escape cancels an in-flight pointer operation.
 
 Validation: 5 focused browser tests PASS, including direct arrow drag at
 375/768/1440 and form/save synchronization; 11 model tests, lint, build:uat PASS.
+
+## Stage grouping and creating links from a task
+
+Each stage now owns exactly one region and one heading/collapse control.
+Stage areas are ordered topologically when possible. If dependencies interleave
+stages in both directions (without a task-level cycle), separate horizontal
+stage lanes preserve downward task edges. No dependencies or stage assignments
+are added/changed by layout. Cross-stage links use outside routing lanes.
+
+Selecting a task exposes an outgoing + connector below its card. Drag it to a
+target card to add a canonical dependency; keyboard activation also works.
+A temporary thin connector follows the pointer. Existing edge rewiring remains
+available. Duplicate connections now display a duplicate-specific message.
+
+Validation for this update: 12 Node tests, 7 focused browser tests (including
+mobile/desktop creation and existing dragging), lint and build:uat PASS.
+Stage containment includes the interleaved-stage case. No migrations required.
