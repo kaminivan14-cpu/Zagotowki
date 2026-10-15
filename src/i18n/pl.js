@@ -1,4 +1,6 @@
 export const pl = {
+  "Скасувати зміну зв’язку": "Cofnij zmianę połączenia",
+  "Неможливо скасувати зв’язок після зміни правил процесу.": "Nie można cofnąć połączenia po zmianie reguł procesu.",
   "Такий зв’язок уже існує.": "Takie połączenie już istnieje.",
   "Мова": "Język",
   "Повторювати процес": "Powtarzaj proces",
