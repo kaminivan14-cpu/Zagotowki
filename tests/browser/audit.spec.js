@@ -109,8 +109,8 @@ test('photo upload failure blocks completion, retry persists, reload shows thumb
 test('module ordering, keyboard modal and narrow/enlarged text layout',async({page},info)=>{
  const f=await setup(page);try{
  f.state.caps=['orders.access','production.access','audit.access','tasks.access']
- await page.goto('/');await expect(page.locator('.module-selector>button').nth(2)).toContainText('AUDYT')
- await page.getByRole('button',{name:'📋 AUDYT Audyt lokalu'}).click()
+ await page.goto('/');await expect(page.locator('.module-selector>button').nth(2)).toContainText('АУДИТ')
+ await page.getByRole('button',{name:'📋 АУДИТ Аудит локації'}).click()
  await page.getByRole('button',{name:'Nowy audyt',exact:false}).click();await page.getByRole('button',{name:'Wybierz wzór'}).click()
  await page.keyboard.press('Tab');expect(await page.getByRole('dialog').evaluate(el=>el.contains(document.activeElement))).toBe(true)
  await page.getByRole('button',{name:'Tak, rozpocznij'}).click()

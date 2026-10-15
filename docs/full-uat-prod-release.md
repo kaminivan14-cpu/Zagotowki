@@ -1,7 +1,56 @@
 # Full UAT → Production release gate — 2026-10-15
 
-Status: **STOP — Production Audit Storage prerequisites missing.**
-Production was queried read-only; no migrations, business writes, merge, push or deployment performed.
+Current status: **BACKEND PASS; STOP before frontend — four Audit Storage policies missing.**
+
+## Continuation: backend applied 2026-10-15
+
+Applied individually with release journal entries:
+- `202610130001_audit.sql` → `full_uat_audit_20261013`
+- `202610150001_task_process_schedules.sql` → `full_uat_schedules_20261015`
+
+Latest applied migration: `202610150001`; Production continues using its existing
+private release journal, not a fabricated standard migration history.
+The private audit-photos bucket and public.audit_photo_access now exist. **The
+manual policy instructions below can now be executed.** No Storage policies,
+employee-avatar rules, system owners, Orders configuration or frontend changed.
+
+Preflight: six modified functions/ACL and affected columns/constraints matched the
+tested baseline. Production's role_has_permission exclusion policy differs from
+UAT intentionally and was preserved byte-for-byte and ACL-for-ACL. Full DDL
+rehearsal rolled back successfully. Each committed migration had guards for
+expected function definitions/ACL, unchanged original function definitions,
+existing table ACL/RLS and business counts. Existing policies stayed identical;
+final affected schema columns/constraints match the local upgraded baseline.
+
+Targeted release validation:
+- 17 Node/PGlite tests PASS.
+- Local real PostgreSQL Audit upgrade/concurrency/capability suite PASS.
+- 9 focused Audit/diagram/i18n browser cases PASS after updating one stale test
+  assertion from the pre-i18n Polish module label to the shipped Ukrainian label.
+  Only test text changed; no new application behavior was implemented.
+- lint and Production build PASS using the verified Production public anon key
+  only in process memory. Initial build correctly rejected the local UAT env;
+  build safety was not weakened.
+- Production rollback-only smoke PASS: Audit create/edit/snapshot/retry/complete/
+  history/immutability; Tasks defaults/recurrence/retry; Process role resolution/
+  launch/schedule/deadlines/central Tasks/dependencies/blocked→ready/completion/rating.
+- Read-only transaction smoke PASS under authenticated role: auth profile,
+  capabilities, Admin/Access/Organization/Worktime. Initial harness used the API
+  read-only role and was denied auth_employee_profile; corrected to authenticated
+  inside the test transaction. No grants were changed. Real credential login was
+  not performed.
+- Test Audit records/templates: 0; smoke Tasks retained: 0. New-menu template: 1.
+  Business records were rolled back; normal PostgreSQL sequence gaps may remain.
+
+No PR, merge, Production Vercel deployment or final frontend smoke yet. Stop at
+manual Storage gate. No rollback currently required. Audit photo HTTP operations
+remain unverified until policies exist. Full-app translation remains partial;
+recurrence stores pending schedules and does not claim an active automatic
+scheduler (existing UAT limitation; no new worker added during release).
+
+## Initial preflight record (before backend continuation)
+
+Production was queried read-only during the initial gate below.
 
 ## Source discovery
 
