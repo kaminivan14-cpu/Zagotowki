@@ -1,3 +1,4 @@
+import {getLocale} from '../../i18n/runtime'
 import {useContext,useEffect,useRef,useState} from 'react'
 import {read,errorText,operationKey} from '../client'
 import {planningRange,dayLabel,addDays} from '../dateTime'
@@ -34,7 +35,7 @@ export default function PlanningScreen({context,run,busy,onDetails,revision,onCr
  <div className="task-actions planning-entry"><button aria-pressed={mode==='week'} onClick={()=>setMode('week')}>Запланувати тиждень</button><button aria-pressed={mode==='month'} onClick={()=>setMode('month')}>Запланувати місяць</button>{mode&&<label className="planning-employee">Співробітник<select value={employee} onChange={e=>setEmployee(e.target.value)}>{people.map(p=><option key={p.id} value={p.id}>{p.id===context.employee_id?'Я':p.name}</option>)}</select></label>}</div><p role="alert">{error}</p>
  {mode && <>
  {mode==='week' && <>
-  <p className="planning-info">{nextAvailable?L.infoNext(new Intl.DateTimeFormat('uk-UA',{weekday:'long',timeZone:'UTC'}).format(new Date(context.today+'T12:00:00Z'))):L.infoCurrent}</p>
+  <p className="planning-info">{nextAvailable?L.infoNext(new Intl.DateTimeFormat(getLocale(),{weekday:'long',timeZone:'UTC'}).format(new Date(context.today+'T12:00:00Z'))):L.infoCurrent}</p>
   <div className="planning-period" role="group" aria-label={L.period}>
    <button aria-pressed={selectedPeriod==='current'} onClick={()=>setPeriod('current')}>{L.current}</button>
    <button aria-pressed={selectedPeriod==='next'} disabled={!nextAvailable} aria-describedby={!nextAvailable?'planning-period-help':undefined} title={!nextAvailable?L.unavailable:undefined} onClick={()=>setPeriod('next')}>{L.next}</button>

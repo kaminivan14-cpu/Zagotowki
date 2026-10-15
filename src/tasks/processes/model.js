@@ -1,3 +1,4 @@
+import {tr} from '../../i18n/runtime.js'
 import {roleName} from '../admin/labels.js'
 export const processSteps=doc=>(doc?.stages||[]).flatMap((s,i)=>s.tasks.map((t,j)=>({...t,stageKey:s.key,stageName:s.name,number:`${i+1}.${j+1}`})))
 export function dependencyEdges(doc){
@@ -17,7 +18,7 @@ export function processProgress(tasks){return tasks.length?Math.round(100*tasks.
 export const isFinished=i=>i.tasks.length>0&&i.tasks.every(t=>['completed','cancelled'].includes(t.status))
 export const taskState=t=>t.status==='completed'?'done':t.status==='cancelled'?'cancelled':t.blocked?'blocked':['in_progress','paused'].includes(t.status)?'working':'new'
 export const referenceName=(ref,directory)=>ref.type==='role'?roleName(ref.id):(ref.type==='department'?directory.departments:directory.employees).find(x=>x.id===ref.id)?.name||`#${ref.id}`
-export const durationText=t=>t.duration_days!=null?`${t.duration_days} дн.`:t.estimated_minutes?`${t.estimated_minutes} хв`:'—'
+export const durationText=t=>t.duration_days!=null?tr('{n} дн.',{n:t.duration_days}):t.estimated_minutes?tr('{n} хв',{n:t.estimated_minutes}):'—'
 
 // Dependency IDs are stored in the existing version document; display numbers never identify edges.
 export function graphLayout(doc){
@@ -41,3 +42,16 @@ export function wizardDraft(def){
 }
 export function patchTask(doc,key,patch){return {...doc,stages:doc.stages.map(s=>({...s,tasks:s.tasks.map(t=>t.key===key?{...t,...patch}:t)}))}}
 export function removeTask(doc,key){return {...doc,stages:doc.stages.map(s=>({...s,tasks:s.tasks.filter(t=>t.key!==key).map(t=>({...t,depends_on:(t.depends_on||[]).filter(id=>id!==key),relative_to:t.relative_to===key?null:t.relative_to}))}))}}
+
+export function addStageTask(doc,stageKey,task){return {...doc,stages:doc.stages.map(s=>s.key===stageKey?{...s,tasks:[...s.tasks,{...task,estimated_minutes:30,depends_on:s.tasks.length?[s.tasks.at(-1).key]:[]}]}:s)}}
+export function validateDeadlines(doc){for(const s of doc.stages){for(const x of [s,...s.tasks])if(x.deadline_offset_days!=null&&(!Number.isInteger(x.deadline_offset_days)||x.deadline_offset_days<0))throw Error('INVALID_DEADLINE');for(const t of s.tasks)if(s.deadline_offset_days!=null&&t.deadline_offset_days!=null&&t.deadline_offset_days>s.deadline_offset_days)throw Error('TASK_STAGE_DEADLINE')}return true}
+export function editDependency(doc,edge,from,to,mode='replace'){
+ if(edge?.implicit)throw Error('IMPLICIT_DEPENDENCY')
+ let next=structuredClone(doc)
+ if(edge&&mode!=='add')next=patchTask(next,edge.to,{depends_on:processSteps(next).find(t=>t.key===edge.to).depends_on.filter(k=>k!==edge.from)})
+ if(mode!=='delete'){
+  if(!canConnect(next,from,to))throw Error('DEPENDENCY_CYCLE')
+  next=patchTask(next,to,{depends_on:[...(processSteps(next).find(t=>t.key===to).depends_on||[]),from]})
+ }
+ graphLayout(next);return next
+}
