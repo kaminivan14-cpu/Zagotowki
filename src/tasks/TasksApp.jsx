@@ -1,3 +1,4 @@
+import {tr,getLocale} from '../i18n/runtime'
 import { useCallback,useEffect,useRef,useState } from 'react'
 import { read,mutate,errorText,operationKey } from './client'
 import {useWorktime} from '../worktime/context'
@@ -31,13 +32,13 @@ export default function TasksApp({employee,onSignOut,onModules}) {
   catch(e){if(alive.current)setError(errorText(e));return null}
   finally {pending.current=false;if(alive.current)setBusy(false)}
  }
- const retry=()=>{try {const op=JSON.parse(sessionStorage.getItem(operationKey(employee.id)));if(op)void run(op.action,op.args);else void refresh()}catch{setError('Не вдалося прочитати попередню дію. Зверніться до адміністратора.')}}
- if(!context)return <div className="app tasks-app"><p role="status">Завантаження модуля…</p><p role="alert">{error}</p><button onClick={refresh}>Повторити</button><button onClick={onSignOut}>Вийти</button></div>
+ const retry=()=>{try {const op=JSON.parse(sessionStorage.getItem(operationKey(employee.id)));if(op)void run(op.action,op.args);else void refresh()}catch{setError(tr('Не вдалося прочитати попередню дію. Зверніться до адміністратора.'))}}
+ if(!context)return <div className="app tasks-app"><p role="status">{tr('Завантаження модуля…')}</p><p role="alert">{error}</p><button onClick={refresh}>{tr('Повторити')}</button><button onClick={onSignOut}>{tr('Вийти')}</button></div>
  const props={context,run,busy,onDetails:setDetail,revision,people}
  const critical=worktime?.current && state?.critical.find(t=>!t.acknowledged && t.ready)
- return <TaskFeedback.Provider value={{error,retry,busy}}><div className="app tasks-app" lang="uk" onInvalidCapture={e=>{if(!e.target.validity.customError)e.target.setCustomValidity('Перевірте значення цього поля. Заповніть обов’язкові дані у вказаному форматі.')}} onInputCapture={e=>{if(e.target.setCustomValidity)e.target.setCustomValidity('')}}><header className="tasks-header"><div><h1>Робота</h1><p>{employee.name}</p></div><div className="task-actions"><button onClick={onModules}>Модулі</button><button onClick={onSignOut}>Вийти</button></div></header>
- <nav aria-label="Розділи роботи">{[['work','Робота'],['planning','Планування'],['reports','Звіти'],['schedule','Графік']].map(([id,label])=><button key={id} aria-pressed={screen===id} onClick={()=>setScreen(id)}>{label}</button>)}{context.capabilities.includes('tasks.admin') && <button aria-pressed={screen==='settings'} onClick={()=>setScreen('settings')}>Адмін панель</button>}<button className={screen==='work'?undefined:'primary'} onClick={()=>setCreating(true)}>Створити завдання</button></nav>
- <ResultInbox run={run} busy={busy} revision={revision}/><p role="alert">{error}</p>{error && <button disabled={busy} onClick={retry}>Повторити дію</button>}
+ return <TaskFeedback.Provider value={{error,retry,busy}}><div className="app tasks-app" lang={getLocale()} onInvalidCapture={e=>{if(!e.target.validity.customError)e.target.setCustomValidity(tr('Перевірте значення цього поля. Заповніть обов’язкові дані у вказаному форматі.'))}} onInputCapture={e=>{if(e.target.setCustomValidity)e.target.setCustomValidity('')}}><header className="tasks-header"><div><h1>{tr('Робота')}</h1><p>{employee.name}</p></div><div className="task-actions"><button onClick={onModules}>{tr('Модулі')}</button><button onClick={onSignOut}>{tr('Вийти')}</button></div></header>
+ <nav aria-label={tr('Розділи роботи')}>{[['work',tr('Робота')],['planning',tr('Планування')],['reports',tr('Звіти')],['schedule',tr('Графік')]].map(([id,label])=><button key={id} aria-pressed={screen===id} onClick={()=>setScreen(id)}>{label}</button>)}{context.capabilities.includes('tasks.admin') && <button aria-pressed={screen==='settings'} onClick={()=>setScreen('settings')}>{tr('Адмін панель')}</button>}<button className={screen==='work'?undefined:'primary'} onClick={()=>setCreating(true)}>{tr('Створити завдання')}</button></nav>
+ <ResultInbox run={run} busy={busy} revision={revision}/><p role="alert">{error}</p>{error && <button disabled={busy} onClick={retry}>{tr('Повторити дію')}</button>}
  <main className={['planning','schedule','reports'].includes(screen)?'planning-main':undefined}>{screen==='work'?<WorkScreen {...props} state={state} refresh={refresh}/>:screen==='planning'?<PlanningScreen {...props} onCreate={(date,id)=>setCreating({planned_date:date,employee_id:id})}/>:screen==='reports'?<ReportsScreen {...props}/>:screen==='schedule'?<ScheduleScreen {...props}/>:<AdminScreen {...props}/>}</main>
  {creating && <TaskCreateDialog initialPlannedDate={creating.planned_date} initialEmployeeId={creating.employee_id} context={context} people={people} run={run} busy={busy} onClose={()=>setCreating(false)}/>}
  {detail && <TaskDetailsDialog {...props} task={detail} onClose={()=>setDetail(null)}/>}

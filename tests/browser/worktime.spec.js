@@ -3,6 +3,8 @@ const uid='30000000-0000-4000-8000-000000000001'
 const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Europe/Warsaw'})
 const iso=(hour=8)=>today()+'T'+String(hour).padStart(2,'0')+':00:00+02:00'
 async function setup(page,{role='administrator',active=true}={}){
+ // These legacy flows assert Polish labels; do not depend on the application's default locale.
+ await page.addInitScript(() => localStorage.setItem('zagotowki.locale', 'pl'))
  const state={calls:[],current:active?{id:1,employee_id:1,location_id:1,started_at:new Date(Date.now()-60000).toISOString(),version:1}:null,rows:[]}
  state.rows=[{id:1,employee_id:1,employee_name:'Serhii',location_id:1,location_name:'Lokal A',started_at:iso(),ended_at:null,version:1,status:'active',worked_minutes:null},
  {id:2,employee_id:2,employee_name:'Anna',location_id:1,location_name:'Lokal A',started_at:iso(),ended_at:iso(16),version:1,status:'completed',worked_minutes:480},
@@ -39,7 +41,7 @@ async function setup(page,{role='administrator',active=true}={}){
  await page.goto('/');return state
 }
 test('shared worktime panel: list, filters, calendar day, summary, correction and server XML',async({page})=>{
- const s=await setup(page);await page.getByRole('button',{name:/🍣 ZAMÓWIENIA/}).click()
+ const s=await setup(page);await page.getByRole('button',{name:/🍣 ЗАМОВЛЕННЯ/}).click()
  await page.getByText('Narzędzia ▾',{exact:true}).click();await page.getByRole('button',{name:'Czas pracy',exact:true}).click()
  await expect(page.getByRole('cell',{name:'Wymaga uwagi',exact:true})).toBeVisible()
  await expect(page.getByRole('cell',{name:'Zakończona',exact:true})).toBeVisible()
@@ -60,14 +62,14 @@ test('shared worktime panel: list, filters, calendar day, summary, correction an
  await expect(page.getByRole('button',{name:'Cały miesiąc'})).toBeVisible()
  await page.getByRole('button',{name:'Powrót do modułu'}).click()
  await page.getByRole('button',{name:'← Moduły'}).click()
- await page.getByRole('button',{name:/🥣 ZAGOTÓWKI/}).click()
+ await page.getByRole('button',{name:/🥣 ЗАГОТІВКИ/}).click()
  await page.getByText('Narzędzia ▾',{exact:true}).click();await page.getByRole('button',{name:'Czas pracy',exact:true}).click()
  await expect(page.getByRole('heading',{name:'Czas pracy',exact:true})).toBeVisible()
  expect(s.calls.filter(x=>x.name==='worktime_command'&&x.args.p_action==='start')).toHaveLength(0)
 })
 for(const close of [false,true])test(`logout choice closes shared shift only when requested: ${close}`,async({page})=>{
  const s=await setup(page)
- await page.getByRole('button',{name:/🍣 ZAMÓWIENIA/}).click()
+ await page.getByRole('button',{name:/🍣 ЗАМОВЛЕННЯ/}).click()
  await page.getByText('Konto ▾',{exact:true}).click();await page.getByRole('button',{name:'Wyloguj',exact:true}).click()
  const modal=page.getByRole('dialog',{name:'Czy zakończyć również czas pracy?'})
  await modal.getByRole('button',{name:close?'Zakończ pracę i wyloguj':'Tylko wyloguj',exact:true}).click()
@@ -77,11 +79,11 @@ for(const close of [false,true])test(`logout choice closes shared shift only whe
 })
 test('normal user has no panel but can start shared work in production and retain it in Orders',async({page})=>{
  const s=await setup(page,{role:'sushi-master',active:false})
- await page.getByRole('button',{name:/🥣 ZAGOTÓWKI/}).click()
+ await page.getByRole('button',{name:/🥣 ЗАГОТІВКИ/}).click()
  await expect(page.getByRole('button',{name:'Czas pracy',exact:true})).toHaveCount(0)
  await page.getByRole('button',{name:'Lokal A',exact:true}).click();await page.getByRole('button',{name:'Rozpocznij pracę',exact:true}).click()
  await expect(page.getByRole('button',{name:'Zakończ pracę',exact:true})).toBeEnabled()
- await page.getByRole('button',{name:'← Moduły'}).click();await page.getByRole('button',{name:/🍣 ZAMÓWIENIA/}).click()
+ await page.getByRole('button',{name:'← Moduły'}).click();await page.getByRole('button',{name:/🍣 ЗАМОВЛЕННЯ/}).click()
  await expect(page.getByRole('button',{name:'Zakończ zmianę',exact:true})).toBeVisible()
  expect(s.calls.filter(x=>x.name==='worktime_command'&&x.args.p_action==='start')).toHaveLength(1)
  await expect(page.getByRole('button',{name:'Czas pracy',exact:true})).toHaveCount(0)
@@ -89,7 +91,7 @@ test('normal user has no panel but can start shared work in production and retai
 test('failed shift closure never logs out and keeps the session available',async({page})=>{
  const s=await setup(page)
  await page.route('**/rest/v1/rpc/worktime_command',route=>route.fulfill({status:400,contentType:'application/json',body:JSON.stringify({code:'P0001',message:'UNFINISHED_WORK'})}))
- await page.getByRole('button',{name:/🍣 ZAMÓWIENIA/}).click()
+ await page.getByRole('button',{name:/🍣 ЗАМОВЛЕННЯ/}).click()
  await page.getByText('Konto ▾',{exact:true}).click();await page.getByRole('button',{name:'Wyloguj',exact:true}).click()
  await page.getByRole('button',{name:'Zakończ pracę i wyloguj',exact:true}).click()
  await expect(page.getByRole('dialog')).toBeVisible()
@@ -99,7 +101,7 @@ test('failed shift closure never logs out and keeps the session available',async
 })
 for(const width of [375,768,1440])test(`worktime list and calendar tablet layout ${width}`,async({page})=>{
  await page.setViewportSize({width,height:1000})
- await setup(page);await page.getByRole('button',{name:/🍣 ZAMÓWIENIA/}).click();await page.getByText('Narzędzia ▾',{exact:true}).click();await page.getByRole('button',{name:'Czas pracy',exact:true}).click()
+ await setup(page);await page.getByRole('button',{name:/🍣 ЗАМОВЛЕННЯ/}).click();await page.getByText('Narzędzia ▾',{exact:true}).click();await page.getByRole('button',{name:'Czas pracy',exact:true}).click()
  await expect(page.locator('.worktime-table tbody tr')).toHaveCount(3)
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
  await page.screenshot({path:`tmp/worktime.local/list-${width}.png`,fullPage:true})
@@ -109,7 +111,7 @@ for(const width of [375,768,1440])test(`worktime list and calendar tablet layout
 for(const width of [375,768,1440])test(`production compact header and worktime summary ${width}`,async({page})=>{
  await page.setViewportSize({width,height:1000});const s=await setup(page)
  await page.route('**/rest/v1/rpc/worktime_summary',route=>route.fulfill({json:[{employee_id:3,employee_name:'Jan',work_days:2,worked_minutes:1200,active_sessions:1},{employee_id:2,employee_name:'Anna',work_days:1,worked_minutes:480,active_sessions:0}]}))
- await page.getByRole('button',{name:/🥣 ZAGOTÓWKI/}).click()
+ await page.getByRole('button',{name:/🥣 ЗАГОТІВКИ/}).click()
  await expect(page.getByRole('heading',{name:'Wybierz lokal'})).toBeVisible()
  await expect(page.locator('.module-header')).toContainText('● W pracy')
  await expect(page.getByRole('button',{name:'Zakończ pracę',exact:true})).toBeEnabled()
@@ -158,7 +160,7 @@ for(const width of [375,768,1440])for(const input of ['click','touch','Enter','S
   const page=await context.newPage()
   try {
    const s=await setup(page)
-   await page.getByRole('button',{name:module==='orders'?/🍣 ZAMÓWIENIA/:/🥣 ZAGOTÓWKI/}).click()
+   await page.getByRole('button',{name:module==='orders'?/🍣 ЗАМОВЛЕННЯ/:/🥣 ЗАГОТІВКИ/}).click()
    if(module==='production'){await page.getByRole('button',{name:'Lokal A',exact:true}).click();await expect(page.getByRole('heading',{name:'📋 Zaplanowane plany',exact:true})).toBeVisible()}
    await page.locator('.module-header').getByRole('combobox',{name:'Lokal',exact:true}).selectOption('2')
    await chooseHeaderAction(page,'Narzędzia','Czas pracy',input)
@@ -184,7 +186,7 @@ for(const width of [375,768,1440])for(const input of ['click','touch','Enter','S
  })
 }
 test('header menus dismiss outside, on Tab and Escape, with visible keyboard focus',async({page})=>{
- await setup(page);await page.getByRole('button',{name:/🍣 ZAMÓWIENIA/}).click()
+ await setup(page);await page.getByRole('button',{name:/🍣 ЗАМОВЛЕННЯ/}).click()
  const tools=page.getByText('Narzędzia ▾',{exact:true}),account=page.getByText('Konto ▾',{exact:true})
  await tools.click();await page.getByRole('heading',{name:'Zamówienia',exact:true}).click()
  await expect(page.locator('.module-menu[open]')).toHaveCount(0)
@@ -199,7 +201,7 @@ test('header menus dismiss outside, on Tab and Escape, with visible keyboard foc
 })
 test('header logout without active work uses existing logout directly',async({page})=>{
  const s=await setup(page,{active:false})
- await page.getByRole('button',{name:/🍣 ZAMÓWIENIA/}).click()
+ await page.getByRole('button',{name:/🍣 ЗАМОВЛЕННЯ/}).click()
  await chooseHeaderAction(page,'Konto','Wyloguj','click')
  await expect(page.getByLabel('E-mail',{exact:true})).toBeVisible()
  await expect(page.getByRole('dialog')).toHaveCount(0)

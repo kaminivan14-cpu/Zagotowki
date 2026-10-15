@@ -156,3 +156,11 @@ pracowników oraz realny test sesji i izolacji lokali. Szczegóły i bramki bezp
 - Runbooks: `docs/tasks-architecture.md`, `docs/tasks-rollout.md`,
   `docs/tasks-implementation-report.md`. Before any remote operation verify the target
   project-ref again; do not treat old recorded environment checkpoints as current state.
+
+## 14. AUDYT MVP — checkpoint 2026-10-13
+
+- Osobny lokalny checkout, gałąź `codex/audyt-mvp`; bez push, zdalnych migracji i wdrożeń.
+- Pełny moduł AUDYT: wspólne wzory, snapshoty pytań, autosave, historia, Score, prywatne zdjęcia i ochrona autora/wersji/ukończonych danych.
+- Nowa migracja `202610130001_audit.sql` oraz obowiązkowy osobny krok `supabase/storage/audit-photo-policies.sql`. Istniejące konta i lokale, bez nowych ról.
+- Testy: 153 jednostkowe/bazy, 5 Playwright AUDYT, 74 regresyjne przeglądarkowe — pozytywne. Kompilacja UAT i lint pozytywne; bez hosted Auth/Storage i fizycznego aparatu.
+- Instrukcja uruchomienia, szczegóły bezpieczeństwa, limity zdjęć i zakres pozostałej akceptacji UAT: `docs/audit-mvp.md`.
