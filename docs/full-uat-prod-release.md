@@ -1,6 +1,6 @@
 # Full UAT → Production release gate — 2026-10-15
 
-Current status: **BACKEND PASS; STOP before frontend — four Audit Storage policies missing.**
+Current status: **BACKEND + STORAGE POLICY SMOKE PASS; STOP before PR — GitHub push authentication unavailable.**
 
 ## Continuation: backend applied 2026-10-15
 
@@ -11,7 +11,7 @@ Applied individually with release journal entries:
 Latest applied migration: `202610150001`; Production continues using its existing
 private release journal, not a fabricated standard migration history.
 The private audit-photos bucket and public.audit_photo_access now exist. **The
-manual policy instructions below can now be executed.** No Storage policies,
+manual policies were created by the operator and verified on 2026-10-15.** No Storage policies,
 employee-avatar rules, system owners, Orders configuration or frontend changed.
 
 Preflight: six modified functions/ACL and affected columns/constraints matched the
@@ -42,9 +42,15 @@ Targeted release validation:
 - Test Audit records/templates: 0; smoke Tasks retained: 0. New-menu template: 1.
   Business records were rolled back; normal PostgreSQL sequence gaps may remain.
 
-No PR, merge, Production Vercel deployment or final frontend smoke yet. Stop at
-manual Storage gate. No rollback currently required. Audit photo HTTP operations
-remain unverified until policies exist. Full-app translation remains partial;
+All four Audit Storage policies now match the canonical SQL (Dashboard name
+suffixes only): SELECT read, INSERT, DELETE, SELECT cleanup; authenticated only.
+No UPDATE or anon policy. Transactional Production photo smoke PASS: reserve,
+metadata INSERT/SELECT, ready, delete reference, cleanup SELECT/delete predicate.
+All smoke changes rolled back; binary HTTP upload/delete remains unverified.
+
+No PR, merge, Production Vercel deployment or final frontend smoke yet. Push of
+release/full-uat-prod failed because GitHub credentials are unavailable with
+interactive prompts disabled. Operator push required; no rollback required. Full-app translation remains partial;
 recurrence stores pending schedules and does not claim an active automatic
 scheduler (existing UAT limitation; no new worker added during release).
 
