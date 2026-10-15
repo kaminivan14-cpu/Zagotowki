@@ -1,3 +1,4 @@
+import {useLocale} from '../i18n/useLocale'
 import { useEffect, useRef, useState } from 'react'
 import ModuleShell from '../orders/ModuleShell'
 import LoginScreen from './LoginScreen'
@@ -8,6 +9,7 @@ import { employeeContext, validEmployee } from './session'
 import './auth.css'
 
 export default function AuthGate() {
+  useLocale()
   const [session, setSession] = useState(null)
   const [employee, setEmployee] = useState(null)
   const [loading, setLoading] = useState(true)

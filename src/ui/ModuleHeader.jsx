@@ -1,3 +1,4 @@
+import {tr} from '../i18n/runtime'
 import {useEffect,useRef} from 'react'
 import './module-header.css'
 export function Menu({label,items,description,disabled}) {
@@ -31,9 +32,9 @@ export default function ModuleHeader({title,employee,location,children,status,on
   <div className="module-identity"><h1>{title}</h1><p>{employee.name}{employee.role && ` · ${employee.role}`}</p>{location}{status}</div>
   {children}
   <div className="module-header-actions">
-   {(onWorktime||onEmployees)&&<Menu label="Narzędzia" disabled={disabled} items={[...(onWorktime?[{label:'Czas pracy',action:onWorktime}]:[]),...(onEmployees?[{label:'Pracownicy',action:onEmployees}]:[])]}/>}
-   {onModules&&<button disabled={disabled} onClick={onModules}>← Moduły</button>}
-   <Menu label="Konto" description={employee.name} disabled={disabled} items={[{label:'Wyloguj',action:onSignOut}]}/>
+   {(onWorktime||onEmployees)&&<Menu label={tr('Інструменти')} disabled={disabled} items={[...(onWorktime?[{label:tr('Час роботи'),action:onWorktime}]:[]),...(onEmployees?[{label:tr('Працівники'),action:onEmployees}]:[])]}/>}
+   {onModules&&<button disabled={disabled} onClick={onModules}>{tr('← Модулі')}</button>}
+   <Menu label={tr('Обліковий запис')} description={employee.name} disabled={disabled} items={[{label:tr('Вийти'),action:onSignOut}]}/>
   </div>
  </header>
 }
