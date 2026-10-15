@@ -1,4 +1,5 @@
 export const pl = {
+  "Такий зв’язок уже існує.": "Takie połączenie już istnieje.",
   "Мова": "Język",
   "Повторювати процес": "Powtarzaj proces",
   "Повторювати завдання": "Powtarzaj zadanie",

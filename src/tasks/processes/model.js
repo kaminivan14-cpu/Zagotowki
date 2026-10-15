@@ -37,25 +37,40 @@ export function graphLayout(doc){
   rows[level].sort((a,b)=>centre(a)-centre(b)||order.get(a.key)-order.get(b.key))
  }
  const cardWidth=250,cardHeight=88,gap=80,railGap=14
- const contentWidth=Math.max(760,...rows.map(r=>r.length*(cardWidth+gap)+gap))
- const bands=[],positions=[]
- let cursor=90,last=''
- rows.forEach((row,level)=>{const stageKeys=[...new Set(row.map(t=>t.stageKey))],signature=stageKeys.join('|')
-  if(signature!==last){const headerHeight=stageKeys.length*64+24;cursor+=headerHeight;bands.push({key:`band-${level}`,stageKeys,top:cursor-headerHeight,height:0});last=signature}
-  positions.push(cursor);cursor+=cardHeight+100;bands.at(-1).height=cursor-bands.at(-1).top-20
- })
- const height=cursor+90,nodes=rows.flatMap((row,level)=>row.map((t,i)=>({...t,level,x:(contentWidth-(row.length*(cardWidth+gap)-gap))/2+i*(cardWidth+gap),y:positions[level]})))
+ // Group by actual stage, never by a shared dependency level. Stage ordering is
+ // presentation only; it adds no dependency. Interleaved stage DAGs use lanes.
+ const stageOf=new Map(tasks.map(t=>[t.key,t.stageKey])),stageKeys=doc.stages.map(s=>s.key)
+ const stageLinks=[...new Set(edges.filter(e=>stageOf.get(e.from)!==stageOf.get(e.to)).map(e=>JSON.stringify([stageOf.get(e.from),stageOf.get(e.to)])))].map(x=>JSON.parse(x))
+ const remaining=new Set(stageKeys),stageOrder=[]
+ while(remaining.size){const key=stageKeys.find(k=>remaining.has(k)&&!stageLinks.some(([a,b])=>b===k&&remaining.has(a)));if(key===undefined)break;stageOrder.push(key);remaining.delete(key)}
+ const lanes=remaining.size>0,bands=[],nodes=[]
+ const stageRows=key=>rows.map(row=>row.filter(t=>t.stageKey===key))
+ const stageWidth=key=>Math.max(760,...stageRows(key).map(r=>r.length*(cardWidth+gap)+gap))
+ let cursor=90,left=0
+ const contentWidth=lanes?stageKeys.reduce((sum,k)=>sum+stageWidth(k)+60,0):Math.max(760,...stageKeys.map(stageWidth))
+ for(const key of lanes?stageKeys:stageOrder){
+  const localRows=stageRows(key),top=lanes?90:cursor,width=lanes?stageWidth(key):contentWidth
+  const band={key:`stage-${key}`,stageKeys:[key],left:lanes?left:0,top,width,height:0}
+  let y=top+88
+  localRows.forEach((row,level)=>{if(!row.length&&!lanes)return
+   row.forEach((t,i)=>nodes.push({...t,level,x:band.left+(width-(row.length*(cardWidth+gap)-gap))/2+i*(cardWidth+gap),y}))
+   y+=cardHeight+100
+  })
+  band.height=Math.max(108,y-top-20);bands.push(band);cursor=Math.max(cursor,top+band.height+60);left+=width+60
+ }
+ const height=cursor+90
+
  const byKey=new Map(nodes.map(n=>[n.key,n]));let rail=0
  const route=(a,b)=>{
   const from={x:a.x+cardWidth/2,y:a.y+cardHeight},to={x:b.x+cardWidth/2,y:b.y}
-  if(b.level===a.level+1)return [from,{x:from.x,y:from.y+50},{x:to.x,y:from.y+50},to]
+  if(a.stageKey===b.stageKey&&b.y===a.y+cardHeight+100)return [from,{x:from.x,y:from.y+50},{x:to.x,y:from.y+50},to]
   const x=contentWidth+(++rail)*railGap
   return [from,{x:from.x,y:from.y+35},{x,y:from.y+35},{x,y:to.y-25},{x:to.x,y:to.y-25},to]
  }
  const routed=edges.map(e=>({...e,points:route(byKey.get(e.from),byKey.get(e.to))}))
  const terminalX=contentWidth/2
  const startEdges=nodes.filter(n=>!edges.some(e=>e.to===n.key)).map(n=>{
-  const x=n.level===0?terminalX:contentWidth+(++rail)*railGap
+  const x=contentWidth+(++rail)*railGap
   return {to:n.key,points:[{x:terminalX,y:42},{x:terminalX,y:60},{x,y:60},{x,y:n.y-25},{x:n.x+125,y:n.y-25},{x:n.x+125,y:n.y}]}
  })
  const endEdges=nodes.filter(n=>!edges.some(e=>e.from===n.key)).map(n=>{

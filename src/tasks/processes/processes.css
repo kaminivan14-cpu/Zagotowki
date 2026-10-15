@@ -26,3 +26,8 @@
 .process-band-heading small{max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .process-graph-node small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .process-connector-hit{touch-action:none}
+/* Stage controls belong to the stage title, not a remote canvas edge. */
+.process-band-heading>div{justify-content:flex-start}
+.process-band-heading small{flex:0 1 auto}
+.process-band-heading button{flex:0 0 30px;margin:0}
+.process-draft-connector{fill:none;stroke:#2563ff;stroke-width:1.5;stroke-dasharray:5 4;pointer-events:none}

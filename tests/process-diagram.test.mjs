@@ -17,3 +17,13 @@ test('rewiring uses canonical UUID dependencies; invalid edits preserve source; 
  const next=editDependency(source,{from:'a',to:'b'},'a','c');assert.deepEqual(next.stages[0].tasks[1].depends_on,[]);assert.deepEqual(next.stages[0].tasks[2].depends_on,['b','a']);assert.equal(JSON.stringify(source),before)
  assert.deepEqual(graphLayout(next).edges.map(({from,to})=>({from,to})),dependencyEdges(next).map(({from,to})=>({from,to})))
 })
+
+test('stages have distinct areas containing only their own cards, without changing dependencies',()=>{
+ for(const interleaved of [false,true]){
+ const source={stages:[{key:'s1',tasks:[{key:'a',depends_on:[]},{key:'b',depends_on:interleaved?['c']:['a']}]},{key:'s2',tasks:[{key:'c',depends_on:['a']}]},{key:'s5',tasks:[{key:'d',depends_on:[]}]}]},before=JSON.stringify(source),g=graphLayout(source)
+ assert.equal(g.bands.length,3)
+ for(const band of g.bands){assert.equal(band.stageKeys.length,1);for(const n of g.nodes){const inside=n.x>=band.left&&n.x+250<=band.left+band.width&&n.y>=band.top&&n.y+88<=band.top+band.height;assert.equal(inside,n.stageKey===band.stageKeys[0])}}
+ for(const e of [...g.edges,...g.startEdges,...g.endEdges])for(let i=1;i<e.points.length;i++){assert.ok(e.points[i].y>=e.points[i-1].y);for(const n of g.nodes)assert.equal(crosses(e.points[i-1],e.points[i],n),false)}
+ assert.equal(JSON.stringify(source),before)
+ }
+})
