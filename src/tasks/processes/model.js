@@ -28,10 +28,42 @@ export function graphLayout(doc){
  while(queue.length){const id=queue.shift();sorted.push(id);for(const e of edges.filter(e=>e.from===id)){levels.set(e.to,Math.max(levels.get(e.to),levels.get(id)+1));indegree.set(e.to,indegree.get(e.to)-1);if(!indegree.get(e.to))queue.push(e.to)}}
  if(sorted.length!==tasks.length)throw Error('DEPENDENCY_CYCLE')
  const rows=[];for(const t of tasks)(rows[levels.get(t.key)]||= []).push(t)
- const width=Math.max(760,...rows.map(r=>r.length*280+48)),bands=[],positions=[];let cursor=70,last=''
- rows.forEach((row,level)=>{const signature=[...new Set(row.map(t=>t.stageKey))].join('|');if(signature!==last){cursor+=60;bands.push({key:`band-${level}`,stageKeys:[...new Set(row.map(t=>t.stageKey))],top:cursor-55,height:0});last=signature}positions.push(cursor);cursor+=130;bands.at(-1).height=cursor-bands.at(-1).top-8})
- const height=cursor+70
- return {edges,rows,bands,width,height,nodes:rows.flatMap((row,level)=>row.map((t,i)=>({...t,level,x:(width-row.length*280)/2+i*280,y:positions[level]})))}
+ // Stable layered DAG: barycentres group children below their predecessors without
+ // changing task order/UUIDs in the canonical definition.
+ const order=new Map(tasks.map((t,i)=>[t.key,i]))
+ for(let pass=0;pass<2;pass++)for(let level=1;level<rows.length;level++){
+  const ranks=new Map(rows[level-1].map((t,i)=>[t.key,i]))
+  const centre=t=>{const parents=edges.filter(e=>e.to===t.key&&ranks.has(e.from)).map(e=>ranks.get(e.from));return parents.length?parents.reduce((a,b)=>a+b,0)/parents.length:order.get(t.key)}
+  rows[level].sort((a,b)=>centre(a)-centre(b)||order.get(a.key)-order.get(b.key))
+ }
+ const cardWidth=250,cardHeight=88,gap=80,railGap=14
+ const contentWidth=Math.max(760,...rows.map(r=>r.length*(cardWidth+gap)+gap))
+ const bands=[],positions=[]
+ let cursor=90,last=''
+ rows.forEach((row,level)=>{const stageKeys=[...new Set(row.map(t=>t.stageKey))],signature=stageKeys.join('|')
+  if(signature!==last){const headerHeight=stageKeys.length*64+24;cursor+=headerHeight;bands.push({key:`band-${level}`,stageKeys,top:cursor-headerHeight,height:0});last=signature}
+  positions.push(cursor);cursor+=cardHeight+100;bands.at(-1).height=cursor-bands.at(-1).top-20
+ })
+ const height=cursor+90,nodes=rows.flatMap((row,level)=>row.map((t,i)=>({...t,level,x:(contentWidth-(row.length*(cardWidth+gap)-gap))/2+i*(cardWidth+gap),y:positions[level]})))
+ const byKey=new Map(nodes.map(n=>[n.key,n]));let rail=0
+ const route=(a,b)=>{
+  const from={x:a.x+cardWidth/2,y:a.y+cardHeight},to={x:b.x+cardWidth/2,y:b.y}
+  if(b.level===a.level+1)return [from,{x:from.x,y:from.y+50},{x:to.x,y:from.y+50},to]
+  const x=contentWidth+(++rail)*railGap
+  return [from,{x:from.x,y:from.y+35},{x,y:from.y+35},{x,y:to.y-25},{x:to.x,y:to.y-25},to]
+ }
+ const routed=edges.map(e=>({...e,points:route(byKey.get(e.from),byKey.get(e.to))}))
+ const terminalX=contentWidth/2
+ const startEdges=nodes.filter(n=>!edges.some(e=>e.to===n.key)).map(n=>{
+  const x=n.level===0?terminalX:contentWidth+(++rail)*railGap
+  return {to:n.key,points:[{x:terminalX,y:42},{x:terminalX,y:60},{x,y:60},{x,y:n.y-25},{x:n.x+125,y:n.y-25},{x:n.x+125,y:n.y}]}
+ })
+ const endEdges=nodes.filter(n=>!edges.some(e=>e.from===n.key)).map(n=>{
+  const x=contentWidth+(++rail)*railGap
+  return {from:n.key,points:[{x:n.x+125,y:n.y+cardHeight},{x:n.x+125,y:n.y+cardHeight+35},{x,y:n.y+cardHeight+35},{x,y:height-60},{x:terminalX,y:height-60},{x:terminalX,y:height-35}]}
+ })
+ return {edges:routed,rows,bands,width:contentWidth+(rail+2)*railGap,height,nodes,startEdges,endEdges,terminalX}
+
 }
 export function requiredRoles(doc){return [...new Set([doc.responsible_role,...(doc.involved_roles||[]),...processSteps(doc).flatMap(t=>[t.responsible_role,...Object.values(t.raci||{}).flat().filter(r=>r.type==='role').map(r=>r.id)])].filter(Boolean))]}
 export function wizardDraft(def){
@@ -55,3 +87,5 @@ export function editDependency(doc,edge,from,to,mode='replace'){
  }
  graphLayout(next);return next
 }
+
+export const connectorPath=points=>points.map((p,i)=>`${i?'L':'M'}${p.x},${p.y}`).join(' ')
