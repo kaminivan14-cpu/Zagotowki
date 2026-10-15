@@ -4,6 +4,8 @@ const caps={administrator:['orders.access','production.access','employees.manage
 const now=()=>new Date().toISOString()
 function state(){return {orders:[],shifts:[],calls:[],operations:new Map(),serial:1}}
 async function setup(page,s,id,role,location=1){
+ // These legacy flows assert Polish labels; do not depend on the application's default locale.
+ await page.addInitScript(() => localStorage.setItem('zagotowki.locale', 'pl'))
  const user={id:uid(id),aud:'authenticated',role:'authenticated',email:'synthetic@example.invalid'}
  const b64=v=>Buffer.from(JSON.stringify(v)).toString('base64url'),exp=Math.floor(Date.now()/1000)+3600
  const session={access_token:`${b64({alg:'HS256'})}.${b64({sub:user.id,exp,role:'authenticated'})}.synthetic`,refresh_token:'synthetic-refresh',expires_at:exp,expires_in:3600,token_type:'bearer',user}
@@ -49,7 +51,7 @@ async function setup(page,s,id,role,location=1){
  })
  await page.goto('/')
 }
-async function enter(page){await page.getByRole('button',{name:/🍣 ZAMÓWIENIA/}).click()}
+async function enter(page){await page.getByRole('button',{name:/🍣 ЗАМОВЛЕННЯ/}).click()}
 test('Orders operational flow: generator, dispatch, split work, cutting, issue, history and private summary',async({browser})=>{
  const s=state(),contexts=[]
  const open=async(id,role)=>{const context=await browser.newContext();contexts.push(context);const page=await context.newPage();await setup(page,s,id,role);await enter(page);return page}

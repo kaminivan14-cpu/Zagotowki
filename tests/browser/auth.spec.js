@@ -7,6 +7,8 @@ function session() {
   return { access_token: `${b64({ alg: 'HS256' })}.${b64({ sub: user.id, exp, role: 'authenticated' })}.test`, refresh_token: 'test-refresh', expires_at: exp, expires_in: 3600, token_type: 'bearer', user }
 }
 async function setup(page, { loggedIn = false, legacy = false, active = true, role = 'employee' } = {}) {
+ // These legacy flows assert Polish labels; do not depend on the application's default locale.
+ await page.addInitScript(() => localStorage.setItem('zagotowki.locale', 'pl'))
   const calls = []
   await page.addInitScript(({ saved, legacy }) => {
     if (saved && !sessionStorage.getItem('seeded')) {

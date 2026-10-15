@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test'
 const uid = '00000000-0000-0000-0000-000000000001'
 async function setup(page) {
+ // These legacy flows assert Polish labels; do not depend on the application's default locale.
+ await page.addInitScript(() => localStorage.setItem('zagotowki.locale', 'pl'))
   const employees = [
     { id: 1, name: 'Admin', role: 'administrator', active: true, location_id: null, auth_user_id: uid, archived_at: null },
     { id: 2, name: 'Manager A', role: 'su-chef', active: true, location_id: 1, auth_user_id: 'test-linked', archived_at: null },
