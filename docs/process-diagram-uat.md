@@ -75,3 +75,16 @@ available. Duplicate connections now display a duplicate-specific message.
 Validation for this update: 12 Node tests, 7 focused browser tests (including
 mobile/desktop creation and existing dragging), lint and build:uat PASS.
 Stage containment includes the interleaved-stage case. No migrations required.
+
+## Dependency undo
+
+The diagram toolbar now offers one-step undo for explicit dependency changes
+(add, delete, rewire, including edits through the form/inspector). Only affected
+`depends_on` arrays are restored; unrelated task edits are preserved. History
+is local to the open editor, survives draft save, and resets when tasks are
+added/deleted to avoid restoring dangling references. Undo revalidates the DAG
+against current implicit rules and marks the draft dirty for saving. The button
+is disabled for read-only/busy states or when no steps remain.
+
+Validation: 6 focused browser tests PASS (including multi-step undo and retained
+task title), 12 Node tests, lint, build:uat PASS. No backend/migration changes.

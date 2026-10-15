@@ -3,7 +3,7 @@ import {useEffect,useId,useMemo,useRef,useState} from 'react'
 import {graphLayout,durationText,connectorPath,editDependency} from './model'
 import {roleName} from '../admin/labels'
 
-export default function ProcessDiagram({doc,selected,onSelect,onAddStage,disabled,employees=[],onSelectEdge,selectedEdge,onRewire,onConnect}){
+export default function ProcessDiagram({doc,selected,onSelect,onAddStage,disabled,employees=[],onSelectEdge,selectedEdge,onRewire,onConnect,onUndoEdge,canUndoEdge}){
  const [zoom,setZoom]=useState(1),[pan,setPan]=useState(false),[collapsed,setCollapsed]=useState([])
  const [rewiring,setRewiring]=useState(false),[hover,setHover]=useState(null),[message,setMessage]=useState('')
  const [connecting,setConnecting]=useState(null),[pointer,setPointer]=useState(null)
@@ -41,6 +41,7 @@ export default function ProcessDiagram({doc,selected,onSelect,onAddStage,disable
  return <section className="process-diagram" ref={ref}>
   <div className="process-graph-tools">
    <button type="button" disabled={disabled} onClick={onAddStage}>{tr('＋ Додати етап')}</button>
+   {onUndoEdge&&<button type="button" disabled={disabled||!canUndoEdge} onClick={()=>{cancel();setMessage('');onUndoEdge()}}>{tr('Скасувати зміну зв’язку')}</button>}
    <button type="button" aria-pressed={!pan} onClick={()=>setPan(false)}>{tr('Вибір')}</button>
    <button type="button" aria-pressed={pan} onClick={()=>{cancel();setPan(true)}}>{tr('Переміщення')}</button>
    <button type="button" aria-label={tr('Зменшити')} onClick={()=>setZoom(Math.max(.15,zoom-.1))}>−</button><output>{Math.round(zoom*100)}%</output>
