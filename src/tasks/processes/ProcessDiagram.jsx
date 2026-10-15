@@ -1,17 +1,73 @@
 import {tr} from '../../i18n/runtime'
-import {useId,useRef,useState} from 'react'
-import {graphLayout,durationText} from './model'
+import {useEffect,useId,useMemo,useRef,useState} from 'react'
+import {graphLayout,durationText,connectorPath,editDependency} from './model'
 import {roleName} from '../admin/labels'
-export default function ProcessDiagram({doc,selected,onSelect,onAddStage,onAddTask,disabled,employees=[],onSelectEdge,selectedEdge}){
- const [zoom,setZoom]=useState(1),[pan,setPan]=useState(false),[collapsed,setCollapsed]=useState([]),ref=useRef(),drag=useRef(),marker=useId().replaceAll(':','');let graph,error
- try{graph=graphLayout(doc)}catch(e){error=e.message}
- if(error)return <p role="alert">{tr('Залежності містять цикл або невідоме завдання.')}</p>
- const {nodes,edges,width,height}=graph,point=id=>nodes.find(t=>t.key===id),path=(a,b)=>`M${a.x+125},${a.y+88} V${b.y-14} H${b.x+125} V${b.y}`
- return <section className="process-diagram" ref={ref}><div className="process-graph-tools"><button type="button" disabled={disabled} onClick={onAddStage}>{tr('＋ Додати етап')}</button><button type="button" aria-pressed={!pan} onClick={()=>setPan(false)}>{tr('Вибір')}</button><button type="button" aria-pressed={pan} onClick={()=>setPan(true)}>{tr('Переміщення')}</button><button type="button" aria-label={tr('Зменшити')} onClick={()=>setZoom(Math.max(.3,zoom-.1))}>−</button><output>{Math.round(zoom*100)}%</output><button type="button" aria-label={tr('Збільшити')} onClick={()=>setZoom(Math.min(2,zoom+.1))}>＋</button><button type="button" onClick={()=>setZoom(Math.min(1,(ref.current.clientWidth-32)/width))}>{tr('Вмістити')}</button><button type="button" onClick={()=>{setZoom(1);setCollapsed([])}}>{tr('Автовирівнювання')}</button><button type="button" onClick={()=>{if(document.fullscreenElement)document.exitFullscreen();else ref.current.requestFullscreen?.()}}>{tr('На весь екран')}</button></div>
- <div className={`process-graph-scroll ${pan?'is-pan':''}`} onPointerDown={e=>{if(!pan)return;drag.current={x:e.clientX,y:e.clientY,left:e.currentTarget.scrollLeft,top:e.currentTarget.scrollTop};e.currentTarget.setPointerCapture(e.pointerId)}} onPointerMove={e=>{if(!drag.current)return;e.currentTarget.scrollLeft=drag.current.left+drag.current.x-e.clientX;e.currentTarget.scrollTop=drag.current.top+drag.current.y-e.clientY}} onPointerUp={()=>{drag.current=null}}><div style={{width:width*zoom,height:height*zoom}}><div className="process-graph-canvas" style={{width,height,transform:`scale(${zoom})`}}>
- <div className="process-terminal start" style={{left:width/2-85}}>{tr('▶ Початок')}</div>
- {graph.bands.map(band=>{const stages=doc.stages.filter(s=>band.stageKeys.includes(s.key));return <div className={`process-graph-band stage-tone-${doc.stages.indexOf(stages[0])%4}`} key={band.key} style={{top:band.top,width,height:band.height}}><div className="process-band-heading">{stages.map(s=><div key={s.key}><strong>{doc.stages.indexOf(s)+1}. {s.name}</strong><small>{s.description} · {tr('{n} завдань',{n:s.tasks.length})}</small><button type="button" disabled={disabled} onClick={()=>onAddTask(s.key)}>{tr('＋ Додати завдання')}</button><button type="button" aria-label={tr('Згорнути {name}',{name:s.name})} aria-expanded={!collapsed.includes(s.key)} onClick={()=>setCollapsed(collapsed.includes(s.key)?collapsed.filter(k=>k!==s.key):[...collapsed,s.key])}>⌃</button></div>)}</div></div>})}
- <svg className="process-graph-edges" width={width} height={height} aria-label={tr('Зв’язки зверху вниз')}><defs><marker id={marker} markerWidth="8" markerHeight="8" refX="4" refY="7" orient="0"><path d="M0 0 L4 8 L8 0" fill="#36445e"/></marker></defs>{edges.map(e=><g key={`${e.from}-${e.to}`}><path d={path(point(e.from),point(e.to))} fill="none" stroke={selectedEdge?.from===e.from&&selectedEdge?.to===e.to?'#2563ff':'#36445e'} strokeWidth={selectedEdge?.from===e.from&&selectedEdge?.to===e.to?3:1.2} markerEnd={`url(#${marker})`}/><path data-from={e.from} data-to={e.to} d={path(point(e.from),point(e.to))} markerEnd={`url(#${marker})`} tabIndex={onSelectEdge?0:undefined} role={onSelectEdge?"button":undefined} aria-label={`${point(e.from).number} → ${point(e.to).number}`} style={{pointerEvents:"stroke",cursor:onSelectEdge?"pointer":"default",stroke:"transparent",strokeWidth:16,fill:"none"}} onClick={()=>onSelectEdge?.(e)} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();onSelectEdge?.(e)}}}/></g>)}{nodes.filter(t=>!edges.some(e=>e.to===t.key)).map(t=><path key={`start-${t.key}`} d={`M${width/2} 42 V${t.y-14} H${t.x+125} V${t.y}`} markerEnd={`url(#${marker})`}/>)}{nodes.filter(t=>!edges.some(e=>e.from===t.key)).map(t=><path key={`end-${t.key}`} d={`M${t.x+125} ${t.y+88} V${height-60} H${width/2} V${height-35}`} markerEnd={`url(#${marker})`}/>)}</svg>
- {nodes.map(t=><button type="button" key={t.key} data-task-key={t.key} data-level={t.level} className={`process-graph-node ${selected===t.key?'selected':''}`} style={{left:t.x,top:t.y}} onClick={()=>onSelect(t.key)}><b>{t.number}　{t.icon||'▤'}　{t.title}</b>{!collapsed.includes(t.stageKey)&&<><small>{employees.find(e=>e.id===t.assigned_to_employee_id)?.name||roleName(t.responsible_role)}</small><small>◷ {durationText(t)}</small></>}</button>)}
- <div className="process-terminal end" style={{left:width/2-85,top:height-35}}>{tr('■ Завершення')}</div></div></div></div></section>
+
+export default function ProcessDiagram({doc,selected,onSelect,onAddStage,onAddTask,disabled,employees=[],onSelectEdge,selectedEdge,onRewire}){
+ const [zoom,setZoom]=useState(1),[pan,setPan]=useState(false),[collapsed,setCollapsed]=useState([])
+ const [rewiring,setRewiring]=useState(false),[hover,setHover]=useState(null),[message,setMessage]=useState('')
+ const ref=useRef(),scroll=useRef(),drag=useRef(),handle=useRef(),marker=useId().replaceAll(':','')
+ const graph=useMemo(()=>{try{return graphLayout(doc)}catch{return null}},[doc])
+ const cancel=()=>{setRewiring(false);setHover(null);onSelectEdge?.(null)}
+ useEffect(()=>{const escape=e=>{if(e.key==='Escape'&&selectedEdge){e.preventDefault();e.stopPropagation();setRewiring(false);setHover(null);onSelectEdge?.(null)}};document.addEventListener('keydown',escape,true);return()=>document.removeEventListener('keydown',escape,true)},[selectedEdge,onSelectEdge])
+ if(!graph)return <p role="alert">{tr('Залежності містять цикл або невідоме завдання.')}</p>
+ const {nodes,edges,width,height,terminalX}=graph,point=id=>nodes.find(t=>t.key===id)
+ const active=selectedEdge&&edges.find(e=>e.from===selectedEdge.from&&e.to===selectedEdge.to)
+ const editable=!!active&&!disabled&&!active.implicit&&!!onRewire
+ const valid=key=>{if(!editable||!key)return false;try{editDependency(doc,active,active.from,key);return true}catch{return false}}
+ const candidate=(x,y)=>document.elementFromPoint(x,y)?.closest('[data-task-key]')?.dataset.taskKey
+ function finish(key){
+  setRewiring(false);setHover(null)
+  if(!key)return
+  if(!valid(key)){setMessage(tr('Залежності не можуть утворювати коло.'));return}
+  onRewire(active,key);setMessage('');onSelectEdge?.(null)
+ }
+ function selectEdge(edge){if(pan)return;setMessage('');setRewiring(false);setHover(null);onSelectEdge?.(edge)}
+ const selectable=!!onSelectEdge&&!pan
+ const line=(edge,key,interactive=false)=>{
+  const chosen=active?.from===edge.from&&active?.to===edge.to
+  return <g key={key} className={`process-connector ${chosen?'is-selected':''}`}>
+   <path className="process-connector-line" d={connectorPath(edge.points)} markerEnd={`url(#${marker})`}/>
+   {interactive&&<path className="process-connector-hit" data-from={edge.from} data-to={edge.to} d={connectorPath(edge.points)} tabIndex={selectable?0:undefined} role={selectable?'button':undefined} aria-label={`${point(edge.from).number} → ${point(edge.to).number}`} aria-pressed={chosen} style={{pointerEvents:selectable?'stroke':'none'}} onClick={()=>selectEdge(edge)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectEdge(edge)}}}/>}
+  </g>
+ }
+ return <section className="process-diagram" ref={ref}>
+  <div className="process-graph-tools">
+   <button type="button" disabled={disabled} onClick={onAddStage}>{tr('＋ Додати етап')}</button>
+   <button type="button" aria-pressed={!pan} onClick={()=>setPan(false)}>{tr('Вибір')}</button>
+   <button type="button" aria-pressed={pan} onClick={()=>{cancel();setPan(true)}}>{tr('Переміщення')}</button>
+   <button type="button" aria-label={tr('Зменшити')} onClick={()=>setZoom(Math.max(.15,zoom-.1))}>−</button><output>{Math.round(zoom*100)}%</output>
+   <button type="button" aria-label={tr('Збільшити')} onClick={()=>setZoom(Math.min(2,zoom+.1))}>＋</button>
+   <button type="button" onClick={()=>setZoom(Math.max(.05,Math.min(1,(scroll.current.clientWidth-24)/width,Math.max(120,Math.min(scroll.current.clientHeight,window.innerHeight-scroll.current.getBoundingClientRect().top-100))/height)))}>{tr('Вмістити')}</button>
+   <button type="button" onClick={()=>{cancel();setZoom(1);setCollapsed([])}}>{tr('Автовирівнювання')}</button>
+   <button type="button" onClick={()=>{if(document.fullscreenElement)document.exitFullscreen();else ref.current.requestFullscreen?.()}}>{tr('На весь екран')}</button>
+  </div>
+  {message&&<p role="alert">{message}</p>}
+  {editable&&<p className="process-rewire-help" role="status">{tr('Перетягніть кінець зв’язку на завдання. Enter — обрати картку, Escape — скасувати.')}</p>}
+  <div ref={scroll} className={`process-graph-scroll ${pan?'is-pan':''}`} onClick={e=>{if(!e.target.closest('button,[data-task-key],.process-connector-hit'))cancel()}}
+   onPointerDown={e=>{if(!pan)return;drag.current={x:e.clientX,y:e.clientY,left:e.currentTarget.scrollLeft,top:e.currentTarget.scrollTop};e.currentTarget.setPointerCapture(e.pointerId)}}
+   onPointerMove={e=>{if(!drag.current)return;e.currentTarget.scrollLeft=drag.current.left+drag.current.x-e.clientX;e.currentTarget.scrollTop=drag.current.top+drag.current.y-e.clientY}}
+   onPointerUp={()=>{drag.current=null}} onPointerCancel={()=>{drag.current=null}} onLostPointerCapture={()=>{drag.current=null}}>
+   <div style={{width:width*zoom,height:height*zoom}}><div className="process-graph-canvas" style={{width,height,transform:`scale(${zoom})`}}>
+    <div className="process-terminal start" style={{left:terminalX-85}}>{tr('▶ Початок')}</div>
+    {graph.bands.map(band=>{const stages=doc.stages.filter(s=>band.stageKeys.includes(s.key));return <div className={`process-graph-band stage-tone-${doc.stages.indexOf(stages[0])%4}`} key={band.key} style={{top:band.top,width,height:band.height}}><div className="process-band-heading">{stages.map(s=><div key={s.key}><strong>{doc.stages.indexOf(s)+1}. {s.name}</strong><small title={s.description}>{s.description} · {tr('{n} завдань',{n:s.tasks.length})}</small><button type="button" disabled={disabled} onClick={()=>onAddTask(s.key)}>{tr('＋ Додати завдання')}</button><button type="button" aria-label={tr('Згорнути {name}',{name:s.name})} aria-expanded={!collapsed.includes(s.key)} onClick={()=>setCollapsed(collapsed.includes(s.key)?collapsed.filter(k=>k!==s.key):[...collapsed,s.key])}>⌃</button></div>)}</div></div>})}
+    <svg className="process-graph-edges" width={width} height={height} aria-label={tr('Зв’язки зверху вниз')}>
+     <defs><marker id={marker} markerUnits="userSpaceOnUse" markerWidth="7" markerHeight="7" viewBox="0 0 7 7" refX="6" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 Z" fill="#36445e"/></marker></defs>
+     {edges.map(e=>line(e,`${e.from}-${e.to}`,true))}
+     {graph.startEdges.map(e=>line(e,`start-${e.to}`))}{graph.endEdges.map(e=>line(e,`end-${e.from}`))}
+    </svg>
+    {nodes.map(t=><button type="button" key={t.key} title={t.title} data-task-key={t.key} data-level={t.level} className={`process-graph-node ${selected===t.key?'selected':''} ${rewiring&&hover===t.key?(valid(t.key)?'rewire-valid':'rewire-invalid'):''}`} style={{left:t.x,top:t.y}}
+     onPointerEnter={()=>{if(rewiring)setHover(t.key)}} onFocus={()=>{if(rewiring)setHover(t.key)}} onClick={()=>{if(pan)return;if(rewiring)finish(t.key);else{onSelectEdge?.(null);onSelect(t.key)}}}>
+     <b>{t.number}　{t.icon||'▤'}　{t.title}</b>{!collapsed.includes(t.stageKey)&&<><small>{employees.find(e=>e.id===t.assigned_to_employee_id)?.name||roleName(t.responsible_role)}</small><small>◷ {durationText(t)}</small></>}
+    </button>)}
+    {editable&&<button ref={handle} type="button" className="process-edge-handle" aria-label={tr('Змінити наступне завдання')} aria-pressed={rewiring} style={{left:point(active.to).x+125-12,top:point(active.to).y-24}}
+     onPointerDown={e=>{if(e.button!==0)return;e.preventDefault();e.stopPropagation();e.currentTarget.setPointerCapture(e.pointerId);setRewiring(true);setHover(null);setMessage('')}}
+     onPointerMove={e=>{if(!rewiring)return;setHover(candidate(e.clientX,e.clientY))}}
+     onPointerUp={e=>{e.stopPropagation();if(rewiring)finish(candidate(e.clientX,e.clientY))}}
+     onPointerCancel={()=>{setRewiring(false);setHover(null)}}
+     onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setRewiring(true);setMessage('');ref.current.querySelector('[data-task-key]')?.focus()}}}>●</button>}
+    <div className="process-terminal end" style={{left:terminalX-85,top:height-35}}>{tr('■ Завершення')}</div>
+   </div></div>
+  </div>
+ </section>
 }

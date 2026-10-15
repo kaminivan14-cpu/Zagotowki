@@ -444,5 +444,7 @@ export const pl = {
   "Рекомендація застаріла. Оновіть розрахунок.": "Rekomendacja jest nieaktualna. Odśwież obliczenia.",
   "Графік уже змінено. Оновіть дані.": "Grafik został zmieniony. Odśwież dane.",
   "Не вдалося підтвердити дію. Перевірте з’єднання та повторіть спробу.": "Nie udało się potwierdzić operacji. Sprawdź połączenie i spróbuj ponownie.",
-  "Період повторення": "Okres powtarzania"
+  "Період повторення": "Okres powtarzania",
+  "Перетягніть кінець зв’язку на завдання. Enter — обрати картку, Escape — скасувати.": "Przeciągnij koniec połączenia na zadanie. Enter — wybierz kartę, Escape — anuluj.",
+  "Змінити наступне завдання": "Zmień następne zadanie"
 }

@@ -1,12 +1,12 @@
 import {test,expect} from '@playwright/test'
 import {readFile,mkdir} from 'node:fs/promises'
 const sample=JSON.parse(await readFile('tests/fixtures/new-menu-process.json','utf8'))
-async function setup(page,{admin=true,accessError=false,productionDepartment=false}={}){
+async function setup(page,{admin=true,accessError=false,productionDepartment=false,diagramDoc=sample}={}){
  let invited=false
  const calls=[],user={id:'20000000-0000-4000-8000-000000000001',email:'admin@example.invalid',aud:'authenticated',role:'authenticated'},caps=['tasks.access','tasks.create.self','worktime.self',...(admin?['tasks.admin','employees.manage','employees.read','dictionaries.manage','dictionaries.read','processes.read','processes.manage','processes.launch']:[])]
  const exp=Math.floor(Date.now()/1000)+3600,b=v=>Buffer.from(JSON.stringify(v)).toString('base64url')
  await page.addInitScript(s=>localStorage.setItem('sb-auth-tests-auth-token',JSON.stringify(s)),{access_token:`${b({alg:'HS256'})}.${b({sub:user.id,exp,role:'authenticated'})}.test`,refresh_token:'test',expires_at:exp,expires_in:3600,token_type:'bearer',user})
- let employees=[{id:1,name:'Іван',role:'owner',active:true,linked:true,department_id:1,location_id:1,capabilities:caps},{id:6,name:'Олена',role:'manager',active:true,linked:true,department_id:productionDepartment?2:1,location_id:1,capabilities:['tasks.access']}],categories=[{id:1,name:'Операційні',sort_order:1,active:true,parent_id:null}],versions=[{id:1,template_id:1,number:1,status:'draft',revision:1,definition:structuredClone(sample)}],templates=[{id:1,name:sample.name}],instances=[]
+ let employees=[{id:1,name:'Іван',role:'owner',active:true,linked:true,department_id:1,location_id:1,capabilities:caps},{id:6,name:'Олена',role:'manager',active:true,linked:true,department_id:productionDepartment?2:1,location_id:1,capabilities:['tasks.access']}],categories=[{id:1,name:'Операційні',sort_order:1,active:true,parent_id:null}],versions=[{id:1,template_id:1,number:1,status:'draft',revision:1,definition:structuredClone(diagramDoc)}],templates=[{id:1,name:diagramDoc.name}],instances=[]
  const departments=[{id:1,code:'marketing',name:'Маркетинг',active:true},{id:2,code:'production',name:'Виробничий',active:true}],locations=[{id:1,name:'Локал A'}]
  await page.routeWebSocket(/.*/,s=>s.close())
  await page.route('**/*',async r=>{
@@ -115,4 +115,34 @@ test('process defaults dropdown dismiss and editable edges share one model',asyn
 
 test('process language changes without replacing business data or draft',async({page})=>{
  await setup(page);await openProcesses(page);await createWizard(page,'Keep original title');const d=page.getByRole('dialog');await d.getByLabel('Мова',{exact:true}).selectOption('pl');await expect(d.getByRole('button',{name:'Dodaj etap',exact:false})).toBeVisible();await expect(d.getByRole('button',{name:/Diagram procesu/})).toBeVisible();await d.getByRole('button',{name:/Dane podstawowe/}).click();await expect(d.getByLabel('Nazwa procesu *',{exact:true})).toHaveValue('Keep original title');await expect(d.getByRole('combobox',{name:'Powtarzaj proces',exact:true})).toHaveValue('none');await d.getByLabel('Język',{exact:true}).selectOption('uk');await expect(d.getByLabel('Назва процесу *',{exact:true})).toHaveValue('Keep original title')
+})
+
+for(const width of [375,768,1440])test(`diagram target drag validates and synchronizes form ${width}`,async({page})=>{
+ await page.setViewportSize({width,height:1000});const calls=await setup(page);await openProcesses(page);await createWizard(page,'Rewire');const d=page.getByRole('dialog');await d.getByRole('button',{name:'Назад',exact:true}).click()
+ for(const [number,name] of [['1.2','Second'],['1.3','Third']]){await d.getByRole('button',{name:'＋ Додати завдання',exact:true}).click();await d.getByLabel(`Назва завдання ${number}`).fill(name)}
+ await d.getByRole('button',{name:'Далі →'}).click();await d.getByRole('button',{name:'Вмістити',exact:true}).click()
+ const edges=d.locator('.process-connector-hit'),nodes=d.locator('.process-graph-node');await expect(edges).toHaveCount(2)
+ // The large pointer hit area must never have a marker. The visible marker has fixed SVG units.
+ expect(await edges.evaluateAll(ns=>ns.every(n=>!n.hasAttribute('marker-end')))).toBe(true);await expect(d.locator('marker')).toHaveAttribute('markerUnits','userSpaceOnUse')
+ await edges.last().focus();await page.keyboard.press('Enter')
+ const handle=d.getByRole('button',{name:'Змінити наступне завдання',exact:true})
+ async function dropOn(target){const a=await handle.boundingBox(),b=await target.boundingBox();await page.mouse.move(a.x+a.width/2,a.y+a.height/2);await page.mouse.down();await page.mouse.move(b.x+b.width/2,b.y+b.height/2,{steps:12});await page.mouse.up()}
+ await dropOn(nodes.first());await expect(d.getByText('Залежності не можуть утворювати коло.',{exact:true})).toBeVisible();await expect(edges).toHaveCount(2)
+ await page.keyboard.press('Escape');await expect(handle).toHaveCount(0);await expect(d).toBeVisible()
+ await edges.first().focus();await page.keyboard.press('Enter');await dropOn(nodes.last());await expect(handle).toHaveCount(0)
+ await d.getByRole('button',{name:'Назад',exact:true}).click();await d.getByLabel('Залежності: Third').click();await expect(d.getByRole('checkbox',{name:'1.1 Перевірити'})).toBeChecked();await expect(d.getByRole('checkbox',{name:'1.2 Second'})).toBeChecked();await page.keyboard.press('Escape')
+ await d.getByRole('button',{name:'Зберегти як чернетку',exact:true}).click();await expect.poll(()=>calls.some(c=>c.args.p_action==='process_create')).toBe(true);const saved=calls.find(c=>c.args.p_action==='process_create').args.p_args.definition;expect(saved.stages[0].tasks[1].depends_on).toEqual([]);expect(saved.stages[0].tasks[2].depends_on).toEqual([saved.stages[0].tasks[1].key,saved.stages[0].tasks[0].key])
+ await d.getByRole('button',{name:'Далі →'}).click();await page.screenshot({path:`tmp/tasks-admin.local/rewire-${width}.png`,fullPage:true})
+})
+
+test('large saved diagram remains readable and supports zoom pan and keyboard cancellation',async({page})=>{
+ await page.setViewportSize({width:1440,height:1000})
+ const definition={...structuredClone(sample),stages:[{key:'large-stage',name:'Large graph',tasks:Array.from({length:40},(_,i)=>({key:`task-${i}`,title:`Task ${i+1} with a long descriptive title`,responsible_role:'owner',duration_minutes:30,depends_on:i===0?[]:[`task-${Math.floor((i-1)/3)}`]}))}]}
+ await setup(page,{diagramDoc:definition});await openProcesses(page);await page.locator('.process-summary details summary').click();await page.getByRole('button',{name:'Редагувати',exact:true}).click()
+ const d=page.getByRole('dialog');await d.getByRole('button',{name:/3 Діаграма процесу/}).click();await expect(d.locator('.process-graph-node')).toHaveCount(40)
+ await d.getByRole('button',{name:'Вмістити',exact:true}).click();await shot(page,'large-diagram-fit')
+ await d.getByRole('button',{name:'Автовирівнювання',exact:true}).click();await expect(d.locator('.process-graph-tools output')).toHaveText('100%')
+ const scroller=d.locator('.process-graph-scroll');await d.getByRole('button',{name:'Переміщення',exact:true}).click();const box=await scroller.boundingBox();await page.mouse.move(box.x+600,box.y+120);await page.mouse.down();await page.mouse.move(box.x+100,box.y+120,{steps:10});await page.mouse.up();expect(await scroller.evaluate(e=>e.scrollLeft)).toBeGreaterThan(0)
+ await d.getByRole('button',{name:'Вибір',exact:true}).click();await d.getByRole('button',{name:'Вмістити',exact:true}).click();const edges=d.locator('.process-connector-hit');await edges.first().focus();await page.keyboard.press('Enter');const handle=d.getByRole('button',{name:'Змінити наступне завдання',exact:true});await handle.focus();await page.keyboard.press('Enter');await page.keyboard.press('Escape');await expect(handle).toHaveCount(0);await expect(edges).toHaveCount(39)
+ await edges.first().focus();await page.keyboard.press('Enter');await d.locator('.process-terminal.start').click();await expect(handle).toHaveCount(0);await expect(d).toBeVisible()
 })
