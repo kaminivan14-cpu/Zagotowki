@@ -118,7 +118,7 @@ for (const viewport of [{width:1024,height:768},{width:768,height:1024},{width:1
   await expect(page.getByRole('heading',{name:'Pracownicy',exact:true})).toBeVisible()
   await page.getByRole('button',{name:'← Powrót',exact:true}).click()
   await page.getByRole('button',{name:'← Moduły',exact:true}).click()
-  await expect(page.getByRole('heading',{name:'Co robisz?'})).toBeVisible()
+  await expect(page.getByRole('heading',{name:'Wybierz moduł',exact:true})).toBeVisible()
  })
 }
 
