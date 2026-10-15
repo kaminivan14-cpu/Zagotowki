@@ -129,7 +129,10 @@ for(const width of [375,768,1440])test(`diagram target drag validates and synchr
  async function dropOn(target){const a=await handle.boundingBox(),b=await target.boundingBox();await page.mouse.move(a.x+a.width/2,a.y+a.height/2);await page.mouse.down();await page.mouse.move(b.x+b.width/2,b.y+b.height/2,{steps:12});await page.mouse.up()}
  await dropOn(nodes.first());await expect(d.getByText('Залежності не можуть утворювати коло.',{exact:true})).toBeVisible();await expect(edges).toHaveCount(2)
  await page.keyboard.press('Escape');await expect(handle).toHaveCount(0);await expect(d).toBeVisible()
- await edges.first().focus();await page.keyboard.press('Enter');await dropOn(nodes.last());await expect(handle).toHaveCount(0)
+ await expect(d.locator('.process-diagram').getByRole('button',{name:'＋ Додати завдання',exact:true})).toHaveCount(0)
+ // Drag the black arrow itself, with no prior selection or handle click.
+ const arrow=await edges.first().evaluate(p=>{const q=p.getPointAtLength(p.getTotalLength()-6),m=p.getScreenCTM();return {x:q.x*m.a+q.y*m.c+m.e,y:q.x*m.b+q.y*m.d+m.f}})
+ await page.mouse.move(arrow.x,arrow.y);await page.mouse.down();await expect(handle).toBeVisible();const target=await nodes.last().boundingBox();await page.mouse.move(target.x+target.width/2,target.y+target.height/2,{steps:12});await page.mouse.up();await expect(handle).toHaveCount(0)
  await d.getByRole('button',{name:'Назад',exact:true}).click();await d.getByLabel('Залежності: Third').click();await expect(d.getByRole('checkbox',{name:'1.1 Перевірити'})).toBeChecked();await expect(d.getByRole('checkbox',{name:'1.2 Second'})).toBeChecked();await page.keyboard.press('Escape')
  await d.getByRole('button',{name:'Зберегти як чернетку',exact:true}).click();await expect.poll(()=>calls.some(c=>c.args.p_action==='process_create')).toBe(true);const saved=calls.find(c=>c.args.p_action==='process_create').args.p_args.definition;expect(saved.stages[0].tasks[1].depends_on).toEqual([]);expect(saved.stages[0].tasks[2].depends_on).toEqual([saved.stages[0].tasks[1].key,saved.stages[0].tasks[0].key])
  await d.getByRole('button',{name:'Далі →'}).click();await page.screenshot({path:`tmp/tasks-admin.local/rewire-${width}.png`,fullPage:true})
