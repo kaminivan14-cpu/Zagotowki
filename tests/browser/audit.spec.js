@@ -49,6 +49,7 @@ async function setup(page){
    else if(name==='audit_read')body=(await db.query('SELECT public.audit_read($1,$2::uuid,$3) AS value',[args.p_kind,args.p_id,args.p_status])).rows[0].value
    else if(name==='audit_command'){
     if(args.p_action==='save'&&state.failSave)return route.fulfill({status:503,json:{message:'Test connection failure'}})
+    if(args.p_action==='save'&&state.saveGate)await state.saveGate
     body=await command(args.p_action,args.p_args,args.p_operation)
     if(args.p_action==='start'&&state.loseStart){state.loseStart=false;return route.fulfill({status:503,json:{message:'Lost response'}})}
    }else if(name==='audit-photos'){
@@ -118,7 +119,16 @@ test('photo upload failure blocks completion, retry persists, reload shows thumb
  f.state.failUpload=false;await page.getByRole('button',{name:'Ponów operację'}).click();await expect(page.getByRole('button',{name:'Powiększ zdjęcie'})).toBeVisible();await saved(page)
  const stored=(await f.db.query("SELECT public.audit_read('history') AS value")).rows[0].value[0];const detail=(await f.db.query("SELECT public.audit_read('detail',$1) AS value",[stored.id])).rows[0].value;expect(detail.photos[0]).toMatchObject({width:1920,height:1280,mime:'image/jpeg',state:'ready'});expect(detail.photos[0].bytes).toBeLessThan(file.buffer.length)
  await page.getByRole('button',{name:'Zapisz i wyjdź'}).click();await page.reload();await page.getByRole('button',{name:'Historia audytów',exact:false}).click();await page.getByRole('button',{name:'Kontynuuj audyt'}).click();await expect(page.getByRole('button',{name:'Powiększ zdjęcie'})).toBeVisible()
- await page.getByRole('button',{name:'Powiększ zdjęcie'}).click();await expect(page.getByRole('dialog')).toBeVisible();await page.keyboard.press('Escape')
+ await page.getByRole('button',{name:'Powiększ zdjęcie'}).click();await expect(page.getByRole('dialog')).toBeVisible()
+ const full=page.getByAltText('Powiększone zdjęcie do pytania')
+ await expect(full).toBeVisible()
+ for(const viewport of [{width:390,height:844},{width:1280,height:800}]){
+  await page.setViewportSize(viewport)
+  const dimensions=await full.evaluate(img=>({width:img.getBoundingClientRect().width,height:img.getBoundingClientRect().height,fit:getComputedStyle(img).objectFit,natural:img.naturalWidth}))
+  expect(dimensions.width).toBeGreaterThan(200);expect(dimensions.height).toBeGreaterThan(80);expect(dimensions.fit).toBe('contain');expect(dimensions.natural).toBe(1920)
+ }
+ await page.keyboard.press('Escape')
+ await expect(page.getByRole('button',{name:'Powiększ zdjęcie'})).toBeFocused()
  await page.getByRole('button',{name:'Usuń audyt w trakcie'}).click();await page.getByRole('button',{name:'Tak, usuń',exact:true}).click();await expect(page.getByText('Brak audytów w tym widoku.')).toBeVisible()
  expect(f.state.files.size).toBe(0)
  }finally{await f.close()}
@@ -172,4 +182,31 @@ test('pending upload can be confirmed after reloading audit without choosing the
   await expect(page.getByRole('button',{name:'Powiększ zdjęcie'})).toBeVisible();await saved(page)
   expect(f.state.files.size).toBe(1)
  } finally {await f.close()}
+})
+
+
+test('background comment save retains focus and saves text typed during an earlier request',async({page})=>{
+ const f=await setup(page);let release
+ try {
+  await start(page)
+  const comment=page.getByLabel('Komentarz (opcjonalnie)').first()
+  f.state.saveGate=new Promise(resolve=>{release=resolve})
+  await comment.fill('Pierwsza część')
+  await expect.poll(()=>f.state.calls.filter(c=>c.args.p_action==='save').length).toBe(1)
+  await expect(comment).toBeFocused();await expect(comment).toBeEnabled()
+  await page.keyboard.type(' i druga część')
+  await expect(comment).toHaveValue('Pierwsza część i druga część')
+  f.state.saveGate=null;release()
+  await saved(page)
+  await expect(comment).toBeFocused()
+  await expect(comment).toHaveValue('Pierwsza część i druga część')
+  const saves=f.state.calls.filter(c=>c.args.p_action==='save')
+  expect(saves).toHaveLength(2)
+  expect(saves[0].args.p_args.answers[0].comment).toBe('Pierwsza część')
+  expect(saves[1].args.p_args.answers[0].comment).toBe('Pierwsza część i druga część')
+  expect(saves[1].args.p_args.version).toBe(saves[0].args.p_args.version+1)
+  await page.getByRole('button',{name:'Zapisz i wyjdź'}).click()
+  await page.getByRole('button',{name:'Kontynuuj audyt'}).click()
+  await expect(comment).toHaveValue('Pierwsza część i druga część')
+ } finally {release?.();await f.close()}
 })

@@ -11,7 +11,7 @@ export default function Photo({ photo, onDelete, onRetry, onCheck, busy }) {
   return()=>{alive=false;clearInterval(timer)}
  },[photo.id,photo.state,revision])
  return <div className="audit-photo">
-  {photo.state==='pending'?<p>Zapis zdjęcia niepotwierdzony — sprawdź zapis, ponów przesyłanie lub usuń.</p>:url&&<button onClick={()=>setPreview(true)} aria-label="Powiększ zdjęcie"><img src={url} alt="Zdjęcie do pytania" onError={()=>setError('Nie udało się wyświetlić zdjęcia.')}/></button>}
+  {photo.state==='pending'?<p>Zapis zdjęcia niepotwierdzony — sprawdź zapis, ponów przesyłanie lub usuń.</p>:url&&<button onClick={()=>setPreview(true)} aria-label="Powiększ zdjęcie"><img className="audit-thumbnail" src={url} alt="Zdjęcie do pytania" onError={()=>setError('Nie udało się wyświetlić zdjęcia.')}/></button>}
   {error&&<><p>{error}</p><button onClick={()=>setRevision(x=>x+1)}>Ponów podgląd</button></>}
   {onCheck&&photo.state==='pending'&&<button disabled={busy} onClick={onCheck}>Sprawdź zapis zdjęcia</button>}
   {onRetry&&photo.state==='pending'&&<label className="audit-file">Ponów przesyłanie<input disabled={busy} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" onChange={e=>{const f=e.target.files[0];e.target.value='';if(f)onRetry(f)}}/></label>}

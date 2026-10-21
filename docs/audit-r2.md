@@ -69,3 +69,11 @@ Wynik: **155/155** testów Node, **7/7** testów Playwright AUDYT, lint bez bł�
 - Dekoder HEIC zwiększa oddzielny pakiet o ok. 751 kB gzip, pobierany przy pierwszej konwersji HEIC. Informacje o licencji i źródle: `/third-party/heic-to/NOTICE.txt`.
 
 Dokumentacja usług: https://developers.cloudflare.com/r2/api/s3/presigned-urls/ oraz https://developers.cloudflare.com/r2/api/s3/api/.
+
+## Poprawki formularza, 21.10.2026
+
+Automatyczny zapis komentarzy nie blokuje pola ani nie odbiera fokusu. Odpowiedź serwera potwierdza zapisany stan; tekst dopisany podczas żądania pozostaje lokalnie i trafia do kolejnego zapisu z nową wersją rekordu. Zakończenie i inne operacje nadal respektują blokady zapisu oraz błędy.
+
+Miniatura pokazuje cały kadr. Powiększenie ma oddzielny styl i dopasowuje całe zdjęcie do okna, bez odziedziczonego limitu 80 × 80 px.
+
+Weryfikacja: 8/8 testów Playwright AUDYT, w tym pisanie podczas wstrzymanego zapisu i odczyt po ponownym otwarciu oraz rozmiar podglądu na telefonie i komputerze. Lint i build UAT poprawne; wcześniejsze ostrzeżenie o wielkości pakietów pozostaje. Zmiany lokalne, bez wdrożenia.

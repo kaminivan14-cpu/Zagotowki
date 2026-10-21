@@ -7,20 +7,29 @@ import Dialog from './Dialog'
 import Photo from './Photo'
 
 export default function AuditForm({ initial, employee, locations, onExit, registerGuard }) {
- const [audit,setAudit]=useState(initial),[dirty,setDirty]=useState(false),[modal,setModal]=useState(null),[photoError,setPhotoError]=useState(''),[photoStage,setPhotoStage]=useState('')
- const current=useRef(initial),changed=useRef(false),op=useOperation()
+ const [audit,setAudit]=useState(initial),[dirty,setDirty]=useState(false),[modal,setModal]=useState(null),[photoError,setPhotoError]=useState(''),[photoStage,setPhotoStage]=useState(''),[backgroundSaving,setBackgroundSaving]=useState(false)
+ const current=useRef(initial),changed=useRef(false),revision=useRef(0),op=useOperation()
  const canEdit=editable(audit,employee), blocked=op.busy||!!op.error
  const set=(value)=>{current.current=value;setAudit(value)}
- const update=(patch)=>{set({...current.current,...patch});changed.current=true;setDirty(true)}
+ const update=(patch)=>{revision.current++;set({...current.current,...patch});changed.current=true;setDirty(true)}
  const unsaved=()=>changed.current||op.locked()||current.current.photos.some(p=>p.state==='pending')||!!op.error
  const captureSave=()=>{
-  const a=current.current, needed=changed.current
+  const a=current.current, needed=changed.current, savedRevision=revision.current
   return async call=>{
   if(!needed)return
   const result=await call('save',{id:a.id,version:a.version,location_id:a.location_id,answers:a.answers})
-  set(result);changed.current=false;setDirty(false)
+  // A response acknowledges its snapshot, never text typed while it was in flight.
+  const newer=revision.current!==savedRevision
+  set(newer?{...result,answers:current.current.answers,location_id:current.current.location_id,location_name:current.current.location_name}:result)
+  changed.current=newer;setDirty(newer)
  }}
- const flush=()=>op.run(captureSave())
+ const flush=()=>{
+  const save=captureSave()
+  return op.run(async call=>{
+   setBackgroundSaving(true)
+   try { await save(call) } finally { setBackgroundSaving(false) }
+  })
+ }
  useEffect(()=>{
   registerGuard(()=>op.locked()?'busy':unsaved())
   const leave=e=>{if(unsaved()){e.preventDefault();e.returnValue=''}}
@@ -98,7 +107,7 @@ export default function AuditForm({ initial, employee, locations, onExit, regist
   {audit.questions.map((q,i)=><section className="audit-card" key={i} aria-label={`Pytanie ${i+1}`}>
    <small>Pytanie {i+1} / {audit.questions.length} · {audit.answers[i].answer?'Odpowiedziano':'Wymagane'}</small><h3>{q}</h3>
    {canEdit?<div className="audit-answers">{Object.entries(answerLabels).map(([v,label])=><button key={v} disabled={blocked} aria-pressed={audit.answers[i].answer===v} onClick={()=>update({answers:audit.answers.map((x,j)=>j===i?{...x,answer:x.answer===v?null:v}:x)})}>{audit.answers[i].answer===v?'✓ ':''}{label}</button>)}</div>:<p>Odpowiedź: <strong>{answerLabels[audit.answers[i].answer]||'Brak'}</strong></p>}
-   {canEdit?<label>Komentarz (opcjonalnie)<textarea disabled={blocked} maxLength={200} value={audit.answers[i].comment} onChange={e=>update({answers:audit.answers.map((x,j)=>j===i?{...x,comment:e.target.value}:x)})}/><small>{audit.answers[i].comment.length}/200</small></label>:audit.answers[i].comment&&<p>Komentarz: {audit.answers[i].comment}</p>}
+   {canEdit?<label>Komentarz (opcjonalnie)<textarea disabled={!!op.error||(op.busy&&!backgroundSaving)} maxLength={200} value={audit.answers[i].comment} onChange={e=>update({answers:audit.answers.map((x,j)=>j===i?{...x,comment:e.target.value}:x)})}/><small>{audit.answers[i].comment.length}/200</small></label>:audit.answers[i].comment&&<p>Komentarz: {audit.answers[i].comment}</p>}
    <p>Zdjęcia: {audit.photos.filter(p=>p.question===i).length}/10</p>
    {canEdit&&<><p className="audit-hint">JPG, PNG, WebP, HEIC/HEIF, do 10 MB. Przed wysłaniem zmniejszamy zdjęcia do 1920 px i zapisujemy jako JPG. Oryginały nie są przechowywane.</p><div className="audit-actions">
     <label className="audit-file">Galeria<input disabled={blocked} type="file" multiple accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" onChange={e=>{const files=Array.from(e.target.files);e.target.value='';if(files.length)addPhotos(files,i)}}/></label>
