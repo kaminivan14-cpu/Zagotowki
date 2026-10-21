@@ -155,3 +155,10 @@
 .order-column .order-prep.estimated { color:#586660; }
 
 .order-external-comment { white-space: pre-wrap; overflow-wrap: anywhere; font-weight: 600; }
+
+.order-delete-dialog { width:min(36rem,calc(100vw - 2rem)); max-height:90dvh; overflow:auto; border:1px solid #94a3b8; border-radius:12px; padding:1.5rem; }
+.order-delete-dialog::backdrop { background:rgb(15 23 42 / 55%); }
+.order-delete-dialog dt { font-weight:600; margin-top:.7rem; }
+.order-delete-dialog dd { margin-left:0; overflow-wrap:anywhere; }
+.order-delete-dialog input { display:block; width:100%; box-sizing:border-box; margin:.5rem 0; }
+.order-delete-actions { display:flex; flex-wrap:wrap; gap:.75rem; margin-top:1rem; }

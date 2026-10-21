@@ -164,3 +164,12 @@ pracowników oraz realny test sesji i izolacji lokali. Szczegóły i bramki bezp
 - Nowa migracja `202610130001_audit.sql` oraz obowiązkowy osobny krok `supabase/storage/audit-photo-policies.sql`. Istniejące konta i lokale, bez nowych ról.
 - Testy: 153 jednostkowe/bazy, 5 Playwright AUDYT, 74 regresyjne przeglądarkowe — pozytywne. Kompilacja UAT i lint pozytywne; bez hosted Auth/Storage i fizycznego aparatu.
 - Instrukcja uruchomienia, szczegóły bezpieczeństwa, limity zdjęć i zakres pozostałej akceptacji UAT: `docs/audit-mvp.md`.
+
+
+## 15. Orders Delete — checkpoint 2026-10-21
+
+- Production `ssheqxdgsmndiutthxvd`: additive `upgrades/production/09_orders_delete.sql` committed after encrypted backup, full isolated restore and catalog/count verification (65 tables).
+- Soft delete RPCs `order_delete` / `orders_delete_bulk`, capability `orders.delete` restricted to administrator/manager plus location enforcement; audit/history retained. Pending callbacks cancelled, outstanding leases reject deletion. Archived work does not strand Orders/Worktime shifts.
+- Release `orders_delete_v1`; Production synthetic smoke PASS, fixture writes rolled back, customer Orders/callback data unchanged.
+- Frontend ready on `codex/orders-delete-production` in isolated local checkout. Push/PR awaiting explicit operator approval required by automatic approval review; no new frontend deployment yet.
+- Runbook and verification: `docs/orders-delete-production.md`.

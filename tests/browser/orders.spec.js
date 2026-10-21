@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test'
 const uid=n=>`10000000-0000-4000-8000-${String(n).padStart(12,'0')}`
-const caps={administrator:['orders.access','production.access','employees.manage','orders.dispatch','orders.work','orders.cut','orders.issue','orders.rates.manage','orders.finance','orders.history.local','orders.test.generate'],manager:['orders.access','production.access','orders.dispatch','orders.test.generate','orders.history.local'], 'sushi-master':['orders.access','production.access','orders.work','orders.history.own'],'su-chef':['orders.access','production.access','orders.cut','orders.issue','orders.history.local'],'shift-manager':['orders.access','production.access','orders.cut','orders.issue','orders.history.local'],crafter:['production.access']}
+const caps={administrator:['orders.delete','orders.access','production.access','employees.manage','orders.dispatch','orders.work','orders.cut','orders.issue','orders.rates.manage','orders.finance','orders.history.local','orders.test.generate'],manager:['orders.delete','orders.access','production.access','orders.dispatch','orders.test.generate','orders.history.local'], 'sushi-master':['orders.access','production.access','orders.work','orders.history.own'],'su-chef':['orders.access','production.access','orders.cut','orders.issue','orders.history.local'],'shift-manager':['orders.access','production.access','orders.cut','orders.issue','orders.history.local'],crafter:['production.access']}
 const now=()=>new Date().toISOString()
 function state(){return {orders:[],shifts:[],calls:[],operations:new Map(),serial:1}}
 async function setup(page,s,id,role,location=1){
  // These legacy flows assert Polish labels; do not depend on the application's default locale.
- await page.addInitScript(() => localStorage.setItem('zagotowki.locale', 'pl'))
+ await page.addInitScript(locale => localStorage.setItem('zagotowki.locale', locale),s.locale || 'pl')
  const user={id:uid(id),aud:'authenticated',role:'authenticated',email:'synthetic@example.invalid'}
  const b64=v=>Buffer.from(JSON.stringify(v)).toString('base64url'),exp=Math.floor(Date.now()/1000)+3600
  const session={access_token:`${b64({alg:'HS256'})}.${b64({sub:user.id,exp,role:'authenticated'})}.synthetic`,refresh_token:'synthetic-refresh',expires_at:exp,expires_in:3600,token_type:'bearer',user}
@@ -25,6 +25,16 @@ async function setup(page,s,id,role,location=1){
   else if(name==='orders_board')data=s.orders.filter(x=>x.location_id===args.p_location)
   else if(name==='orders_shift_summary')data={shift_id:args.p_shift,started_at:now(),ended_at:now(),products:[{name:'Philadelphia Salmon',quantity:6}],total_units:6,total_amount_minor:1200}
   else if(name==='orders_shift_history')data=s.orders.flatMap(o=>o.items.flatMap(i=>i.assignments.flatMap(w=>w.cuttings.filter(c=>c.issued_at&&c.employee_id===id).map(c=>({order:o.display_number,product:i.name,quantity:c.quantity,maker:w.employee_name,cutter:c.employee_name,issuer:c.employee_name,claimed_at:w.claimed_at,ready_at:w.ready_for_cutting_at,cutting_started_at:c.started_at,cutting_completed_at:c.completed_at,issued_at:c.issued_at})))))
+  else if(name==='order_delete' || name==='orders_delete_bulk'){
+   s.calls.push({rpc:name,...args})
+   if(s.deleteError)return route.fulfill({status:400,contentType:'application/json',body:JSON.stringify({code:'P0001',message:s.deleteError})})
+   if(s.operations.has(args.p_operation))data=s.operations.get(args.p_operation)
+   else {
+    const ids=name==='order_delete'?[args.p_order_id]:args.p_order_ids
+    const removed=s.orders.filter(o=>o.location_id===args.p_location_id && ids.includes(o.id))
+    data={success:true,deleted_count:removed.length};s.orders=s.orders.filter(o=>!removed.includes(o));s.operations.set(args.p_operation,data)
+   }
+  }
   else if(name==='orders_command'){
    s.calls.push(args);const {p_action:a,p_args:v,p_operation:op}=args
    if(s.operations.has(op))data=s.operations.get(op)
@@ -367,4 +377,38 @@ for(const width of [375,768,1440])test(`external title and comments in both Kitc
   await expect(card.locator('b')).toHaveCount(0)
   await expect(card.getByText('SB-123456',{exact:true})).toBeVisible()
  }
+})
+
+const deleteOrder=(id,location=1,lifecycle='new')=>({id,location_id:location,display_number:`DELETE-${id}`,integration_sbid:`SB-DELETE-${id}`,status:'TO_DO',lifecycle,received_at:now(),items:[{id:id*10,name:'Synthetic',quantity:1,available:1,issued:0,assignments:[]}]})
+for(const role of ['administrator','manager'])test(`Orders delete single: ${role} confirms metadata and refreshes`,async({page})=>{
+ const s=state();s.orders=[deleteOrder(900)];await setup(page,s,role==='manager'?2:1,role);await enter(page)
+ await page.locator('.order-column summary').click();await page.getByRole('button',{name:'Usuń zamówienie',exact:true}).click()
+ const modal=page.getByRole('dialog');await expect(modal).toContainText('900');await expect(modal).toContainText('SB-DELETE-900');await expect(modal).toContainText('Lokal 1')
+ expect(s.calls).toHaveLength(0)
+ await modal.getByRole('button',{name:'Potwierdź usunięcie'}).click();await expect(modal).toHaveCount(0);await expect(page.locator('.order-column')).toHaveCount(0)
+ expect(s.calls[0]).toMatchObject({rpc:'order_delete',p_location_id:1,p_order_id:900});await expect(page.getByRole('status')).toHaveText('Usunięto zamówienia: 1.')
+})
+test('Orders bulk requires typed confirmation and preserves filtered/other/new arrivals',async({page})=>{
+ const s=state();s.orders=[deleteOrder(901),deleteOrder(902,1,'done'),deleteOrder(903,2)];await setup(page,s,2,'manager');await enter(page)
+ await page.getByRole('button',{name:/^Oczekujące/}).click();await page.locator('.module-header summary').filter({hasText:'…'}).click();await page.getByRole('button',{name:'Usuń wszystkie zamówienia',exact:true}).click()
+ const modal=page.getByRole('dialog'),confirm=modal.getByRole('button',{name:'Potwierdź usunięcie'})
+ await expect(confirm).toBeDisabled();await expect(modal).toContainText('Oczekujące');await expect(modal).toContainText('Lokal 1')
+ s.orders.push(deleteOrder(904));await modal.getByRole('textbox').fill('usun');await expect(confirm).toBeDisabled();await modal.getByRole('textbox').fill('USUŃ');await confirm.click()
+ await expect(modal).toHaveCount(0);expect(s.calls[0]).toMatchObject({rpc:'orders_delete_bulk',p_location_id:1,p_order_ids:[901]});expect(s.orders.map(o=>o.id)).toEqual([902,903,904])
+})
+test('Orders delete errors remain visible and cancellation does not submit',async({page})=>{
+ const s=state();s.orders=[deleteOrder(905)];s.deleteError='CALLBACK_IN_FLIGHT';await setup(page,s,2,'manager');await enter(page)
+ await page.locator('.order-column summary').click();await page.getByRole('button',{name:'Usuń zamówienie',exact:true}).click()
+ const modal=page.getByRole('dialog');await modal.getByRole('button',{name:'Anuluj'}).click();expect(s.calls).toHaveLength(0)
+ await page.locator('.order-column summary').click();await page.getByRole('button',{name:'Usuń zamówienie',exact:true}).click();await modal.getByRole('button',{name:'Potwierdź usunięcie'}).click()
+ await expect(modal.getByRole('alert')).toContainText('w trakcie wysyłki');await expect(page.locator('.order-column')).toHaveCount(1)
+ s.deleteError=null;await modal.getByRole('button',{name:'Potwierdź usunięcie'}).click();await expect(modal).toHaveCount(0)
+})
+test('Orders deletion labels use Ukrainian locale',async({page})=>{
+ const s=state();s.locale='uk';s.orders=[deleteOrder(906)];await setup(page,s,2,'manager');await enter(page)
+ await page.locator('.order-column summary').click();await page.getByRole('button',{name:'Видалити замовлення',exact:true}).click();await expect(page.getByRole('dialog')).toContainText('Ви впевнені')
+})
+test('Orders deletion is hidden from other roles even with accidental capability',async({page})=>{
+ const s=state();s.orders=[deleteOrder(907)];caps['su-chef'].push('orders.delete')
+ try{await setup(page,s,3,'su-chef');await enter(page);await expect(page.locator('.order-column')).toHaveCount(1);await expect(page.locator('.order-column summary')).toHaveCount(0);await expect(page.getByRole('button',{name:/Usuń/})).toHaveCount(0)}finally{caps['su-chef']=caps['su-chef'].filter(x=>x!=='orders.delete')}
 })
