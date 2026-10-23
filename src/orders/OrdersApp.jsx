@@ -1,5 +1,9 @@
 import { generatorAllowed, runtimeEnvironment } from './environment'
-import ModuleHeader from '../ui/ModuleHeader'
+import ModuleHeader, { Menu } from '../ui/ModuleHeader'
+import OrderDeleteDialog from './OrderDeleteDialog'
+import { canDeleteOrders, deleteLabels } from './delete'
+import { useLocale } from '../i18n/useLocale'
+import { productionTasks } from './production'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../supabase'
 import ProductionMode from './ProductionMode'
@@ -13,6 +17,9 @@ import EmployeesScreen from '../auth/EmployeesScreen'
 import { pendingOperation, operationKey, orderError, formatTime, money, rateText, parseRate } from './client'
 
 export default function OrdersApp({ employee, capabilities, onSignOut, onModules, onWorktime }) {
+  const locale=useLocale(), deleteText=deleteLabels[locale]
+  const [deleteTarget,setDeleteTarget]=useState(null)
+  const deleteAllowed=canDeleteOrders(employee,capabilities)
   // Keep both views mounted after first use so switching preserves in-progress form state.
   const [urgencyFilter,setUrgencyFilter]=useState('all')
   const [mode,setMode]=useState('general'), [operatorMounted,setOperatorMounted]=useState(false)
@@ -67,21 +74,31 @@ export default function OrdersApp({ employee, capabilities, onSignOut, onModules
     locked.current = true; setBusy(true); setMessage('')
     try {
       const op = pendingOperation(sessionStorage, employee.id, action, args); setPending(op)
-      const { error } = await supabase.rpc('orders_command', { p_action: action, p_args: args, p_operation: op.id })
+      const deleting=['delete_single','delete_bulk'].includes(action)
+      const { data, error } = deleting
+        ? await supabase.rpc(action==='delete_single'?'order_delete':'orders_delete_bulk', { ...args, p_operation:op.id })
+        : await supabase.rpc('orders_command', { p_action: action, p_args: args, p_operation: op.id })
       if (error) {
         // A structured PostgreSQL rejection rolled back the whole transaction. Network errors remain retryable with the same UUID.
         if (['P0001', '42501', '23514', '22P02', '22003'].includes(error.code)) { sessionStorage.removeItem(operationKey(employee.id)); setPending(null) }
         throw error
       }
       sessionStorage.removeItem(operationKey(employee.id)); if (!alive.current) return
-      setPending(null); setSelection({}); setMessage('Zapisano.'); await load(); return true
-    } catch (error) { console.error('orders-command', { action, code: /^[A-Z0-9]{5}$/.test(error?.code) ? error.code : 'UNCONFIRMED' }); if (alive.current) setMessage(orderError(error)) }
+      setPending(null); setSelection({}); setMessage(deleting?deleteText.success(data.deleted_count):'Zapisano.'); if(deleting)setDeleteTarget(null); await load(); return true
+    } catch (error) { console.error('orders-command', { action, code: /^[A-Z0-9]{5}$/.test(error?.code) ? error.code : 'UNCONFIRMED' }); if (alive.current) setMessage(action.startsWith('delete_') ? (String(error?.message).includes('CALLBACK_IN_FLIGHT')?deleteText.inFlight:deleteText.error) : orderError(error)) }
     finally { locked.current = false; if (alive.current) setBusy(false) }
   }
   const action = (label, name, args, disabled = false) => <button disabled={busy || disabled} onClick={event => { if (event.detail < 2) void run(name, args) }}>{label}</button>
   const isMine = w => !w.released_at && w.employee_id === employee.id && !w.ready_for_cutting_at
   const rankedOrders = sortedOrders(orders,now,urgencyFilter)
   const visibleOrders = rankedOrders.filter(o => (tab !== 'new' || lifecycle(o) === 'new') && (tab !== 'board' || ['partial','in_progress'].includes(lifecycle(o))) && (tab !== 'done' || lifecycle(o) === 'done') && (tab !== 'mine' || o.items.some(i => i.assignments.some(isMine))))
+  const tasks=operatorActive?productionTasks(rankedOrders,employee.id,capabilities):null
+  const deleteScope=operatorActive?rankedOrders.filter(o=>[...tasks.mine,...tasks.available].some(t=>t.orderId===o.id)):visibleOrders
+  const scopeLabel=`${operatorActive?L.operationalMode:({all:L.all,new:L.waiting,board:L.working,done:L.done,mine:'Moje zadania'}[tab] || tab)} · ${L.urgencyFilters[urgencyFilter]}`
+  function openDelete(order) {
+    setMessage('')
+    setDeleteTarget({bulk:!order,orders:order?[order]:deleteScope,locationId:Number(location),locationName:locations.find(l=>String(l.id)===String(location))?.name || String(location),scope:scopeLabel})
+  }
   async function readHistory(id, type) {
     const n = ++historyRequest.current
     setSummary(null); setHistory(null)
@@ -95,6 +112,7 @@ export default function OrdersApp({ employee, capabilities, onSignOut, onModules
   if (employeesOpen && has('employees.manage')) return <EmployeesScreen pracownik={employee} lokale={locations} onPowrot={() => setEmployeesOpen(false)} />
   return <div className="app orders-app"><ModuleHeader title="Zamówienia" employee={employee} disabled={busy} onModules={onModules} onSignOut={onSignOut} onWorktime={has('worktime.access')?onWorktime:undefined} onEmployees={has('employees.manage')?()=>setEmployeesOpen(true):undefined} location={<label>Lokal<select value={location} disabled={busy} onChange={e => { ++historyRequest.current; setSelection({}); setOrders([]); setNotices([]); setNoticeError(false); setSummary(null); setHistory(null); setEvents(null); setLocation(e.target.value) }}><option value="">Wybierz lokal</option>{locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}</select></label>}>
       {operatorAllowed && <div className="orders-mode-switch" role="group" aria-label={L.workMode}>{[['general',L.generalMode],['operational',L.operationalMode]].map(([key,label])=><button key={key} aria-pressed={operatorActive ? key==='operational' : key==='general'} onClick={()=>{setMode(key);if(key==='operational')setOperatorMounted(true)}}>{label}</button>)}</div>}
+      {deleteAllowed && (operatorActive || ['all','new','board','done','mine'].includes(tab)) && <Menu label="…" disabled={busy || Boolean(pending) || !location || !deleteScope.length} items={[{label:deleteText.bulk,action:()=>openDelete(),danger:true}]}/>}
     </ModuleHeader>
     <nav className="urgency-filters" aria-label={L.urgencyFilter}>{Object.entries(L.urgencyFilters).map(([key,label])=><button key={key} aria-pressed={urgencyFilter===key} onClick={()=>setUrgencyFilter(key)}>{label}</button>)}</nav>
     <div hidden={operatorActive}>
@@ -116,7 +134,7 @@ export default function OrdersApp({ employee, capabilities, onSignOut, onModules
       {history && <article><h2>Historia zmiany {history.shiftId}</h2>{history.rows.length === 0 && <p>Brak wydanych pozycji w tej zmianie.</p>}{history.rows.map((h,n) => <div key={n}><h3>{h.order} · {h.product} ×{h.quantity}</h3><p>Wykonał: {h.maker}; kroił: {h.cutter}; wydał: {h.issuer}</p><p>Przejęte: {formatTime(h.claimed_at)} · Gotowe: {formatTime(h.ready_at)} · Krojenie: {formatTime(h.cutting_started_at)} → {formatTime(h.cutting_completed_at)} · Wydane: {formatTime(h.issued_at)}</p></div>)}</article>}</section>}
     {['board','all','new','mine','done'].includes(tab) && <>
       {!visibleOrders.length && <p className="empty-state">{L.empty}</p>}
-      <OrdersBoard focusOrder={focusOrder} orders={visibleOrders} employee={employee} capabilities={capabilities} shift={shift} disabled={busy || Boolean(pending)} selection={selection} setSelection={setSelection} run={run} now={now} onHistory={tab==='all' ? async o => {
+      <OrdersBoard onDelete={deleteAllowed?openDelete:null} focusOrder={focusOrder} orders={visibleOrders} employee={employee} capabilities={capabilities} shift={shift} disabled={busy || Boolean(pending)} selection={selection} setSelection={setSelection} run={run} now={now} onHistory={tab==='all' ? async o => {
         const n=++historyRequest.current;setEvents(null)
         try { const {data,error}=await supabase.rpc('orders_history',{p_order:o.id});if(error)throw error;if(alive.current && n===historyRequest.current)setEvents({number:o.display_number,rows:data||[]}) }
         catch { if(alive.current && n===historyRequest.current)setMessage('Nie udało się pobrać historii zamówienia.') }
@@ -124,7 +142,8 @@ export default function OrdersApp({ employee, capabilities, onSignOut, onModules
     </>}
     {tab === 'all' && events && <section><h2>Historia {events.number}</h2>{events.rows.length === 0 && <p>Brak zdarzeń.</p>}{events.rows.map((e,n)=><p key={n}>{formatTime(e.at)} · {e.event} · {e.actor}</p>)}</section>}
     </div>
-    {operatorAllowed && operatorMounted && <div hidden={!operatorActive}><ProductionMode now={now} employee={employee} capabilities={capabilities} orders={rankedOrders} shift={shift} location={location} busy={busy} pending={pending} message={message} run={run}/></div>}
+    {operatorAllowed && operatorMounted && <div hidden={!operatorActive}><ProductionMode onDelete={deleteAllowed?openDelete:null} now={now} employee={employee} capabilities={capabilities} orders={rankedOrders} shift={shift} location={location} busy={busy} pending={pending} message={message} run={run}/></div>}
+    {deleteTarget && <OrderDeleteDialog target={deleteTarget} busy={busy} message={message} onClose={()=>setDeleteTarget(null)} onConfirm={()=>run(deleteTarget.bulk?'delete_bulk':'delete_single',{p_location_id:deleteTarget.locationId,...(deleteTarget.bulk?{p_order_ids:deleteTarget.orders.map(o=>o.id)}:{p_order_id:deleteTarget.orders[0].id})})}/>}
   </div>
 }
 function RateEditor({product,busy,save}) {

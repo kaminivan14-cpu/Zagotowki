@@ -1,0 +1,71 @@
+import { readFile } from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
+export async function verifyDeletion({sql,command,read,eq,denied,lit}) {
+ await sql(await readFile('tests/fixtures/order-callbacks.sql','utf8'))
+ await sql(await readFile('supabase/upgrades/production/09_orders_delete.sql','utf8'))
+ const single=(actor,id,location=1,op=randomUUID())=>read(actor,'order_delete',`${location},${id},'${op}'`)
+ const bulk=(actor,ids,location=1,op=randomUUID())=>read(actor,'orders_delete_bulk',`${location},ARRAY[${ids.join(',')}]::bigint[],'${op}'`)
+ const make=async (location=1)=>{
+  const sbid=`DELETE-TEST-${randomUUID()}`
+  await sql(`SELECT public.order_ingest(${lit({sbid,items:[{sku:'TEST',title:'Synthetic delete fixture',quantity:1}]})},${location},'${randomUUID()}')`)
+  return Number(await sql(`SELECT id FROM public."Orders" WHERE integration_sbid='${sbid}'`))
+ }
+ const one=await make(),two=await make(),other=await make(2),op=randomUUID()
+ await sql(`INSERT INTO app_private.order_callbacks(order_id,sbid,status,payload) SELECT id,integration_sbid,'prepared','{}' FROM public."Orders" WHERE id=${one}`)
+ // Role enforcement holds even if a broader role accidentally receives the capability.
+ await sql(`INSERT INTO app_private.role_permissions VALUES('su-chef','orders.delete')`)
+ await denied(single(3,one),/ORDERS_DENIED/)
+ await denied(single(2,other,2),/ORDERS_DENIED/)
+ await denied(bulk(1,[one,other]),/ORDERS_DENIED/)
+ eq(await sql(`SELECT count(*) FROM public."Orders" WHERE id IN (${one},${other}) AND deleted_at IS NOT NULL`),'0')
+ eq(await single(1,one,1,op),{success:true,deleted_count:1})
+ eq(await single(1,one,1,op),{success:true,deleted_count:1})
+ eq(await single(1,one),{success:true,deleted_count:0})
+ await denied(single(1,two,1,op),/OPERATION_CONFLICT/)
+ eq(await sql(`SELECT deleted_by FROM public."Orders" WHERE id=${one}`),'1')
+ eq(await sql(`SELECT cancelled_at IS NOT NULL AND next_attempt_at IS NULL FROM app_private.order_callbacks WHERE order_id=${one}`),'t')
+ eq(await sql(`SELECT count(*) FROM public."Order_items" WHERE order_id=${one}`),'1')
+ eq((await read(1,'orders_board','1')).some(o=>o.id===one),false)
+ eq(await sql(`SELECT count(*) FROM public."Order_events" WHERE order_id=${one} AND event_type='ORDER_DELETED' AND employee_id=1 AND metadata->>'mode'='single'`),'1')
+ await denied(command(1,'claim_all',{order_id:one}),/ORDER_DELETED/)
+ eq(await single(2,two),{success:true,deleted_count:1})
+ const a=await make(),b=await make(),arrival=await make()
+ const bulkOp=randomUUID()
+ eq(await bulk(2,[a,b],1,bulkOp),{success:true,deleted_count:2})
+ eq(await bulk(2,[a,b],1,bulkOp),{success:true,deleted_count:2})
+ eq(await bulk(2,[a,b]),{success:true,deleted_count:0})
+ eq(await sql(`SELECT count(*) FROM public."Orders" WHERE id IN (${arrival},${other}) AND deleted_at IS NULL`),'2')
+ eq(await sql(`SELECT count(*) FROM public."Order_events" WHERE event_type='ORDERS_BULK_DELETED' AND metadata->>'operation_id'='${bulkOp}' AND metadata->>'deleted_count'='2' AND metadata->>'location_id'='1'`),'1')
+ await denied(read(1,'orders_delete_bulk',`NULL,ARRAY[${arrival}],'${randomUUID()}'`),/INVALID_DELETE_SCOPE/)
+ await denied(bulk(1,[]),/INVALID_DELETE_SCOPE/)
+ const leased=await make(),pending=await make(),sent=await make(),token=randomUUID()
+ await sql(`INSERT INTO app_private.order_callbacks(order_id,sbid,status,payload) SELECT id,integration_sbid,'prepared','{}' FROM public."Orders" WHERE id IN (${leased},${pending},${sent});
+ UPDATE app_private.order_callbacks SET lease_token='${token}',lease_until=now()-interval '1 minute' WHERE order_id=${leased};
+ UPDATE app_private.order_callbacks SET sent_at=now() WHERE order_id=${sent};`)
+ await denied(bulk(1,[pending,leased]),/CALLBACK_IN_FLIGHT/)
+ eq(await sql(`SELECT count(*) FROM public."Orders" WHERE id IN (${pending},${leased}) AND deleted_at IS NOT NULL`),'0')
+ const jid=await sql(`SELECT id FROM app_private.order_callbacks WHERE order_id=${leased}`)
+ eq(await sql(`SET ROLE service_role;SELECT public.order_callback_result(${jid},'${token}',false,'synthetic')`),'t')
+ eq(await bulk(1,[pending,leased,sent]),{success:true,deleted_count:3})
+ eq(await sql(`SELECT cancelled_at IS NULL AND sent_at IS NOT NULL FROM app_private.order_callbacks WHERE order_id=${sent}`),'t')
+ eq(await sql(`SET ROLE service_role;SELECT public.order_callback_result(${jid},'${token}',true)`),'f')
+ await sql(`UPDATE app_private.order_callbacks SET exhausted_at=now() WHERE cancelled_at IS NULL AND sent_at IS NULL;UPDATE app_private.order_callback_settings SET enabled=true`)
+ eq(await sql(`SET ROLE service_role;SELECT public.order_callback_claim() IS NULL`),'t')
+ await sql(`UPDATE app_private.order_callback_settings SET enabled=false`)
+ // Two concurrent deletes write a single per-order audit event.
+ const race=await make()
+ const results=await Promise.all([single(1,race),single(2,race)])
+ eq(results.map(x=>x.deleted_count).sort(),[0,1])
+ eq(await sql(`SELECT count(*) FROM public."Order_events" WHERE order_id=${race} AND event_type='ORDER_DELETED'`),'1')
+ // Isolated operator with no other work: soft deletion must not strand a shift.
+ await sql(`INSERT INTO app_private.role_permissions VALUES('manager','orders.work') ON CONFLICT DO NOTHING`)
+ const active=await make(),shift=(await command(2,'open_shift',{location_id:1})).shift_id
+ await command(2,'claim_all',{order_id:active})
+ await denied(command(2,'end_shift',{shift_id:shift}),/UNFINISHED_WORK/)
+ await single(1,active)
+ await command(2,'end_shift',{shift_id:shift})
+ eq(await sql(`SELECT ended_at IS NOT NULL FROM public."Work_shifts" WHERE id=${shift}`),'t')
+ eq(await sql(`SELECT count(*) FROM public."Order_item_assignments" w JOIN public."Order_items" i ON i.id=w.order_item_id WHERE i.order_id=${active}`),'1')
+ for(const role of ['anon','authenticated']) await denied(sql(`SET ROLE ${role};UPDATE public."Orders" SET deleted_at=now() WHERE id=${arrival}`),/permission denied/)
+ console.log('Orders deletion roles, scope, audit, callback leases, concurrency and worktime PASS')
+}

@@ -4,7 +4,7 @@ import { orderDeadline } from './board'
 import { labels as L } from './labels'
 import { productionTasks, quantityArgs } from './production'
 
-export default function ProductionMode({ employee, capabilities, orders, shift, location, busy, pending, message, run, now }) {
+export default function ProductionMode({ onDelete, employee, capabilities, orders, shift, location, busy, pending, message, run, now }) {
   const { mine, available } = productionTasks(orders, employee.id, capabilities)
   const blocked = busy || Boolean(pending)
   return <main className="production-mode">
@@ -24,7 +24,7 @@ export default function ProductionMode({ employee, capabilities, orders, shift, 
        groups.get(key).push(task)
       }
       return <article key={order.id} data-order-id={order.id} className={`order-column deadline-${urgency?.level || 'normal'}`}>
-       <OrderHeader order={order} urgency={urgency} now={now}/>
+       <OrderHeader order={order} urgency={urgency} now={now} onDelete={onDelete} disabled={blocked}/>
        {[...groups].map(([key,rows])=>{
         const parent=order.items.find(i=>i.id===rows[0].parentId)
         return <section key={key} className={parent?'operator-set':'operator-items'}>

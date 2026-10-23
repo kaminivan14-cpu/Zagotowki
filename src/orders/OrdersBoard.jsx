@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { labels as L } from './labels'
 import { orderDeadline, visibleItems, operational, setAvailable, selectedItems, lifecycle } from './board'
 import OrderHeader from './OrderHeader'
-export default function OrdersBoard({ orders, employee, capabilities, shift, disabled, selection, setSelection, run, now, onHistory, focusOrder }) {
+export default function OrdersBoard({ onDelete, orders, employee, capabilities, shift, disabled, selection, setSelection, run, now, onHistory, focusOrder }) {
  const cards=useRef(new Map())
  useEffect(()=>{
    const card=cards.current.get(String(focusOrder?.id));if(!card)return
@@ -16,7 +16,7 @@ export default function OrdersBoard({ orders, employee, capabilities, shift, dis
  {orders.map(order => {
   const items = visibleItems(order), urgency = orderDeadline(order,now), selected = selectedItems(order,selection)
   return <article key={order.id} tabIndex={-1} ref={el=>{if(el)cards.current.set(String(order.id),el);else cards.current.delete(String(order.id))}} data-order-id={order.id} className={`order-column deadline-${urgency?.level || 'normal'}`}>
-   <OrderHeader order={order} urgency={urgency} now={now}/>
+   <OrderHeader order={order} urgency={urgency} now={now} onDelete={onDelete} disabled={disabled}/>
    <p>{L.visible(items.filter(operational).length)}</p>
    {order.status==='NEW' && has('orders.dispatch') && button(L.dispatch,'send',{order_id:order.id})}
    {has('orders.work') && order.status!=='NEW' && lifecycle(order)!=='done' && <div className="order-claim-buttons">
