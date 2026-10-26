@@ -30,7 +30,7 @@ for(const role of ['administrator','manager','su-chef','shift-manager','sushi-ma
   await page.getByRole('button',{name:/ЗАМОВЛЕННЯ/}).click();await expect(page.getByRole('heading',{name:'Zamówienia',exact:true})).toBeVisible()
   await expect(page.getByRole('button',{name:'Generator UAT'})).toHaveCount(0)
   expect(calls.includes('orders_command')).toBe(false)
-  expect(calls).toContain('orders_board')
+  await expect.poll(()=>calls).toContain('orders_board')
   await expect(page.getByRole('button',{name:'Usuń wszystkie zamówienia',exact:true,includeHidden:true})).toHaveCount(['administrator','manager'].includes(role)?1:0)
  }else{
   await expect(page.getByRole('button',{name:/ЗАМОВЛЕННЯ/})).toHaveCount(0);await expect(page.getByRole('button',{name:/Робота|Praca/})).toHaveCount(['owner','director','expert','specialist'].includes(role)?1:0)
