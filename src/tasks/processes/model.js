@@ -17,11 +17,11 @@ export function canConnect(doc,from,to){
 export function processProgress(tasks){return tasks.length?Math.round(100*tasks.filter(t=>t.status==='completed').length/tasks.length):0}
 export const isFinished=i=>i.tasks.length>0&&i.tasks.every(t=>['completed','cancelled'].includes(t.status))
 export const taskState=t=>t.status==='completed'?'done':t.status==='cancelled'?'cancelled':t.blocked?'blocked':['in_progress','paused'].includes(t.status)?'working':'new'
-export const referenceName=(ref,directory)=>ref.type==='role'?roleName(ref.id):(ref.type==='department'?directory.departments:directory.employees).find(x=>x.id===ref.id)?.name||`#${ref.id}`
+export const referenceName=(ref,directory)=>ref.type==='position'?ref.id:ref.type==='role'?roleName(ref.id):(ref.type==='department'?directory.departments:directory.employees).find(x=>x.id===ref.id)?.name||`#${ref.id}`
 export const durationText=t=>t.duration_days!=null?tr('{n} дн.',{n:t.duration_days}):t.estimated_minutes?tr('{n} хв',{n:t.estimated_minutes}):'—'
 
 // Dependency IDs are stored in the existing version document; display numbers never identify edges.
-export function graphLayout(doc){
+export function graphLayout(doc,fontScale=1){
  const tasks=processSteps(doc),edges=dependencyEdges(doc),indegree=new Map(tasks.map(t=>[t.key,0])),levels=new Map(tasks.map(t=>[t.key,0]))
  for(const e of edges){if(!indegree.has(e.from)||!indegree.has(e.to))throw Error('INVALID_DEPENDENCY');indegree.set(e.to,indegree.get(e.to)+1)}
  const queue=tasks.filter(t=>indegree.get(t.key)===0).map(t=>t.key),sorted=[]
@@ -36,7 +36,7 @@ export function graphLayout(doc){
   const centre=t=>{const parents=edges.filter(e=>e.to===t.key&&ranks.has(e.from)).map(e=>ranks.get(e.from));return parents.length?parents.reduce((a,b)=>a+b,0)/parents.length:order.get(t.key)}
   rows[level].sort((a,b)=>centre(a)-centre(b)||order.get(a.key)-order.get(b.key))
  }
- const cardWidth=250,cardHeight=88,gap=80,railGap=14
+ const cardWidth=250,cardHeight=Math.ceil(88*Math.max(1,fontScale)),gap=80,railGap=14
  // Group by actual stage, never by a shared dependency level. Stage ordering is
  // presentation only; it adds no dependency. Interleaved stage DAGs use lanes.
  const stageOf=new Map(tasks.map(t=>[t.key,t.stageKey])),stageKeys=doc.stages.map(s=>s.key)
@@ -77,7 +77,7 @@ export function graphLayout(doc){
   const x=contentWidth+(++rail)*railGap
   return {from:n.key,points:[{x:n.x+125,y:n.y+cardHeight},{x:n.x+125,y:n.y+cardHeight+35},{x,y:n.y+cardHeight+35},{x,y:height-60},{x:terminalX,y:height-60},{x:terminalX,y:height-35}]}
  })
- return {edges:routed,rows,bands,width:contentWidth+(rail+2)*railGap,height,nodes,startEdges,endEdges,terminalX}
+ return {cardHeight,edges:routed,rows,bands,width:contentWidth+(rail+2)*railGap,height,nodes,startEdges,endEdges,terminalX}
 
 }
 export function requiredRoles(doc){return [...new Set([doc.responsible_role,...(doc.involved_roles||[]),...processSteps(doc).flatMap(t=>[t.responsible_role,...Object.values(t.raci||{}).flat().filter(r=>r.type==='role').map(r=>r.id)])].filter(Boolean))]}
@@ -104,3 +104,21 @@ export function editDependency(doc,edge,from,to,mode='replace'){
 }
 
 export const connectorPath=points=>points.map((p,i)=>`${i?'L':'M'}${p.x},${p.y}`).join(' ')
+
+export const positionKey=value=>(value||'').trim().replace(/\s+/g,' ').toLocaleLowerCase('uk')
+export const assignmentName=(value,doc)=>doc?.schema_version===3?(value||'—'):roleName(value)
+export const responsiblePosition=doc=>doc?.responsible_position||doc?.responsible_role
+export function requiredPositions(doc){return [...new Set([doc.responsible_position,...(doc.involved_positions||[]),...processSteps(doc).flatMap(t=>[t.responsible_position,...Object.values(t.raci||{}).flat().filter(r=>r.type==='position').map(r=>r.id)])].filter(Boolean))]}
+export function positionDraft(def){
+ if(def.schema_version===3)return structuredClone(def)
+ const doc=wizardDraft(def)
+ // A system role is not a business position. Explicitly select positions in the
+ // new draft; never infer them or change the immutable source version.
+ delete doc.responsible_role;delete doc.involved_roles
+ return {...doc,schema_version:3,responsible_position:'',involved_positions:[],stages:doc.stages.map(s=>({...s,tasks:s.tasks.map(t=>{const copy={...t,responsible_position:'',raci:{accountable:[],consulted:[],informed:[]}};delete copy.responsible_role;return copy})}))}
+}
+
+export function legacyPositionView(def){
+ const doc=structuredClone(def);if(doc.schema_version===3)return doc
+ return {...doc,responsible_position:roleName(doc.responsible_role),involved_positions:(doc.involved_roles||[]).map(roleName),stages:doc.stages.map(s=>({...s,tasks:s.tasks.map(t=>({...t,responsible_position:roleName(t.responsible_role),raci:Object.fromEntries(Object.entries(t.raci||{}).map(([k,refs])=>[k,refs.map(r=>r.type==='role'?{...r,id:roleName(r.id)}:r)]))}))}))}
+}
