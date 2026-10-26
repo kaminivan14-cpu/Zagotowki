@@ -214,6 +214,7 @@ for(const width of [375,768,1440])test(`top-level Processes table stays readable
  const metrics=await table.evaluate(t=>({font:getComputedStyle(t).fontSize,layout:getComputedStyle(t).tableLayout,headers:[...t.querySelectorAll('th')].map(h=>({whiteSpace:getComputedStyle(h).whiteSpace,height:h.getBoundingClientRect().height})),cells:[...t.querySelectorAll('td')].map(c=>getComputedStyle(c).overflowWrap),rowHeight:t.querySelector('tbody tr').getBoundingClientRect().height,pageWidth:document.documentElement.scrollWidth,viewport:innerWidth,scrollable:t.parentElement.scrollWidth>t.parentElement.clientWidth}))
  expect(metrics.font).toBe('13px');expect(metrics.layout).toBe('auto');expect(metrics.headers.every(h=>h.whiteSpace==='nowrap'&&h.height<65)).toBe(true);expect(metrics.cells.every(w=>w==='normal')).toBe(true);expect(metrics.rowHeight).toBeLessThan(150);expect(metrics.pageWidth).toBeLessThanOrEqual(metrics.viewport)
  if(width<1100)expect(metrics.scrollable).toBe(true)
+ else expect(metrics.scrollable).toBe(false)
  await page.screenshot({path:info.outputPath('processes-table.png'),fullPage:true})
  await page.getByRole('button',{name:'Картки',exact:true}).click();await expect(page.locator('.process-grid-view')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
 })

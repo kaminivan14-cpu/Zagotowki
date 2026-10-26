@@ -35,3 +35,5 @@
 /* Keep descriptive text readable without squeezing dates or numeric columns. */
 .process-workspace .process-list[data-view=templates] td:nth-child(6){min-width:180px;max-width:280px;text-align:left}
 .process-workspace .process-list[data-view=templates] td:nth-child(9){white-space:nowrap}
+
+.tasks-app main.processes-main{width:100%;max-width:100%;min-width:0}
