@@ -173,3 +173,11 @@ pracowników oraz realny test sesji i izolacji lokali. Szczegóły i bramki bezp
 - Release `orders_delete_v1`; Production synthetic smoke PASS, fixture writes rolled back, customer Orders/callback data unchanged.
 - Frontend ready on `codex/orders-delete-production` in isolated local checkout. Push/PR awaiting explicit operator approval required by automatic approval review; no new frontend deployment yet.
 - Runbook and verification: `docs/orders-delete-production.md`.
+
+## 16. Orders operational role access — 2026-10-26
+
+- Production `ssheqxdgsmndiutthxvd`: `orders_role_access_v1` applied. Operator explicitly expanded initial access-only scope to claiming, status progression and issue.
+- su-chef, shift-manager, sushi-master and crafter receive only `orders.access`, `orders.work`, `orders.cut`, `orders.issue`. Delete stays administrator/manager only; other grants and location scope unchanged.
+- Six-role transactional Production smoke PASS; workflow/API/delete/callback/Worktime functions and RLS unchanged. Three explicitly requested persistent test orders: 695–697 in SB_Wroclaw, NEW, no integration SBID/callback. Admin/manager dispatches them using the existing action.
+- Minimal frontend module-gate change on `codex/orders-role-access`; PR/checks/operator merge approval required before Production frontend rollout.
+- Details: `docs/orders-role-access-production.md`.
