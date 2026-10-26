@@ -1,0 +1,6 @@
+.modal-with-close.modal-with-close { padding-top: 56px; }
+section.modal-with-close,form.modal-with-close { position: relative; }
+.modal-with-close button.modal-close { position: absolute; top: 10px; right: 10px; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; min-height: 36px; margin: 0; padding: 0; border: 1px solid #899f94; border-radius: 8px; background: white; color: #172b26; font: inherit; font-size: 26px; line-height: 1; cursor: pointer; }
+.modal-with-close button.modal-close:hover:not(:disabled) { background: #e8f0ec; }
+.modal-with-close button.modal-close:focus-visible { outline: 3px solid #1769aa; outline-offset: 2px; }
+.modal-with-close button.modal-close:disabled { opacity: .6; cursor: wait; }

@@ -6,6 +6,7 @@ test('access distinguishes unknown from denied without role assumptions',()=>{
  assert.ok(moduleStates([]).every(m=>m.allowed===false))
  assert.equal(moduleStates(['tasks.access']).find(m=>m.id==='admin').allowed,false)
  assert.equal(moduleStates(['tasks.access','tasks.admin','processes.read']).find(m=>m.id==='processes').allowed,true)
+ assert.equal(moduleStates(['tasks.access','processes.read']).find(m=>m.id==='processes').allowed,true)
  assert.equal(moduleStates(['processes.read']).find(m=>m.id==='processes').allowed,false)
  assert.equal(moduleStates(['worktime.self']).find(m=>m.id==='worktime').allowed,false)
  assert.equal(moduleStates(['worktime.access']).find(m=>m.id==='worktime').allowed,true)

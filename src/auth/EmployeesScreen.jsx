@@ -1,3 +1,4 @@
+import ModalClose from '../ui/ModalClose'
 import { pinRoles } from './loginRoles'
 import EmailInvite from './EmailInvite'
 import { useEffect, useRef, useState } from 'react'
@@ -63,8 +64,8 @@ export default function EmployeesScreen({ pracownik, lokale, onPowrot }) {
         <option value="all">Pracownicy — wszyscy niearchiwalni</option><option value="active">Aktywni</option><option value="inactive">Nieaktywni</option>
         {['owner', 'administrator'].includes(pracownik.role) && <option value="archived">Archiwalni</option>}
       </select></label>
-      {confirmation && <dialog ref={dialogRef} aria-modal="true" aria-labelledby="employee-confirm-title" onCancel={e => { e.preventDefault(); if (!busy) setConfirmation(null) }}>
-        <h2 id="employee-confirm-title">{confirmation.action === 'archive' ? 'Usunąć pracownika?' : 'Dezaktywować pracownika?'}</h2>
+      {confirmation && <dialog className="modal-with-close" ref={dialogRef} aria-modal="true" aria-labelledby="employee-confirm-title" onCancel={e => { e.preventDefault(); if (!busy) setConfirmation(null) }}>
+        <ModalClose onClose={()=>setConfirmation(null)} disabled={busy}/><h2 id="employee-confirm-title">{confirmation.action === 'archive' ? 'Usunąć pracownika?' : 'Dezaktywować pracownika?'}</h2>
         <p>Czy na pewno chcesz {confirmation.action === 'archive' ? 'usunąć' : 'dezaktywować'} konto {confirmation.employee.name}?</p>
         <p>{confirmation.action === 'archive' ? 'Pracownik straci możliwość logowania, ale jego historia w systemie zostanie zachowana.' : 'Pracownik straci możliwość logowania do aplikacji.'}</p>
         <p role="alert">{message}</p>

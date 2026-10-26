@@ -1,3 +1,4 @@
+import ModalClose from '../ui/ModalClose'
 import DateFilter from './DateFilter'
 import {useEffect,useRef,useState} from 'react'
 import {supabase} from '../supabase'
@@ -85,7 +86,8 @@ export default function WorktimePanel({capabilities,onBack}){
 }
 function Correction({row,close,saved}){
  const w=useWorktime(),[start,setStart]=useState(localInput(row.started_at)),[end,setEnd]=useState(localInput(row.ended_at)),[reason,setReason]=useState(''),[error,setError]=useState('')
- return <div className="worktime-overlay"><form className="worktime-dialog" role="dialog" aria-modal="true" aria-label="Korekta sesji" onSubmit={async e=>{e.preventDefault();try{setError('');await w.command('correct',{shift_id:row.id,version:row.version,started_at:correctionInstant(start,row.started_at),ended_at:correctionInstant(end,row.ended_at),reason});saved()}catch(e){setError(e.message?.includes('godzin')?e.message:worktimeError(e))}}}>
+ return <div className="worktime-overlay"><form className="worktime-dialog modal-with-close" role="dialog" aria-modal="true" aria-label="Korekta sesji" onSubmit={async e=>{e.preventDefault();try{setError('');await w.command('correct',{shift_id:row.id,version:row.version,started_at:correctionInstant(start,row.started_at),ended_at:correctionInstant(end,row.ended_at),reason});saved()}catch(e){setError(e.message?.includes('godzin')?e.message:worktimeError(e))}}}>
+ <ModalClose onClose={close} disabled={w.busy}/>
  <h2>Korekta sesji — {row.employee_name}</h2><p>Czas Europe/Warsaw. Format RRRR-MM-DDTHH:mm lub ISO z offsetem dla zmiany czasu. Pusty koniec oznacza aktywną sesję.</p>
  <label>Początek<input required value={start} disabled={w.busy||Boolean(w.pending)} onChange={e=>setStart(e.target.value)}/></label>
  <label>Koniec<input value={end} disabled={w.busy||Boolean(w.pending)} onChange={e=>setEnd(e.target.value)}/></label>

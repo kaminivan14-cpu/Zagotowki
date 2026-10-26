@@ -1,9 +1,9 @@
 import {test,expect} from '@playwright/test'
 import {readFile,mkdir} from 'node:fs/promises'
 const sample=JSON.parse(await readFile('tests/fixtures/new-menu-process.json','utf8'))
-async function setup(page,{admin=true,accessError=false,productionDepartment=false,diagramDoc=sample}={}){
+async function setup(page,{admin=true,processRead=false,accessError=false,productionDepartment=false,diagramDoc=sample}={}){
  let invited=false
- const calls=[],user={id:'20000000-0000-4000-8000-000000000001',email:'admin@example.invalid',aud:'authenticated',role:'authenticated'},caps=['tasks.access','tasks.create.self','worktime.self',...(admin?['tasks.admin','employees.manage','employees.read','dictionaries.manage','dictionaries.read','processes.read','processes.manage','processes.launch']:[])]
+ const calls=[],user={id:'20000000-0000-4000-8000-000000000001',email:'admin@example.invalid',aud:'authenticated',role:'authenticated'},caps=['tasks.access','tasks.create.self','worktime.self',...(processRead?['processes.read']:[]),...(admin?['tasks.admin','employees.manage','employees.read','dictionaries.manage','dictionaries.read','processes.read','processes.manage','processes.launch']:[])]
  const exp=Math.floor(Date.now()/1000)+3600,b=v=>Buffer.from(JSON.stringify(v)).toString('base64url')
  await page.addInitScript(s=>localStorage.setItem('sb-auth-tests-auth-token',JSON.stringify(s)),{access_token:`${b({alg:'HS256'})}.${b({sub:user.id,exp,role:'authenticated'})}.test`,refresh_token:'test',expires_at:exp,expires_in:3600,token_type:'bearer',user})
  let employees=[{id:1,name:'Іван',role:'owner',active:true,linked:true,department_id:1,location_id:1,capabilities:caps},{id:6,name:'Олена',role:'manager',active:true,linked:true,department_id:productionDepartment?2:1,location_id:1,capabilities:['tasks.access']}],categories=[{id:1,name:'Операційні',sort_order:1,active:true,parent_id:null}],versions=[{id:1,template_id:1,number:1,status:'draft',revision:1,definition:structuredClone(diagramDoc)}],templates=[{id:1,name:diagramDoc.name}],instances=[]
@@ -103,7 +103,7 @@ async function createWizard(page,name){await page.getByRole('button',{name:'Ст
 for(const width of [375,768,1440])test(`process wizard shared stages dependencies diagram ${width}`,async({page})=>{
  await page.setViewportSize({width,height:1000});const calls=await setup(page);await openProcesses(page)
  await page.getByLabel('Пошук за назвою та описом').fill('does-not-exist');await expect(page.getByText('Процесів не знайдено')).toBeVisible();await page.getByLabel('Пошук за назвою та описом').fill('')
- await page.getByRole('button',{name:'Переглянути',exact:true}).click();await expect(page.locator('.process-operational-stage')).toHaveCount(7);await page.getByRole('dialog').getByRole('button',{name:'Закрити',exact:true}).click()
+ await page.getByRole('button',{name:'Переглянути',exact:true}).click();await expect(page.locator('.process-operational-stage')).toHaveCount(7);await page.getByRole('dialog').getByRole('button',{name:'Закрити',exact:true}).last().click()
  await createWizard(page,'DAG test');const d=page.getByRole('dialog');await d.getByRole('button',{name:'Назад',exact:true}).click();await d.getByRole('button',{name:'＋ Додати завдання',exact:true}).click();await d.getByLabel('Назва завдання 1.2').fill('Наступне');await selectRole(d,'Роль 1.2');const deps=d.getByLabel('Залежності: Наступне');await deps.click();await deps.locator('..').getByRole('checkbox',{name:'1.1 Перевірити'}).check();await deps.click();await d.getByRole('button',{name:'Далі →'}).click();await expect(d.locator('.process-graph-node')).toHaveCount(2)
  const nodes=await d.locator('.process-graph-node').evaluateAll(ns=>ns.map(n=>({id:n.dataset.taskKey,level:Number(n.dataset.level)})));expect(nodes.map(n=>n.level)).toEqual([0,1]);await d.locator('.process-graph-node').last().click();await d.getByRole('button',{name:'Додатково',exact:true}).click();await d.getByLabel('Чек-лист',{exact:true}).fill('Перевірити')
  await d.getByRole('button',{name:'Зберегти як чернетку',exact:true}).click();await expect.poll(()=>calls.some(c=>c.args.p_action==='process_create')).toBe(true);const saved=calls.find(c=>c.args.p_action==='process_create').args.p_args.definition;expect(saved.stages[0].tasks[1].depends_on).toEqual([saved.stages[0].tasks[0].key]);expect(saved.stages[0].tasks[1].checklist).toEqual(['Перевірити']);expect(saved.schema_version).toBe(2);await shot(page,`wizard-${width}`)
@@ -173,4 +173,35 @@ test('dependency undo is one step per click and preserves task edits',async({pag
  await undo.click();await expect(edges).toHaveCount(2);await expect(undo).toBeEnabled();await undo.click();await expect(undo).toBeDisabled();await expect(edges).toHaveCount(2)
  await d.getByRole('button',{name:'Назад',exact:true}).click();await expect(d.getByLabel('Назва завдання 1.2')).toHaveValue('Keep this title');await d.getByLabel('Залежності: Third').click();await expect(d.getByRole('checkbox',{name:'1.1 Перевірити'})).not.toBeChecked();await expect(d.getByRole('checkbox',{name:'1.2 Keep this title'})).toBeChecked();await page.keyboard.press('Escape')
  await d.getByRole('button',{name:'Зберегти як чернетку',exact:true}).click();await expect.poll(()=>calls.some(c=>c.args.p_action==='process_create')).toBe(true);const tasks=calls.find(c=>c.args.p_action==='process_create').args.p_args.definition.stages[0].tasks;expect(tasks[1].depends_on).toEqual([tasks[0].key]);expect(tasks[2].depends_on).toEqual([tasks[1].key])
+})
+
+test('Processes is a permission-gated top-level view independent of Admin',async({page})=>{
+ await setup(page);await page.goto('/')
+ const nav=page.getByRole('navigation',{name:'Розділи роботи'})
+ await expect(nav.getByRole('button')).toHaveText(['Робота','Планування','Звіти','Графік','Процеси','Адмін панель','Створити завдання'])
+ await nav.getByRole('button',{name:'Процеси',exact:true}).click()
+ await expect(page.locator('.process-workspace')).toBeVisible()
+ await expect(nav.getByRole('button',{name:'Процеси',exact:true})).toHaveAttribute('aria-pressed','true')
+ await expect(nav.getByRole('button',{name:'Адмін панель',exact:true})).toHaveAttribute('aria-pressed','false')
+ await nav.getByRole('button',{name:'Адмін панель',exact:true}).click()
+ await expect(nav.getByRole('button',{name:'Адмін панель',exact:true})).toHaveAttribute('aria-pressed','true')
+ await expect(page.getByRole('navigation',{name:'Адміністрування'}).getByRole('button')).toHaveText(['Працівники','Структура','Доступи','Довідники'])
+})
+for(const width of [375,768,1440])test(`shared modal close keyboard locale and layout ${width}`,async({page})=>{
+ await page.setViewportSize({width,height:900});await setup(page);await page.goto('/');await page.getByRole('button',{name:'Процеси',exact:true}).click()
+ const open=()=>page.getByRole('button',{name:'Створити процес',exact:true}).click()
+ await open();let d=page.getByRole('dialog'),x=d.locator('.modal-close')
+ await expect(x).toHaveCount(1);await expect(x).toHaveAccessibleName('Закрити')
+ const box=await x.boundingBox(),title=await d.getByRole('heading',{name:'Створити процес',exact:true}).boundingBox()
+ expect(box.x).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(width);expect(box.y+box.height).toBeLessThanOrEqual(title.y)
+ await x.focus();await expect(x).toBeFocused();await page.keyboard.press('Enter');await expect(d).toHaveCount(0)
+ await open();await d.locator('.modal-close').focus();await page.keyboard.press('Space');await expect(d).toHaveCount(0)
+ await open();await page.keyboard.press('Escape');await expect(d).toHaveCount(0)
+ await open();await d.getByLabel('Мова',{exact:true}).selectOption('pl');await expect(d.locator('.modal-close')).toHaveAccessibleName('Zamknij');await d.locator('.modal-close').click();await expect(d).toHaveCount(0)
+})
+
+test('Processes read access does not require or fetch Admin directory',async({page})=>{
+ const calls=await setup(page,{admin:false,processRead:true});await page.goto('/');await page.getByRole('button',{name:'Процеси',exact:true}).click()
+ await expect(page.locator('.process-summary')).toHaveCount(1);await page.getByRole('button',{name:'Переглянути',exact:true}).click();await expect(page.getByRole('dialog').locator('.process-operational-stage')).toHaveCount(7);await expect(page.getByRole('button',{name:'Адмін панель',exact:true})).toHaveCount(0)
+ expect(calls.some(c=>c.name==='tasks_admin_directory')).toBe(false)
 })
