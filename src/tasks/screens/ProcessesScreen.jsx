@@ -13,5 +13,5 @@ export default function ProcessesScreen(props){
  },[allowed,admin,revision,context.today])
  if(!allowed)return null
  if(admin&&!directory)return <p role={error?'alert':'status'}>{error||tr('Завантаження…')}</p>
- return <Processes {...props} directory={admin?directory:{employees:people,departments:context.departments||[],locations}}/>
+ return <Processes {...props} directory={admin?directory:{employees:people,categories:context.category_history||context.categories||[],departments:context.departments||[],locations}}/>
 }

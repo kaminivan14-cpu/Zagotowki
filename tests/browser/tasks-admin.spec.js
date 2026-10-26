@@ -202,6 +202,6 @@ for(const width of [375,768,1440])test(`shared modal close keyboard locale and l
 
 test('Processes read access does not require or fetch Admin directory',async({page})=>{
  const calls=await setup(page,{admin:false,processRead:true});await page.goto('/');await page.getByRole('button',{name:'Процеси',exact:true}).click()
- await expect(page.locator('.process-workspace')).toBeVisible();await expect(page.getByRole('button',{name:'Адмін панель',exact:true})).toHaveCount(0)
+ await expect(page.locator('.process-summary')).toHaveCount(1);await page.getByRole('button',{name:'Переглянути',exact:true}).click();await expect(page.getByRole('dialog').locator('.process-operational-stage')).toHaveCount(7);await expect(page.getByRole('button',{name:'Адмін панель',exact:true})).toHaveCount(0)
  expect(calls.some(c=>c.name==='tasks_admin_directory')).toBe(false)
 })
