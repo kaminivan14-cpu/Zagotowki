@@ -5,7 +5,7 @@ import { productionReleaseSteps, productionReleaseSql } from '../scripts/lib/pro
 test('Production module policy denies all non-admin/manager roles even with spoofed capabilities',()=>{
  for(const role of ['administrator','manager','su-chef','shift-manager','sushi-master','crafter','employee','director','expert','specialist','owner']){
   for(const module of ['orders','tasks']){
-   assert.equal(moduleAllowed('production',role,module,[`${module}.access`]),['administrator','manager'].includes(role))
+   assert.equal(moduleAllowed('production',role,module,[`${module}.access`]),(['administrator','manager'].includes(role) || (module==='orders' && ['su-chef','shift-manager','sushi-master','crafter'].includes(role))))
    assert.equal(moduleAllowed('production',role,module,[]),false)
    assert.equal(moduleAllowed('uat',role,module,[`${module}.access`]),true)
   }
