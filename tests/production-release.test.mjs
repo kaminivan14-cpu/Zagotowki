@@ -2,10 +2,10 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { moduleAllowed, generatorAllowed } from '../src/orders/environment.js'
 import { productionReleaseSteps, productionReleaseSql } from '../scripts/lib/production-release.mjs'
-test('Production module policy denies all non-admin/manager roles even with spoofed capabilities',()=>{
+test('Production module policy requires capability and explicit role access',()=>{
  for(const role of ['administrator','manager','su-chef','shift-manager','sushi-master','crafter','employee','director','expert','specialist','owner']){
   for(const module of ['orders','tasks']){
-   assert.equal(moduleAllowed('production',role,module,[`${module}.access`]),(['administrator','manager'].includes(role) || (module==='orders' && ['su-chef','shift-manager','sushi-master','crafter'].includes(role))))
+   assert.equal(moduleAllowed('production',role,module,[`${module}.access`]),(['administrator','manager'].includes(role) || (module==='tasks' && ['owner','director','expert','specialist'].includes(role)) || (module==='orders' && ['su-chef','shift-manager','sushi-master','crafter'].includes(role))))
    assert.equal(moduleAllowed('production',role,module,[]),false)
    assert.equal(moduleAllowed('uat',role,module,[`${module}.access`]),true)
   }

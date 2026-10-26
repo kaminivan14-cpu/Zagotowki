@@ -8,6 +8,7 @@ import PlanningScreen from './screens/PlanningScreen'
 import ReportsScreen from './screens/ReportsScreen'
 import ScheduleScreen from './screens/ScheduleScreen'
 import AdminScreen from './admin/AdminScreen'
+import ProcessesScreen from './screens/ProcessesScreen'
 import {ResultInbox} from './admin/TaskResult'
 import './admin/admin.css'
 import TaskCreateDialog from './components/TaskCreateDialog'
@@ -37,9 +38,9 @@ export default function TasksApp({employee,onSignOut,onModules}) {
  const props={context,run,busy,onDetails:setDetail,revision,people}
  const critical=worktime?.current && state?.critical.find(t=>!t.acknowledged && t.ready)
  return <TaskFeedback.Provider value={{error,retry,busy}}><div className="app tasks-app" lang={getLocale()} onInvalidCapture={e=>{if(!e.target.validity.customError)e.target.setCustomValidity(tr('Перевірте значення цього поля. Заповніть обов’язкові дані у вказаному форматі.'))}} onInputCapture={e=>{if(e.target.setCustomValidity)e.target.setCustomValidity('')}}><header className="tasks-header"><div><h1>{tr('Робота')}</h1><p>{employee.name}</p></div><div className="task-actions"><button onClick={onModules}>{tr('Модулі')}</button><button onClick={onSignOut}>{tr('Вийти')}</button></div></header>
- <nav aria-label={tr('Розділи роботи')}>{[['work',tr('Робота')],['planning',tr('Планування')],['reports',tr('Звіти')],['schedule',tr('Графік')]].map(([id,label])=><button key={id} aria-pressed={screen===id} onClick={()=>setScreen(id)}>{label}</button>)}{context.capabilities.includes('tasks.admin') && <button aria-pressed={screen==='settings'} onClick={()=>setScreen('settings')}>{tr('Адмін панель')}</button>}<button className={screen==='work'?undefined:'primary'} onClick={()=>setCreating(true)}>{tr('Створити завдання')}</button></nav>
+ <nav aria-label={tr('Розділи роботи')}>{[['work',tr('Робота')],['planning',tr('Планування')],['reports',tr('Звіти')],['schedule',tr('Графік')]].map(([id,label])=><button key={id} aria-pressed={screen===id} onClick={()=>setScreen(id)}>{label}</button>)}{context.capabilities.includes('processes.read') && <button aria-pressed={screen==='processes'} onClick={()=>setScreen('processes')}>{tr('Процеси')}</button>}{context.capabilities.includes('tasks.admin') && <button aria-pressed={screen==='settings'} onClick={()=>setScreen('settings')}>{tr('Адмін панель')}</button>}<button className={screen==='work'?undefined:'primary'} onClick={()=>setCreating(true)}>{tr('Створити завдання')}</button></nav>
  <ResultInbox run={run} busy={busy} revision={revision}/><p role="alert">{error}</p>{error && <button disabled={busy} onClick={retry}>{tr('Повторити дію')}</button>}
- <main className={['planning','schedule','reports'].includes(screen)?'planning-main':undefined}>{screen==='work'?<WorkScreen {...props} state={state} refresh={refresh}/>:screen==='planning'?<PlanningScreen {...props} onCreate={(date,id)=>setCreating({planned_date:date,employee_id:id})}/>:screen==='reports'?<ReportsScreen {...props}/>:screen==='schedule'?<ScheduleScreen {...props}/>:<AdminScreen {...props}/>}</main>
+ <main className={['planning','schedule','reports'].includes(screen)?'planning-main':undefined}>{screen==='work'?<WorkScreen {...props} state={state} refresh={refresh}/>:screen==='planning'?<PlanningScreen {...props} onCreate={(date,id)=>setCreating({planned_date:date,employee_id:id})}/>:screen==='reports'?<ReportsScreen {...props}/>:screen==='schedule'?<ScheduleScreen {...props}/>:screen==='processes'?<ProcessesScreen {...props} locations={state?.locations||[]}/>:<AdminScreen {...props}/>}</main>
  {creating && <TaskCreateDialog initialPlannedDate={creating.planned_date} initialEmployeeId={creating.employee_id} context={context} people={people} run={run} busy={busy} onClose={()=>setCreating(false)}/>}
  {detail && <TaskDetailsDialog {...props} task={detail} onClose={()=>setDetail(null)}/>}
  {critical && <CriticalTaskDialog key={critical.id} task={critical} run={run} busy={busy}/>}

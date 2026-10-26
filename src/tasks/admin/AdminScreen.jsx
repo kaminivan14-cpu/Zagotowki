@@ -7,7 +7,6 @@ import {useEffect,useState} from 'react'
 import {read,errorText} from '../client'
 import Dialog from '../components/Dialog'
 import {adminTabs,systemRoles,productionRoles,roleName} from './labels'
-import Processes from './Processes'
 import TaskSettingsScreen from '../screens/TaskSettingsScreen'
 import OrganizationScreen from '../organization/OrganizationScreen'
 export default function AdminScreen(props){
@@ -22,7 +21,6 @@ export default function AdminScreen(props){
  {tab==='structure'&&<><OrganizationScreen context={context} initialEmployeeId={structureEmployee} onInitialEmployeeOpened={()=>setStructureEmployee(null)}/><details><summary>Налаштування роботи та доступів</summary><TaskSettingsScreen {...props}/></details></>}
  {tab==='access'&&<AccessScreen directory={data} revision={revision}/>}
  {tab==='dictionaries'&&<><div className="admin-toolbar"><h3>Категорії завдань</h3><button onClick={()=>setCategory({name:'',sort_order:0,active:true})}>Додати категорію</button></div>{data.categories.map(c=><article className="dictionary-row" key={c.id}><div>{c.parent_id&&<small>{data.categories.find(p=>p.id===c.parent_id)?.name} → </small>}<strong>{c.name}</strong><small>{c.active?'Активна':'Неактивна'} · Порядок: {c.sort_order}</small></div><button onClick={()=>setCategory(c)}>Редагувати</button><button disabled={busy} onClick={()=>run('category_save',{id:c.id,name:c.name,parent_id:c.parent_id,sort_order:c.sort_order,active:!c.active})}>{c.active?'Деактивувати':'Відновити'}</button></article>)}<p>Неактивні категорії залишаються в історичних завданнях.</p></>}
- {tab==='processes'&&<Processes {...props} directory={data}/>}
  {edit&&<Dialog title={edit.id?'Редагувати працівника':'Додати працівника'} busy={busy||photoBusy} onClose={()=>setEdit(null)}><form onChange={()=>setEditDirty(true)} onSubmit={async e=>{e.preventDefault();const withPhoto=e.nativeEvent.submitter?.value==='photo';const result=await run('admin_employee_save',{id:edit.id||null,name:edit.name,role:edit.role,active:edit.active,location_id:edit.location_id||null,department_id:edit.id?edit.stored_department_id??null:edit.department_id||null,production_role:edit.production_role||null,manager_id:edit.id?edit.stored_manager_id??null:edit.manager_id||null});if(result){if(withPhoto&&result.id)setEdit({...edit,id:result.id});else setEdit(null)}}}>
  {edit.id&&canEditPhotos&&<EmployeePhoto employee={edit} actorId={context.employee_id} onBusy={setPhotoBusy} onSaved={path=>{setEdit(e=>e?.id===edit.id?{...e,avatar_path:path}:e);setData(d=>({...d,employees:d.employees.map(e=>e.id===edit.id?{...e,avatar_path:path}:e)}))}}/>}
  <label>Ім’я<input required value={edit.name} onChange={e=>setEdit({...edit,name:e.target.value})}/></label><label>Відділ<select aria-label="Відділ" disabled={!!edit.id} value={edit.department_id||''} onChange={e=>setEdit({...edit,department_id:Number(e.target.value)||null,production_role:null})}><option value="">Не призначено</option>{data.departments.filter(d=>d.active).map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label>

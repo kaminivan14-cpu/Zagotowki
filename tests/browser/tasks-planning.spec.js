@@ -74,7 +74,7 @@ for(const width of [375,768,1024,1440])test(`weekly planning layout, data and ex
  expect(s.calls.find(c=>c.name==='tasks_command').args.p_args).toMatchObject({planned_date:'2026-10-08',assigned_to_employee_id:6})
  await page.locator('.planning-unplanned').getByRole('button',{name:'Запланувати',exact:true}).click()
  await page.getByLabel('Дата',{exact:true}).fill('09.10.2026')
- await page.getByRole('button',{name:'Зберегти дату',exact:true}).click();await page.getByRole('button',{name:'Закрити',exact:true}).click()
+ await page.getByRole('button',{name:'Зберегти дату',exact:true}).click();await page.getByRole('button',{name:'Закрити',exact:true}).last().click()
  await expect(page.locator('.planning-unplanned')).not.toContainText('Незапланований аудит')
  expect(s.calls.some(c=>c.name==='tasks_command'&&c.args.p_action==='plan')).toBe(true)
 })

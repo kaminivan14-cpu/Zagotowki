@@ -2,7 +2,7 @@
 // Tasks tabs are all readable once tasks.access is present; actions remain scoped.
 export const accessModules=[
  ['work','Робота',c=>c.has('tasks.access')],['planning','Планування',c=>c.has('tasks.access')],['reports','Звіти',c=>c.has('tasks.access')],['schedule','Графік',c=>c.has('tasks.access')],
- ['admin','Адмін панель',c=>c.has('tasks.access')&&c.has('tasks.admin')],['processes','Процеси',c=>c.has('tasks.access')&&c.has('tasks.admin')&&c.has('processes.read')],
+ ['admin','Адмін панель',c=>c.has('tasks.access')&&c.has('tasks.admin')],['processes','Процеси',c=>c.has('tasks.access')&&c.has('processes.read')],
  ['orders','Замовлення',c=>c.has('orders.access')],['worktime','Час роботи',c=>c.has('worktime.access')],['production','Заготівки',c=>c.has('production.access')],
 ]
 export const moduleStates=capabilities=>accessModules.map(([id,label,allowed])=>({id,label,allowed:Array.isArray(capabilities)?allowed(new Set(capabilities)):null}))

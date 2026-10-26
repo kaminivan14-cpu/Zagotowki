@@ -146,6 +146,7 @@ export const pl = {
   "Завдання вниз": "Zadanie w dół",
   "Завершення → початок. Порядок рядків сам по собі не створює залежності.": "Zakończenie → rozpoczęcie. Sama kolejność wierszy nie tworzy zależności.",
   "Завершено": "Zakończono",
+  "Закрити": "Zamknij",
   "Закрити конструктор": "Zamknij edytor",
   "Залежності містять цикл або невідоме завдання.": "Zależności zawierają cykl lub nieznane zadanie.",
   "Залучені ролі": "Zaangażowane role",

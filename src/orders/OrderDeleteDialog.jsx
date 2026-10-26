@@ -1,10 +1,12 @@
+import ModalClose from '../ui/ModalClose'
 import { useEffect, useRef, useState } from 'react'
 import { useLocale } from '../i18n/useLocale'
 import { deleteLabels } from './delete'
 export default function OrderDeleteDialog({ target, busy, message, onClose, onConfirm }) {
  const ref=useRef(null), [word,setWord]=useState(''), locale=useLocale(), t=deleteLabels[locale]
  useEffect(()=>{const previous=document.activeElement;ref.current.showModal();return()=>previous?.focus()},[])
- return <dialog ref={ref} className="order-delete-dialog" aria-labelledby="order-delete-title" onCancel={e=>{e.preventDefault();if(!busy)onClose()}}>
+ return <dialog ref={ref} className="order-delete-dialog modal-with-close" aria-labelledby="order-delete-title" onCancel={e=>{e.preventDefault();if(!busy)onClose()}}>
+  <ModalClose onClose={onClose} disabled={busy}/>
   <form onSubmit={e=>{e.preventDefault();if(!busy && (!target.bulk || ['USUŃ','DELETE'].includes(word.trim())))onConfirm()}}>
    <h2 id="order-delete-title">{target.bulk?t.bulk:t.single}</h2>
    <p>{target.bulk?t.bulkWarning:t.confirm}</p>{!target.bulk && <p>{t.warning}</p>}

@@ -15,7 +15,7 @@ async function setup(page,role,locale='pl'){
   else if(n==='auth_capabilities')data=['production.access','orders.access','tasks.access','orders.test.generate','orders.delete']
   else if(n==='orders_board')data=[{id:1,location_id:1,display_number:'ACCESS-TEST',status:'NEW',items:[]}]
   else if(n==='Locations')data=[{id:1,name:'Synthetic location',active:true}]
-  else if(n==='tasks_context')data={capabilities:role==='administrator'?['tasks.admin']:[],categories:[],settings:{company_timezone:'Europe/Warsaw'}}
+  else if(n==='tasks_context')data={capabilities:role==='administrator'?['tasks.admin','processes.read']:[],categories:[],settings:{company_timezone:'Europe/Warsaw'}}
   else if(n==='tasks_execution_state')data={current:null,next:null,active_shift:null,critical:[]}
   else if(n==='organization_structure')data={assignments:[],can_manage:role==='administrator'}
   else if(n==='tasks_admin_directory')data={employees:[],departments:[],categories:[],locations:[],reporting_lines:[],scope_grants:[],settings:{}}
@@ -33,7 +33,7 @@ for(const role of ['administrator','manager','su-chef','shift-manager','sushi-ma
   expect(calls).toContain('orders_board')
   await expect(page.getByRole('button',{name:'Usuń wszystkie zamówienia',exact:true,includeHidden:true})).toHaveCount(['administrator','manager'].includes(role)?1:0)
  }else{
-  await expect(page.getByRole('button',{name:/ЗАМОВЛЕННЯ/})).toHaveCount(0);await expect(page.getByRole('button',{name:/Робота|Praca/})).toHaveCount(0)
+  await expect(page.getByRole('button',{name:/ЗАМОВЛЕННЯ/})).toHaveCount(0);await expect(page.getByRole('button',{name:/Робота|Praca/})).toHaveCount(['owner','director','expert','specialist'].includes(role)?1:0)
   await expect(page.getByText('Sprawdzanie modułów…')).toHaveCount(0)
   expect(calls.some(n=>n.startsWith('orders_')||n.startsWith('tasks_'))).toBe(false)
  }
@@ -44,4 +44,11 @@ for(const role of ['administrator','manager'])test(`Production admin capability 
   await page.getByRole('button',{name:'Адмін панель',exact:true}).click()
   await page.getByRole('button',{name:'Процеси',exact:true}).click();await expect(page.getByRole('button',{name:'Шаблони процесів',exact:true})).toBeVisible()
  }else await expect(page.getByRole('button',{name:'Адмін панель',exact:true})).toHaveCount(0)
+})
+
+for(const role of ['administrator','manager','owner','director','expert','specialist'])test(`Production Work opens ${role}`,async({page})=>{
+ const calls=await setup(page,role,'uk');await page.goto('/');await page.getByRole('button',{name:/Робота|Praca/}).click()
+ await expect(page.getByRole('heading',{name:'Робота',exact:true})).toBeVisible()
+ expect(calls).toContain('tasks_context');expect(calls).toContain('tasks_execution_state')
+ if(!['administrator'].includes(role)){await expect(page.getByRole('button',{name:'Адмін панель',exact:true})).toHaveCount(0);await expect(page.getByRole('button',{name:'Процеси',exact:true})).toHaveCount(0)}
 })
