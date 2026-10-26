@@ -205,3 +205,16 @@ test('Processes read access does not require or fetch Admin directory',async({pa
  await expect(page.locator('.process-summary')).toHaveCount(1);await page.getByRole('button',{name:'Переглянути',exact:true}).click();await expect(page.getByRole('dialog').locator('.process-operational-stage')).toHaveCount(7);await expect(page.getByRole('button',{name:'Адмін панель',exact:true})).toHaveCount(0)
  expect(calls.some(c=>c.name==='tasks_admin_directory')).toBe(false)
 })
+
+for(const width of [375,768,1440])test(`top-level Processes table stays readable ${width}`,async({page},info)=>{
+ await page.setViewportSize({width,height:1000});await setup(page)
+ await page.route('**/rest/v1/rpc/tasks_processes',route=>route.fulfill({json:{templates:[{id:1,name:sample.name}],versions:[{id:1,template_id:1,number:1,status:'draft',updated_at:'2026-10-26T12:00:00Z',definition:{...sample,goal:'Перевірка процесу та підготовка нового меню'}}],instances:[],roles:['owner','manager']}}))
+ await page.getByRole('button',{name:'Процеси',exact:true}).click()
+ const table=page.locator('table.process-list');await expect(table.locator('tbody tr')).toHaveCount(1)
+ const metrics=await table.evaluate(t=>({font:getComputedStyle(t).fontSize,layout:getComputedStyle(t).tableLayout,headers:[...t.querySelectorAll('th')].map(h=>({whiteSpace:getComputedStyle(h).whiteSpace,height:h.getBoundingClientRect().height})),cells:[...t.querySelectorAll('td')].map(c=>getComputedStyle(c).overflowWrap),rowHeight:t.querySelector('tbody tr').getBoundingClientRect().height,pageWidth:document.documentElement.scrollWidth,viewport:innerWidth,scrollable:t.parentElement.scrollWidth>t.parentElement.clientWidth}))
+ expect(metrics.font).toBe('13px');expect(metrics.layout).toBe('auto');expect(metrics.headers.every(h=>h.whiteSpace==='nowrap'&&h.height<65)).toBe(true);expect(metrics.cells.every(w=>w==='normal')).toBe(true);expect(metrics.rowHeight).toBeLessThan(150);expect(metrics.pageWidth).toBeLessThanOrEqual(metrics.viewport)
+ if(width<1100)expect(metrics.scrollable).toBe(true)
+ else expect(metrics.scrollable).toBe(false)
+ await page.screenshot({path:info.outputPath('processes-table.png'),fullPage:true})
+ await page.getByRole('button',{name:'Картки',exact:true}).click();await expect(page.locator('.process-grid-view')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
+})
