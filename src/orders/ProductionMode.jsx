@@ -1,10 +1,11 @@
+import OrderStatusBadge from './OrderStatusBadge'
 import { useState } from 'react'
 import OrderHeader from './OrderHeader'
-import { orderDeadline } from './board'
+import { orderDeadline, operational } from './board'
 import { labels as L } from './labels'
 import { productionTasks, quantityArgs } from './production'
 
-export default function ProductionMode({ onDelete, employee, capabilities, orders, shift, location, busy, pending, message, run, now }) {
+export default function ProductionMode({ showCuttingQueue=false, onDelete, employee, capabilities, orders, shift, location, busy, pending, message, run, now }) {
   const { mine, available } = productionTasks(orders, employee.id, capabilities)
   const blocked = busy || Boolean(pending)
   return <main className="production-mode">
@@ -13,9 +14,9 @@ export default function ProductionMode({ onDelete, employee, capabilities, order
     {!shift && <section><h2>Rozpocznij pracę</h2><p>Zadania możesz przejmować po rozpoczęciu zmiany w tym lokalu.</p><button className="production-primary" disabled={blocked || !location} onClick={() => run('open_shift', { location_id: Number(location) })}>Rozpocznij zmianę</button></section>}
     <h2>{L.myActive} · {mine.length}</h2>
     <p>{L.availableWork} · {available.length}</p>
-    {!mine.length && !available.length && <p className="empty-state">{L.empty}</p>}
+    {!mine.length && !available.length && !(showCuttingQueue&&orders.length) && <p className="empty-state">{L.empty}</p>}
     <div className="orders-horizontal" role="region" aria-label={L.operatorBoard} tabIndex={0}>
-     {orders.filter(o=>[...mine,...available].some(t=>t.orderId===o.id)).map(order=>{
+     {orders.filter(o=>showCuttingQueue||[...mine,...available].some(t=>t.orderId===o.id)).map(order=>{
       const tasks=[...mine,...available].filter(t=>t.orderId===order.id), urgency=orderDeadline(order,now)
       const groups=new Map()
       for(const task of tasks) {
@@ -25,6 +26,7 @@ export default function ProductionMode({ onDelete, employee, capabilities, order
       }
       return <article key={order.id} data-order-id={order.id} className={`order-column deadline-${urgency?.level || 'normal'}`}>
        <OrderHeader order={order} urgency={urgency} now={now} onDelete={onDelete} disabled={blocked}/>
+       {showCuttingQueue&&order.items.filter(operational).filter(item=>!tasks.some(t=>t.itemId===item.id)).map(item=><section key={`waiting:${item.id}`} className="production-task"><div className="compact-title"><strong>{item.name}</strong><span>×{item.quantity-item.issued}</span></div></section>)}
        {[...groups].map(([key,rows])=>{
         const parent=order.items.find(i=>i.id===rows[0].parentId)
         return <section key={key} className={parent?'operator-set':'operator-items'}>
@@ -46,7 +48,7 @@ function TaskCard({ task, disabled, run }) {
     if (args && await run(task.action, args)) { setSplit(false); setCustom(false); setDigits('') }
   }
   return <section data-work-key={task.key} className="production-task" aria-label={`${task.name} — ${task.status}`}>
-    <div className="compact-title"><strong>{task.name}</strong><span>×{task.quantity}</span></div><span className="order-status">{task.status}</span>
+    <div className="compact-title"><strong>{task.name}</strong><span>×{task.quantity}</span></div><OrderStatusBadge status={task.statusCode}/>
     {task.comment && <p className="order-external-comment">{task.comment}</p>}
     {confirmRelease ? <div className="production-confirm" role="group" aria-label="Potwierdź oddanie zadania"><p>Oddać {task.quantity} szt. do wspólnej puli?</p><button disabled={disabled} onClick={async () => { if (await run('release', task.release)) setConfirmRelease(false) }}>Tak, oddaj zadanie</button><button disabled={disabled} onClick={() => setConfirmRelease(false)}>Zostaw u mnie</button></div> : <>
       <button className="production-primary" disabled={disabled} onClick={() => available ? take(task.quantity) : run(task.action, task.args)}>{label}</button>

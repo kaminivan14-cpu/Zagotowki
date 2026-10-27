@@ -1,3 +1,5 @@
+import ShiftFunctionSelect from './ShiftFunctionSelect'
+import {canChooseShiftFunction,shiftFunctions} from './shiftFunction'
 import ModalClose from '../ui/ModalClose'
 import {useCallback,useEffect,useRef,useState} from 'react'
 import {supabase} from '../supabase'
@@ -9,6 +11,8 @@ export default function WorktimeProvider({employee,capabilities,module,onSignOut
  useEffect(()=>{if(['orders','production','tasks'].includes(module))lastModule.current=module},[module])
  const enabled=capabilities?.includes('worktime.self')
  const [current,setCurrent]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[dialog,setDialog]=useState(false)
+ const functionEnabled=enabled&&canChooseShiftFunction(employee)
+ const [selectedFunction,setSelectedFunction]=useState(()=>{try{const f=localStorage.getItem(`shift-function:${employee.id}`);return shiftFunctions.includes(f)?f:'prep'}catch{return 'prep'}})
  const storageKey=`worktime-operation:${employee.id}`
  const [pending,setPending]=useState(()=>{try{return JSON.parse(sessionStorage.getItem(storageKey))}catch{return null}})
  const pendingRef=useRef(pending),lock=useRef(false),alive=useRef(true),readVersion=useRef(0)
@@ -38,14 +42,19 @@ export default function WorktimeProvider({employee,capabilities,module,onSignOut
   }catch(e){setError(worktimeError(e));throw e}finally{lock.current=false;setBusy(false)}
  }
  async function start(location,source=module){
-  return command('start',{location_id:Number(location),module:source})
+  return command('start',{location_id:Number(location),module:source,...(functionEnabled?{function:selectedFunction}:{})})
+ }
+ async function changeFunction(f){
+  if(!functionEnabled||!shiftFunctions.includes(f))return
+  if(current)await command('function',{shift_id:current.id,function:f})
+  setSelectedFunction(f);try{localStorage.setItem(`shift-function:${employee.id}`,f)}catch{/* Preference only. */}
  }
  async function end(){const latest=await refresh();if(latest)await command('end',{shift_id:latest.id,module:lastModule.current})}
  async function logout(){
   if(!enabled){await onSignOut();return}
   try{const active=await refresh();if(active)setDialog(true);else await onSignOut()}catch(e){setError(worktimeError(e));setDialog(true)}
  }
- return <Context.Provider value={{enabled,current,busy,pending,error,command,start,end,logout,refresh}}>
+ return <Context.Provider value={{functionEnabled,selectedFunction,changeFunction,enabled,current,busy,pending,error,command,start,end,logout,refresh}}>
  {children}
  {error && <p className="worktime-error" role="alert">{module==='tasks'?'Не вдалося підтвердити операцію часу роботи. Перевірте активну роботу та повторіть спробу.':error}</p>}
  {pending && <aside className="worktime-bar">{module==='tasks'?'Час роботи: підтвердьте попередню операцію.':'Czas pracy: operacja wymaga potwierdzenia.'} <button disabled={busy} onClick={()=>command(pending.action,pending.args).catch(()=>{})}>{module==='tasks'?'Повторити операцію часу роботи':'Ponów operację czasu pracy'}</button></aside>}
@@ -66,7 +75,7 @@ export function WorktimeBar({location,locations=[],onLocation,onPanel,canAccess,
  if(!w?.enabled)return null
  return <nav className="worktime-bar" aria-label="Czas pracy">
  {canAccess && <button onClick={onPanel}>Czas pracy</button>}
- {showSession && <>{w.current?<><span>● W pracy · {duration((now-Date.parse(w.current.started_at))/60000)}</span><button disabled={w.busy||Boolean(w.pending)} onClick={()=>w.end().catch(()=>{})}>Zakończ pracę</button></>:<>
+ {showSession && <><ShiftFunctionSelect/>{w.current?<><span>● W pracy · {duration((now-Date.parse(w.current.started_at))/60000)}</span><button disabled={w.busy||Boolean(w.pending)} onClick={()=>w.end().catch(()=>{})}>Zakończ pracę</button></>:<>
  {onLocation && <label>Lokal pracy<select aria-label="Lokal pracy" value={location||''} onChange={e=>onLocation(e.target.value)}><option value="">Wybierz lokal</option>{locations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></label>}
  <button disabled={!location||w.busy||Boolean(w.pending)} onClick={()=>w.start(location).catch(()=>{})}>Rozpocznij pracę</button>
  </>}</>}

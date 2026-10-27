@@ -1,3 +1,4 @@
+import OrderStatusBadge from './OrderStatusBadge'
 import { Menu } from '../ui/ModuleHeader'
 import { useLocale } from '../i18n/useLocale'
 import { deleteLabels } from './delete'
@@ -11,7 +12,7 @@ export default function OrderHeader({order, urgency, now, onDelete, disabled}) {
   <div className="order-heading"><h2>{order.display_number}</h2>{onDelete && <Menu label="…" disabled={disabled} items={[{label:deleteLabels[locale].single,action:()=>onDelete(order),danger:true}]}/>}{order.ready_at && <span className={`deadline-badge ${urgency?.level || ''}`}>{L.readyAt(time(order.ready_at))}</span>}</div>
   {order.integration_sbid && <p>{order.integration_sbid}</p>}
   {order.comment && <p className="order-external-comment">{order.comment}</p>}
-  <div className="operational-chips" aria-label={L.operationalStatus}>{[...new Set(operationalChips(order).map(key=>key.startsWith('lifecycle:')?L.lifecycle[key.slice(10)]:L.stages[key]||L[key]).filter(Boolean))].map(label=><span className="order-status" key={label}>{label}</span>)}</div>
+  <div className="operational-chips" aria-label={L.operationalStatus}>{operationalChips(order).map(status=><OrderStatusBadge key={status} status={status}/>)}</div>
   {urgency && urgency.level!=='normal' && <p className={`deadline-badge ${urgency.level}`}>{urgency.level==='overdue'?L.overdue(urgency.minutes):L[urgency.level]}</p>}
   {elapsed !== null && <p className="order-prep">{L.actualPrep(elapsed)}</p>}
   {order.estimated_prep_minutes != null && <p className="order-prep estimated">{L.prep(order.estimated_prep_minutes)}</p>}

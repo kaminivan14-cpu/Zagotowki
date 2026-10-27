@@ -40,7 +40,8 @@ try {
  const today=await sql('SELECT app_private.task_today()'), tomorrow=await sql('SELECT app_private.task_today()+1')
  const dep=await sql('SELECT id FROM public."Departments" ORDER BY id LIMIT 1')
  await sql(`UPDATE public."Employees" SET department_id=${dep}; INSERT INTO public."Employee_reporting_lines"(employee_id,manager_employee_id,effective_from) VALUES(6,4,'2020-01-01'),(4,3,'2020-01-01');`)
- const employeesBefore=await sql(`SELECT jsonb_agg(to_jsonb(e)-'avatar_path' ORDER BY id) FROM public."Employees" e`)
+ // PR14 adds nullable position; migration must preserve existing fields and initialize it to null.
+ const employeesBefore=await sql(`SELECT jsonb_agg((to_jsonb(e)-'avatar_path')||jsonb_build_object('position',null) ORDER BY id) FROM public."Employees" e`)
  const linesBefore=await sql('SELECT jsonb_agg(to_jsonb(e) ORDER BY id) FROM public."Employee_reporting_lines" e')
  await sql(await readFile('supabase/migrations/202610080001_organization_structure.sql','utf8'))
  for(const f of (await readdir('supabase/migrations')).filter(f=>f>'202610080002_access_directory.sql'&&f.endsWith('.sql')).sort())await sql(await readFile(`supabase/migrations/${f}`,'utf8'))

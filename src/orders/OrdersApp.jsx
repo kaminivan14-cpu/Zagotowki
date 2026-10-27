@@ -1,3 +1,8 @@
+import {cuttingOrders} from './cutting'
+import {orderStatusStyle} from './statusStyles'
+import ShiftFunctionSelect from '../worktime/ShiftFunctionSelect'
+import {useWorktime} from '../worktime/context'
+import {shiftCapabilities,shiftFunctionLabels} from '../worktime/shiftFunction'
 import { generatorAllowed, runtimeEnvironment } from './environment'
 import ModuleHeader, { Menu } from '../ui/ModuleHeader'
 import OrderDeleteDialog from './OrderDeleteDialog'
@@ -17,10 +22,12 @@ import EmployeesScreen from '../auth/EmployeesScreen'
 import { pendingOperation, operationKey, orderError, formatTime, money, rateText, parseRate } from './client'
 
 export default function OrdersApp({ employee, capabilities, onSignOut, onModules, onWorktime }) {
+  const worktime=useWorktime()
   const locale=useLocale(), deleteText=deleteLabels[locale]
   const [deleteTarget,setDeleteTarget]=useState(null)
   const deleteAllowed=canDeleteOrders(employee,capabilities)
   // Keep both views mounted after first use so switching preserves in-progress form state.
+  const [cuttingOverride,setCuttingOverride]=useState(null)
   const [urgencyFilter,setUrgencyFilter]=useState('all')
   const [mode,setMode]=useState('general'), [operatorMounted,setOperatorMounted]=useState(false)
   const operatorAllowed=canUseProductionMode(capabilities)
@@ -38,6 +45,10 @@ export default function OrdersApp({ employee, capabilities, onSignOut, onModules
   const [pending, setPending] = useState(() => { try { return JSON.parse(sessionStorage.getItem(operationKey(employee.id))) } catch { return null } })
   const alive = useRef(true), locked = useRef(false), generation = useRef(0), historyRequest = useRef(0)
   const shift = shifts.find(s => !s.ended_at && String(s.location_id) === String(location))
+  const workShift=worktime?.current||shift
+  const workingCapabilities=shiftCapabilities(capabilities,employee,workShift)
+  const functionCode=workShift?.current_shift_function
+  const cuttingOnly=cuttingOverride&&cuttingOverride.functionCode===functionCode?cuttingOverride.enabled:functionCode==='cutter'
   const chef = capabilities.includes('orders.cut') && capabilities.includes('orders.issue')
   const load = useCallback(async () => {
     const n = ++generation.current
@@ -73,6 +84,7 @@ export default function OrdersApp({ employee, capabilities, onSignOut, onModules
     if (locked.current) return
     locked.current = true; setBusy(true); setMessage('')
     try {
+      if(action==='open_shift' && worktime?.functionEnabled){await worktime.start(args.location_id,'orders');await load();return true}
       const op = pendingOperation(sessionStorage, employee.id, action, args); setPending(op)
       const deleting=['delete_single','delete_bulk'].includes(action)
       const { data, error } = deleting
@@ -90,9 +102,10 @@ export default function OrdersApp({ employee, capabilities, onSignOut, onModules
   }
   const action = (label, name, args, disabled = false) => <button disabled={busy || disabled} onClick={event => { if (event.detail < 2) void run(name, args) }}>{label}</button>
   const isMine = w => !w.released_at && w.employee_id === employee.id && !w.ready_for_cutting_at
-  const rankedOrders = sortedOrders(orders,now,urgencyFilter)
+  const activeOrders=workShift?.current_shift_function==='sushi' && (operatorActive || !['done','shifts'].includes(tab)) ? orders.filter(o=>lifecycle(o)!=='done') : orders
+  const rankedOrders = sortedOrders(cuttingOnly?cuttingOrders(activeOrders):activeOrders,now,urgencyFilter)
   const visibleOrders = rankedOrders.filter(o => (tab !== 'new' || lifecycle(o) === 'new') && (tab !== 'board' || ['partial','in_progress'].includes(lifecycle(o))) && (tab !== 'done' || lifecycle(o) === 'done') && (tab !== 'mine' || o.items.some(i => i.assignments.some(isMine))))
-  const tasks=operatorActive?productionTasks(rankedOrders,employee.id,capabilities):null
+  const tasks=operatorActive?productionTasks(rankedOrders,employee.id,workingCapabilities):null
   const deleteScope=operatorActive?rankedOrders.filter(o=>[...tasks.mine,...tasks.available].some(t=>t.orderId===o.id)):visibleOrders
   const scopeLabel=`${operatorActive?L.operationalMode:({all:L.all,new:L.waiting,board:L.working,done:L.done,mine:'Moje zadania'}[tab] || tab)} · ${L.urgencyFilters[urgencyFilter]}`
   function openDelete(order) {
@@ -115,8 +128,9 @@ export default function OrdersApp({ employee, capabilities, onSignOut, onModules
       {deleteAllowed && (operatorActive || ['all','new','board','done','mine'].includes(tab)) && <Menu label="…" disabled={busy || Boolean(pending) || !location || !deleteScope.length} items={[{label:deleteText.bulk,action:()=>openDelete(),danger:true}]}/>}
     </ModuleHeader>
     <nav className="urgency-filters" aria-label={L.urgencyFilter}>{Object.entries(L.urgencyFilters).map(([key,label])=><button key={key} aria-pressed={urgencyFilter===key} onClick={()=>setUrgencyFilter(key)}>{label}</button>)}</nav>
+    <div className="shift-function-toolbar">{operatorActive&&<ShiftFunctionSelect/>}<button aria-pressed={cuttingOnly} style={cuttingOnly?orderStatusStyle('READY_FOR_CUTTING'):undefined} onClick={()=>setCuttingOverride({functionCode,enabled:!cuttingOnly})}>{shiftFunctionLabels[locale].cutting}</button>{workShift?.current_shift_function==='prep'&&<p>{shiftFunctionLabels[locale].prepHint}</p>}</div>
     <div hidden={operatorActive}>
-    <nav aria-label="Widoki zamówień">{[['all',L.all],['new',L.waiting],['board',L.working],['done',L.done],...(has('orders.work') ? [['mine','Moje zadania']] : []),['shifts','Zmiany / historia'],...(generatorAllowed(runtimeEnvironment,capabilities) ? [['generator','Generator UAT']] : []),...(has('orders.rates.manage') ? [['rates','Katalog i stawki']] : [])].map(([key,label]) => <button key={key} aria-pressed={tab === key} onClick={() => setTab(key)}>{label}{['all','new','board','done'].includes(key) ? ` (${orders.filter(o=>key==='all' || (key==='new' ? lifecycle(o)==='new' : key==='done' ? lifecycle(o)==='done' : ['partial','in_progress'].includes(lifecycle(o)))).length})` : ''}</button>)}</nav>
+    <nav aria-label="Widoki zamówień">{[['all',L.all],['new',L.waiting],['board',L.working],['done',L.done],...(has('orders.work') ? [['mine','Moje zadania']] : []),['shifts','Zmiany / historia'],...(generatorAllowed(runtimeEnvironment,capabilities) ? [['generator','Generator UAT']] : []),...(has('orders.rates.manage') ? [['rates','Katalog i stawki']] : [])].map(([key,label]) => <button key={key} style={['new','board','done'].includes(key)?orderStatusStyle({new:'lifecycle:new',board:'IN_PROGRESS',done:'COMPLETED'}[key]):undefined} aria-pressed={tab === key} onClick={() => setTab(key)}>{label}{['all','new','board','done'].includes(key) ? ` (${orders.filter(o=>key==='all' || (key==='new' ? lifecycle(o)==='new' : key==='done' ? lifecycle(o)==='done' : ['partial','in_progress'].includes(lifecycle(o)))).length})` : ''}</button>)}</nav>
     {chef && <OrderNotices notices={notices} error={noticeError} busy={ackBusy} onView={id=>{setTab('all');setUrgencyFilter('all');setFocusOrder({id,nonce:Date.now()})}} onRead={async id=>{
       if(ackBusy)return;setAckBusy(true)
       try {const {error}=await supabase.rpc('orders_notifications',{p_location:Number(location),p_ack:id});if(error)throw error;acknowledged.current.add(id);if(alive.current)setNotices(old=>old.filter(x=>x.id!==id))}
@@ -124,7 +138,7 @@ export default function OrdersApp({ employee, capabilities, onSignOut, onModules
     }}/>}
     <p role="status">{message}</p>{pending && <aside>Operacja oczekuje na potwierdzenie. {action('Ponów tę samą operację',pending.action,pending.args)}</aside>}
     <section className="shift-panel" aria-label="Moja zmiana"><div><h2>Moja zmiana</h2><p>{shift ? `Zmiana od ${formatTime(shift.started_at)}` : 'Brak aktywnej zmiany w tym lokalu'}</p><small>Podgląd zamówień nie wymaga rozpoczęcia zmiany.</small></div>
-      {shift ? action('Zakończ zmianę','end_shift',{ shift_id: shift.id }) : action('Rozpocznij zmianę','open_shift',{ location_id: Number(location) },!location)}</section>
+      <ShiftFunctionSelect/>{shift ? action('Zakończ zmianę','end_shift',{ shift_id: shift.id }) : action('Rozpocznij zmianę','open_shift',{ location_id: Number(location) },!location)}</section>
     {tab === 'generator' && generatorAllowed(runtimeEnvironment,capabilities) && <OrderGenerator catalog={catalog} location={location} disabled={busy || Boolean(pending)} run={run}/>}
     {tab === 'rates' && has('orders.rates.manage') && <section><h2>Katalog i stawki</h2>{catalog.map(p => <RateEditor key={`${p.id}:${p.work_rate_minor}:${p.active}`} product={p} busy={busy} save={args => run('rate',args)} />)}</section>}
     {tab === 'shifts' && <section><h2>Zmiany / historia</h2>{shifts.length === 0 && <p>Nie masz jeszcze zmian.</p>}{shifts.map(s => <article key={s.id}><p>{formatTime(s.started_at)} → {formatTime(s.ended_at)}</p>
@@ -134,7 +148,7 @@ export default function OrdersApp({ employee, capabilities, onSignOut, onModules
       {history && <article><h2>Historia zmiany {history.shiftId}</h2>{history.rows.length === 0 && <p>Brak wydanych pozycji w tej zmianie.</p>}{history.rows.map((h,n) => <div key={n}><h3>{h.order} · {h.product} ×{h.quantity}</h3><p>Wykonał: {h.maker}; kroił: {h.cutter}; wydał: {h.issuer}</p><p>Przejęte: {formatTime(h.claimed_at)} · Gotowe: {formatTime(h.ready_at)} · Krojenie: {formatTime(h.cutting_started_at)} → {formatTime(h.cutting_completed_at)} · Wydane: {formatTime(h.issued_at)}</p></div>)}</article>}</section>}
     {['board','all','new','mine','done'].includes(tab) && <>
       {!visibleOrders.length && <p className="empty-state">{L.empty}</p>}
-      <OrdersBoard onDelete={deleteAllowed?openDelete:null} focusOrder={focusOrder} orders={visibleOrders} employee={employee} capabilities={capabilities} shift={shift} disabled={busy || Boolean(pending)} selection={selection} setSelection={setSelection} run={run} now={now} onHistory={tab==='all' ? async o => {
+      <OrdersBoard onDelete={deleteAllowed?openDelete:null} focusOrder={focusOrder} orders={visibleOrders} employee={employee} capabilities={workingCapabilities} shift={shift} disabled={busy || Boolean(pending)} selection={selection} setSelection={setSelection} run={run} now={now} onHistory={tab==='all' ? async o => {
         const n=++historyRequest.current;setEvents(null)
         try { const {data,error}=await supabase.rpc('orders_history',{p_order:o.id});if(error)throw error;if(alive.current && n===historyRequest.current)setEvents({number:o.display_number,rows:data||[]}) }
         catch { if(alive.current && n===historyRequest.current)setMessage('Nie udało się pobrać historii zamówienia.') }
@@ -142,7 +156,7 @@ export default function OrdersApp({ employee, capabilities, onSignOut, onModules
     </>}
     {tab === 'all' && events && <section><h2>Historia {events.number}</h2>{events.rows.length === 0 && <p>Brak zdarzeń.</p>}{events.rows.map((e,n)=><p key={n}>{formatTime(e.at)} · {e.event} · {e.actor}</p>)}</section>}
     </div>
-    {operatorAllowed && operatorMounted && <div hidden={!operatorActive}><ProductionMode onDelete={deleteAllowed?openDelete:null} now={now} employee={employee} capabilities={capabilities} orders={rankedOrders} shift={shift} location={location} busy={busy} pending={pending} message={message} run={run}/></div>}
+    {operatorAllowed && operatorMounted && <div hidden={!operatorActive}><ProductionMode showCuttingQueue={cuttingOnly} onDelete={deleteAllowed?openDelete:null} now={now} employee={employee} capabilities={workingCapabilities} orders={rankedOrders} shift={shift} location={location} busy={busy} pending={pending} message={message} run={run}/></div>}
     {deleteTarget && <OrderDeleteDialog target={deleteTarget} busy={busy} message={message} onClose={()=>setDeleteTarget(null)} onConfirm={()=>run(deleteTarget.bulk?'delete_bulk':'delete_single',{p_location_id:deleteTarget.locationId,...(deleteTarget.bulk?{p_order_ids:deleteTarget.orders.map(o=>o.id)}:{p_order_id:deleteTarget.orders[0].id})})}/>}
   </div>
 }
