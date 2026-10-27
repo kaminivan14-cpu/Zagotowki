@@ -1,3 +1,4 @@
+import {applyTextSize,readTextSize} from '../preferences/textSize'
 import {useLocale} from '../i18n/useLocale'
 import { useEffect, useRef, useState } from 'react'
 import ModuleShell from '../orders/ModuleShell'
@@ -16,6 +17,8 @@ export default function AuthGate() {
   const [error, setError] = useState('')
   const [passwordMode, setPasswordMode] = useState(initialPasswordRedirect.requested)
   const [passwordLinkError, setPasswordLinkError] = useState(initialPasswordRedirect.hasError ? invalidPasswordLink : '')
+  const preferenceId=employee?.auth_user_id||employee?.id
+  useEffect(()=>{applyTextSize(readTextSize(preferenceId));return()=>applyTextSize('normal')},[preferenceId])
   const generation = useRef(0)
   const refresh = useRef(() => {})
   useEffect(() => {

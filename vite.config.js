@@ -1,3 +1,4 @@
+import {scaleTypography} from './scripts/lib/text-scale.mjs'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
 import { assertBuildEnvironment } from './scripts/lib/build-environment.mjs'
@@ -10,5 +11,5 @@ export default defineConfig(({ command, mode }) => {
   } else if (process.env.VITE_SUPABASE_URL === 'https://auth-tests.supabase.co' || loadEnv(mode, process.cwd(), 'VITE_').VITE_SUPABASE_URL === 'https://meuzkduxttjcuiynsnaa.supabase.co') {
     environment = 'uat'
   }
-  return { plugins: [react()], define: { __APP_ENVIRONMENT__: JSON.stringify(environment) } }
+  return { plugins: [react()], css: {postcss: {plugins: [scaleTypography()]}}, define: { __APP_ENVIRONMENT__: JSON.stringify(environment) } }
 })

@@ -1,7 +1,8 @@
+import {subscribeTextScale,getTextScale} from '../../preferences/textSize'
 import {tr} from '../../i18n/runtime'
-import {useEffect,useId,useMemo,useRef,useState} from 'react'
+import {useSyncExternalStore,useEffect,useId,useMemo,useRef,useState} from 'react'
 import {graphLayout,durationText,connectorPath,editDependency} from './model'
-import {roleName} from '../admin/labels'
+import {assignmentName,responsiblePosition} from './model'
 
 export default function ProcessDiagram({doc,selected,onSelect,onAddStage,disabled,employees=[],onSelectEdge,selectedEdge,onRewire,onConnect,onUndoEdge,canUndoEdge}){
  const [zoom,setZoom]=useState(1),[pan,setPan]=useState(false),[collapsed,setCollapsed]=useState([])
@@ -9,11 +10,12 @@ export default function ProcessDiagram({doc,selected,onSelect,onAddStage,disable
  const [connecting,setConnecting]=useState(null),[pointer,setPointer]=useState(null)
  const edgeDrag=useRef(null),suppressClick=useRef(false)
  const ref=useRef(),scroll=useRef(),drag=useRef(),handle=useRef(),marker=useId().replaceAll(':','')
- const graph=useMemo(()=>{try{return graphLayout(doc)}catch{return null}},[doc])
+ const textScale=useSyncExternalStore(subscribeTextScale,getTextScale)
+ const graph=useMemo(()=>{try{return graphLayout(doc,textScale)}catch{return null}},[doc,textScale])
  const cancel=()=>{edgeDrag.current=null;setConnecting(null);setPointer(null);setRewiring(false);setHover(null);onSelectEdge?.(null)}
  useEffect(()=>{const escape=e=>{if(e.key==='Escape'&&(selectedEdge||connecting)){e.preventDefault();e.stopPropagation();edgeDrag.current=null;setConnecting(null);setPointer(null);setRewiring(false);setHover(null);onSelectEdge?.(null)}};document.addEventListener('keydown',escape,true);return()=>document.removeEventListener('keydown',escape,true)},[selectedEdge,onSelectEdge,connecting])
  if(!graph)return <p role="alert">{tr('Залежності містять цикл або невідоме завдання.')}</p>
- const {nodes,edges,width,height,terminalX}=graph,point=id=>nodes.find(t=>t.key===id)
+ const {nodes,edges,width,height,terminalX,cardHeight}=graph,point=id=>nodes.find(t=>t.key===id)
  const active=selectedEdge&&edges.find(e=>e.from===selectedEdge.from&&e.to===selectedEdge.to)
  const editable=!!active&&!disabled&&!active.implicit&&!!onRewire
  const valid=key=>{if((!editable&&!connecting)||!key)return false;try{editDependency(doc,connecting?null:active,connecting||active.from,key,connecting?'add':'replace');return true}catch{return false}}
@@ -62,14 +64,14 @@ export default function ProcessDiagram({doc,selected,onSelect,onAddStage,disable
     <svg className="process-graph-edges" width={width} height={height} aria-label={tr('Зв’язки зверху вниз')}>
      <defs><marker id={marker} markerUnits="userSpaceOnUse" markerWidth="7" markerHeight="7" viewBox="0 0 7 7" refX="6" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 Z" fill="#36445e"/></marker></defs>
      {edges.map(e=>line(e,`${e.from}-${e.to}`,true))}
-     {pointer&&(connecting||active)&&<path className="process-draft-connector" d={connectorPath([{x:point(connecting||active.from).x+125,y:point(connecting||active.from).y+88},pointer])} markerEnd={`url(#${marker})`}/>}
+     {pointer&&(connecting||active)&&<path className="process-draft-connector" d={connectorPath([{x:point(connecting||active.from).x+125,y:point(connecting||active.from).y+cardHeight},pointer])} markerEnd={`url(#${marker})`}/>}
      {graph.startEdges.map(e=>line(e,`start-${e.to}`))}{graph.endEdges.map(e=>line(e,`end-${e.from}`))}
     </svg>
-    {nodes.map(t=><button type="button" key={t.key} title={t.title} data-task-key={t.key} data-level={t.level} className={`process-graph-node ${selected===t.key?'selected':''} ${rewiring&&hover===t.key?(valid(t.key)?'rewire-valid':'rewire-invalid'):''}`} style={{left:t.x,top:t.y}}
+    {nodes.map(t=><button type="button" key={t.key} title={t.title} data-task-key={t.key} data-level={t.level} className={`process-graph-node ${selected===t.key?'selected':''} ${rewiring&&hover===t.key?(valid(t.key)?'rewire-valid':'rewire-invalid'):''}`} style={{left:t.x,top:t.y,height:cardHeight}}
      onPointerEnter={()=>{if(rewiring)setHover(t.key)}} onFocus={()=>{if(rewiring)setHover(t.key)}} onClick={()=>{if(pan)return;if(rewiring)finish(t.key);else{onSelectEdge?.(null);onSelect(t.key)}}}>
-     <b>{t.number}　{t.icon||'▤'}　{t.title}</b>{!collapsed.includes(t.stageKey)&&<><small>{employees.find(e=>e.id===t.assigned_to_employee_id)?.name||roleName(t.responsible_role)}</small><small>◷ {durationText(t)}</small></>}
+     <b>{t.number}　{t.icon||'▤'}　{t.title}</b>{!collapsed.includes(t.stageKey)&&<><small>{employees.find(e=>e.id===t.assigned_to_employee_id)?.name||assignmentName(responsiblePosition(t),doc)}</small><small>◷ {durationText(t)}</small></>}
     </button>)}
-    {selected&&!active&&!disabled&&!pan&&onConnect&&point(selected)&&<button type="button" className="process-edge-handle process-source-handle" aria-label={tr('Додати залежність')} title={tr('Додати залежність')} style={{left:point(selected).x+113,top:point(selected).y+88}}
+    {selected&&!active&&!disabled&&!pan&&onConnect&&point(selected)&&<button type="button" className="process-edge-handle process-source-handle" aria-label={tr('Додати залежність')} title={tr('Додати залежність')} style={{left:point(selected).x+113,top:point(selected).y+cardHeight}}
      onPointerDown={e=>{if(e.button!==0)return;e.preventDefault();e.stopPropagation();e.currentTarget.setPointerCapture(e.pointerId);setConnecting(selected);setRewiring(true);setMessage('')}}
      onPointerMove={e=>{if(connecting)track(e)}} onPointerUp={e=>{e.stopPropagation();if(connecting)finish(candidate(e.clientX,e.clientY))}} onPointerCancel={cancel}
      onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setConnecting(selected);setRewiring(true);setMessage('');ref.current.querySelector('[data-task-key]')?.focus()}}}>＋</button>}

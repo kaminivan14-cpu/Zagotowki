@@ -60,7 +60,7 @@ export default function PlanningScreen({
   <span
     style={{
       color: '#64748b',
-      fontSize: '15px',
+      fontSize: 'calc(15px * var(--app-font-scale, 1))',
       fontWeight: '500',
       paddingLeft: '2px',
     }}

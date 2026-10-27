@@ -91,7 +91,7 @@ export default function HistoryScreen({
                         style={{
                           marginTop: '8px',
                           opacity: 0.65,
-                          fontSize: '15px',
+                          fontSize: 'calc(15px * var(--app-font-scale, 1))',
                         }}
                       >
                         {wszystkiePozycje.length}{' '}
@@ -103,7 +103,7 @@ export default function HistoryScreen({
 
                     <div
                       style={{
-                        fontSize: '28px',
+                        fontSize: 'calc(28px * var(--app-font-scale, 1))',
                         fontWeight: '600',
                       }}
                     >
@@ -143,7 +143,7 @@ export default function HistoryScreen({
 <div
   style={{
     marginTop: '6px',
-    fontSize: '14px',
+    fontSize: 'calc(14px * var(--app-font-scale, 1))',
     color: '#64748b',
   }}
 >
