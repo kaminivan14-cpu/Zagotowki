@@ -16,10 +16,18 @@ async function setup(page,s,id,role,location=1){
   const name=url.pathname.split('/').pop(),args=route.request().postDataJSON()||{};let data=[]
   const employee={id,name:`Person ${id}`,role,location_id:location,active:true,auth_user_id:user.id}
   if(name==='auth_employee_profile')data=[employee]
-  else if(name==='auth_capabilities')data=caps[role]
+  else if(name==='auth_capabilities')data=s.functionMode?[...new Set([...caps[role],'worktime.self','orders.access','orders.work','orders.cut','orders.issue'])]:caps[role]
   else if(name==='user')data=user
   else if(name==='Locations')data=[{id:location,name:`Lokal ${location}`,active:true}]
   else if(name==='orders_notifications'){if(args.p_ack)s.notices=(s.notices||[]).filter(n=>n.id!==args.p_ack);data=s.notices||[]}
+  else if(name==='worktime_current')data=s.shifts.find(x=>x.employee_id===id&&!x.ended_at)||null
+  else if(name==='worktime_command'){
+   s.calls.push({rpc:name,...args});const a=args.p_action,v=args.p_args
+   let shift=s.shifts.find(x=>x.employee_id===id&&!x.ended_at)
+   if(a==='start'&&!shift){shift={id:s.serial++,employee_id:id,location_id:location,started_at:now(),current_shift_function:v.function};s.shifts.push(shift)}
+   if(a==='function'){shift.current_shift_function=v.function;s.functionEvents=(s.functionEvents||0)+1}
+   data={shift_id:shift?.id}
+  }
   else if(name==='orders_catalog')data=s.catalog || [{id:1,name:'Philadelphia Salmon',active:true,is_test:true,...(role==='administrator'?{work_rate_minor:200,currency:'PLN'}:{})}]
   else if(name==='orders_shifts')data=s.shifts.filter(x=>x.employee_id===id)
   else if(name==='orders_board')data=s.orders.filter(x=>x.location_id===args.p_location)
@@ -411,4 +419,32 @@ test('Orders deletion labels use Ukrainian locale',async({page})=>{
 test('Orders deletion is hidden from other roles even with accidental capability',async({page})=>{
  const s=state();s.orders=[deleteOrder(907)];caps['su-chef'].push('orders.delete')
  try{await setup(page,s,3,'su-chef');await enter(page);await expect(page.locator('.order-column')).toHaveCount(1);await expect(page.locator('.order-column summary')).toHaveCount(0);await expect(page.getByRole('button',{name:/Usuń/})).toHaveCount(0)}finally{caps['su-chef']=caps['su-chef'].filter(x=>x!=='orders.delete')}
+})
+
+for(const width of [1440,768,390])for(const locale of ['pl','uk'])test(`shift function + cutter ${width} ${locale}`,async({page},testInfo)=>{
+ await page.setViewportSize({width,height:1000})
+ const s=state();s.functionMode=true;s.locale=locale
+ s.orders=[{id:1,location_id:1,display_number:'SYNTHETIC-CUTTER',status:'IN_PROGRESS',sent_to_kitchen_at:now(),items:[{id:1,item_type:'product',name:'Synthetic roll',quantity:2,available:0,issued:0,assignments:[{id:1,employee_id:99,employee_name:'Synthetic maker',quantity:2,ready_for_cutting_at:null,cutting_available:2,cuttings:[]}]}]}]
+ await setup(page,s,4,'sushi-master');await enter(page)
+ const select=page.getByRole('combobox',{name:locale==='pl'?'Funkcja':'Функція',exact:true})
+ await select.selectOption('sushi');await page.getByRole('button',{name:'Rozpocznij zmianę',exact:true}).click()
+ await expect(select).toHaveValue('sushi');const initial={...s.shifts[0]}
+ await select.selectOption('cutter');await expect(page.getByRole('button',{name:locale==='pl'?'Do krojenia':'До нарізки',exact:true})).toHaveAttribute('aria-pressed','true')
+ await expect(page.getByRole('heading',{name:'SYNTHETIC-CUTTER'})).toBeVisible()
+ await page.getByRole('button',{name:'Tryb operacyjny',exact:true}).click();await expect(page.getByRole('heading',{name:'SYNTHETIC-CUTTER'})).toBeVisible();await expect(page.locator('.production-mode').getByText('Synthetic roll',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Tryb ogólny',exact:true}).click()
+ expect(s.shifts[0].id).toBe(initial.id);expect(s.shifts[0].started_at).toBe(initial.started_at);expect(s.functionEvents).toBe(1)
+ for(const size of ['normal','large','xlarge']){
+  await page.evaluate(size=>document.documentElement.style.setProperty('--app-font-scale',String({normal:1,large:1.1,xlarge:1.2}[size])),size)
+  await expect(select).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true)
+  await page.screenshot({path:testInfo.outputPath(`cutter-${size}.png`),fullPage:true})
+ }
+ await select.selectOption('prep');await expect(page.getByRole('button',{name:'Weź całe zamówienie'})).toHaveCount(0)
+})
+
+test('legacy active shift has no invented function and selecting prep preserves its time',async({page})=>{
+ const s=state();s.functionMode=true;s.shifts=[{id:55,employee_id:4,location_id:1,started_at:now(),current_shift_function:null}]
+ const started=s.shifts[0].started_at;await setup(page,s,4,'sushi-master');await enter(page)
+ const select=page.getByRole('combobox',{name:'Funkcja',exact:true});await expect(select).toHaveValue('')
+ await select.selectOption('prep');await expect(select).toHaveValue('prep')
+ expect(s.shifts[0].id).toBe(55);expect(s.shifts[0].started_at).toBe(started);expect(s.functionEvents).toBe(1)
 })

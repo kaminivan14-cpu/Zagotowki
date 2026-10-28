@@ -9,7 +9,7 @@ export const uid=n=>`20000000-0000-4000-8000-${String(n).padStart(12,'0')}`
 const literal=value=>`'${JSON.stringify(value).replaceAll("'","''")}'::jsonb`
 function sql(query,db=database){return new Promise((resolve,reject)=>{const p=spawn('docker',['exec','-i',container,'psql','-U','postgres','-d',db,'-X','-qAt','-v','ON_ERROR_STOP=1']);let out='',err='';p.stdout.on('data',b=>out+=b);p.stderr.on('data',b=>err+=b);p.on('error',reject);p.on('close',code=>code?reject(new Error(err)):resolve(out.trim()));p.stdin.end(query)})}
 const as=n=>`SET ROLE authenticated; SET request.jwt.claim.sub='${uid(n)}';`
-const command=(n,action,args,op=randomUUID())=>sql(`${as(n)} SELECT public.tasks_command('${action}',${literal(args)},'${op}');`).then(JSON.parse)
+const command=(n,action,args,op=randomUUID())=>sql(`${as(n)} SELECT public.tasks_command('${action}',${literal(args)},'${op}');`).then(JSON.parse).catch(e=>{throw new Error(`Fixture employee ${n}, action ${action}, task ${args.task_id||'new'}: ${e.message}`)})
 const rpc=(n,name,args='')=>sql(`${as(n)} SELECT public.${name}(${args});`).then(JSON.parse)
 let checks=0
 const eq=(a,b)=>{assert.deepEqual(a,b);checks++}
@@ -96,17 +96,18 @@ try {
  eq(next[0].id,next[1].id)
  eq(await sql('SELECT count(*) FROM public."Task_work_sessions" WHERE employee_id=6 AND ended_at IS NULL'),'1')
  eq((await rpc(6,'tasks_work_state')).current.id,task.id)
- const critical=await command(6,'create',{title:'Негайно',urgency:'critical_now',estimated_minutes:2})
+ await denied(command(6,'create',{title:'Unauthorized interruption',urgency:'critical_now'}),/INTERRUPTION_DENIED/)
+ const critical=await command(1,'create',{assigned_to_employee_id:6,title:'Негайно',urgency:'critical_now',estimated_minutes:2})
  const interrupt=await command(6,'critical_start',{task_id:critical.id,version:critical.version})
  eq(interrupt.status,'in_progress')
  eq((await rpc(6,'tasks_details',task.id)).task.status,'paused')
- const nested=await command(6,'create',{title:'Ще критичніше',urgency:'critical_now',estimated_minutes:1})
+ const nested=await command(1,'create',{assigned_to_employee_id:6,title:'Ще критичніше',urgency:'critical_now',estimated_minutes:1})
  await command(6,'critical_start',{task_id:nested.id,version:nested.version})
  let back=await command(6,'complete',{task_id:nested.id,version:nested.version+1,advance:false})
  eq(back.id,critical.id)
  back=await command(6,'complete',{task_id:critical.id,version:back.version})
  eq(back.id,task.id)
- const declined=await command(6,'create',{title:'Зачекає',urgency:'critical_now',estimated_minutes:2})
+ const declined=await command(1,'create',{assigned_to_employee_id:6,title:'Зачекає',urgency:'critical_now',estimated_minutes:2})
  await denied(command(6,'critical_decline',{task_id:declined.id,version:declined.version,reason:''}),/REASON_REQUIRED/)
  await command(6,'critical_decline',{task_id:declined.id,version:declined.version,reason:'Зустріч'})
  eq((await rpc(6,'tasks_work_state')).critical.find(t=>t.id===declined.id).acknowledged,true)
@@ -144,6 +145,9 @@ try {
  await denied(command(6,'create',{title:'Підміна',created_by_employee_id:1}),/INVALID_ARGUMENTS/)
  await denied(command(6,'create',{title:'Підміна джерела',source_type:'manager'}),/INVALID_ARGUMENTS/)
  const unknown=await command(10,'create',{title:'Без оцінки',planned_date:today})
+ // Current creation defaults to 30 minutes; retain coverage of legacy unknown-duration rows.
+ eq(unknown.estimated_minutes,30)
+ await sql(`UPDATE public."Tasks" SET estimated_minutes=NULL WHERE id=${unknown.id}`)
  const unknownPlan=await rpc(10,'tasks_planning',`10,'${today}','${today}'`)
  eq(unknownPlan.days[0].unknown_count,1)
  eq(unknownPlan.tasks[0].estimated_minutes,null)
@@ -160,8 +164,8 @@ try {
  eq(approvedMove.planned_date,dayAdd(today,1))
  // Unknown duration and blocked dependencies never enter the queue.
  const precursor=await command(10,'create',{title:'Передумова',estimated_minutes:10})
- const dependent=await command(10,'create',{title:'Залежить',urgency:'critical_now',estimated_minutes:2})
- await command(10,'dependency',{task_id:dependent.id,version:dependent.version,depends_on_task_id:precursor.id})
+ const dependent=await command(1,'create',{assigned_to_employee_id:10,title:'Залежить',urgency:'critical_now',estimated_minutes:2})
+ await command(1,'dependency',{task_id:dependent.id,version:dependent.version,depends_on_task_id:precursor.id})
  const ordinary=await command(10,'create',{title:'Звичайне',estimated_minutes:20,planned_date:today})
  const urgent=await command(10,'create',{title:'Сьогодні',urgency:'critical_today',estimated_minutes:10})
  eq((await command(10,'next',{})).id,urgent.id)

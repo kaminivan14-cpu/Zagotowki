@@ -1,3 +1,5 @@
+import {useLocale} from '../i18n/useLocale'
+import {shiftFunctionLabels} from './shiftFunction'
 import ModalClose from '../ui/ModalClose'
 import DateFilter from './DateFilter'
 import {useEffect,useRef,useState} from 'react'
@@ -6,6 +8,7 @@ import {useWorktime} from './context'
 import {initialRange,date,time,duration,localInput,correctionInstant,worktimeError} from './client'
 const statuses={active:'W pracy',completed:'Zakończona',needs_attention:'Wymaga uwagi'}
 export default function WorktimePanel({capabilities,onBack}){
+ const locale=useLocale(),functionText=shiftFunctionLabels[locale]
  const [filters,setFilters]=useState(initialRange),[view,setView]=useState('list'),[context,setContext]=useState(null),[rows,setRows]=useState([]),[summary,setSummary]=useState([]),[calendar,setCalendar]=useState([]),[next,setNext]=useState(null),[cursor,setCursor]=useState(0),[busy,setBusy]=useState(false),[error,setError]=useState(''),[revision,reload]=useState(0),[edit,setEdit]=useState(null),[events,setEvents]=useState(null),[month,setMonth]=useState(()=>initialRange().p_to.slice(0,7)),[day,setDay]=useState(null),[downloadBusy,setDownloadBusy]=useState(false)
  const [attention,setAttention]=useState(new Set())
  const generation=useRef(0),w=useWorktime()
@@ -80,7 +83,7 @@ export default function WorktimePanel({capabilities,onBack}){
  <div className="worktime-kpis" aria-label="Podsumowanie czasu pracy"><span>Łącznie godzin <strong>{duration(summary.reduce((n,r)=>n+r.worked_minutes,0))}</strong></span><span>Aktywne sesje <strong>{summary.reduce((n,r)=>n+r.active_sessions,0)}</strong></span><span>Liczba pracowników <strong>{summary.length}</strong></span></div>
  <div className="worktime-table"><table><thead><tr><th>Pracownik</th><th>Dni pracy</th><th className="numeric">Łącznie</th><th>Aktywne</th><th>Status</th></tr></thead><tbody>{summary.map(r=>{const status=attention.has(r.employee_id)?'needs_attention':r.active_sessions?'active':'completed';return <tr key={r.employee_id}><td>{r.employee_name}</td><td>{r.work_days}</td><td className="numeric">{duration(r.worked_minutes)}</td><td>{r.active_sessions || '—'}</td><td><span className={`worktime-badge ${status}`}>{statuses[status]}</span></td></tr>})}</tbody></table></div></>}
 
- {events&&<section><h2>Historia korekt i sesji</h2>{!events.length&&<p>Brak zdarzeń. Audyt obejmuje operacje od wdrożenia funkcji.</p>}{events.map(e=><div key={e.id}><p>{date(e.created_at)} {time(e.created_at)} · {e.event_type} · Pracownik #{e.actor_employee_id}</p><p>{e.reason}</p><p>Przed: {date(e.old_values?.started_at)} {time(e.old_values?.started_at)} → {date(e.old_values?.ended_at)} {time(e.old_values?.ended_at)}</p><p>Po: {date(e.new_values.started_at)} {time(e.new_values.started_at)} → {date(e.new_values.ended_at)} {time(e.new_values.ended_at)}</p></div>)}</section>}
+ {events&&<section><h2>Historia korekt i sesji</h2>{!events.length&&<p>Brak zdarzeń. Audyt obejmuje operacje od wdrożenia funkcji.</p>}{events.map(e=><div key={e.id}><p>{date(e.created_at)} {time(e.created_at)} · {e.event_type} · Pracownik #{e.actor_employee_id}</p><p>{e.reason}</p>{e.event_type==='WORK_SHIFT_FUNCTION_CHANGED'&&<p>{functionText.label}: {functionText[e.old_values?.current_shift_function]||'—'} → {functionText[e.new_values.current_shift_function]}</p>}<p>Przed: {date(e.old_values?.started_at)} {time(e.old_values?.started_at)} → {date(e.old_values?.ended_at)} {time(e.old_values?.ended_at)}</p><p>Po: {date(e.new_values.started_at)} {time(e.new_values.started_at)} → {date(e.new_values.ended_at)} {time(e.new_values.ended_at)}</p></div>)}</section>}
  {edit&&<Correction row={edit} close={()=>setEdit(null)} saved={()=>{setEdit(null);reload(n=>n+1)}}/>}
  </main>
 }

@@ -39,3 +39,5 @@
 .worktime-badge.active { background:#e1f1e8; color:#206343; }
 .worktime-badge.needs_attention { background:#fff0d5; color:#7b4906; }
 @media(max-width:600px) { .worktime-panel header { flex-wrap:wrap; gap:8px; } .worktime-filters label { flex:1 1 130px; min-width:0; } .worktime-filters input,.worktime-filters select { width:100%; max-width:100%; } .worktime-filters .worktime-export { margin-left:0; } }
+
+.shift-function-select{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}.shift-function-select select{min-height:44px;max-width:100%;font:inherit;padding:.5rem}.shift-function-toolbar{display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin:1rem 0}.shift-function-toolbar p{max-width:60ch}
