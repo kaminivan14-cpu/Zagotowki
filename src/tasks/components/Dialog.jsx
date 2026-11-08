@@ -1,11 +1,54 @@
-import ModalClose from '../../ui/ModalClose'
-import LanguageSwitcher from '../../i18n'
-import {tr} from '../../i18n/runtime'
-import { useContext, useEffect, useRef } from 'react'
-import { TaskFeedback } from '../feedback'
-export default function Dialog({ title, children, onClose, busy = false, onRetry, hideClose=false }) {
- const feedback = useContext(TaskFeedback)
- const ref = useRef(null)
- useEffect(() => { const el = ref.current; el.showModal(); return () => el.close() }, [])
- return <dialog ref={ref} className="tasks-dialog modal-with-close" aria-label={title} onCancel={e => { e.preventDefault(); if (!busy) onClose() }}><ModalClose onClose={onClose} disabled={busy}/><div className="tasks-app"><LanguageSwitcher/><h2>{title}</h2><p role="alert">{feedback.error}</p>{feedback.error && <button disabled={feedback.busy} type="button" onClick={onRetry || feedback.retry}>{tr('Повторити дію')}</button>}{children}{!hideClose&&<button type="button" disabled={busy} onClick={onClose}>{tr('Закрити')}</button>}</div></dialog>
+import ModalClose from "../../ui/ModalClose";
+import LanguageSwitcher from "../../i18n";
+import { tr } from "../../i18n/runtime";
+import { useContext, useEffect, useRef } from "react";
+import { TaskFeedback } from "../feedback";
+export default function Dialog({
+  title,
+  children,
+  onClose,
+  busy = false,
+  onRetry,
+  hideClose = false,
+}) {
+  const feedback = useContext(TaskFeedback);
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    el.showModal();
+    return () => el.close();
+  }, []);
+  return (
+    <dialog
+      ref={ref}
+      className="tasks-dialog modal-with-close"
+      aria-label={title}
+      onCancel={(e) => {
+        e.preventDefault();
+        if (!busy) onClose();
+      }}
+    >
+      <ModalClose onClose={onClose} disabled={busy} />
+      <div className="tasks-app">
+        <LanguageSwitcher />
+        <h2>{title}</h2>
+        <p role="alert">{feedback.error}</p>
+        {feedback.error && (
+          <button
+            disabled={feedback.busy}
+            type="button"
+            onClick={onRetry || feedback.retry}
+          >
+            {tr("Повторити дію")}
+          </button>
+        )}
+        {children}
+        {!hideClose && (
+          <button type="button" disabled={busy} onClick={onClose}>
+            {tr("Закрити")}
+          </button>
+        )}
+      </div>
+    </dialog>
+  );
 }
