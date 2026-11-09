@@ -136,19 +136,54 @@
 .editor-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 12px;
+  gap: 8px 16px;
 }
 .task-editor textarea {
-  min-height: 64px;
+  min-height: 72px;
+  border-radius: 8px;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  border: 1px solid #c2d1c8;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
+.task-editor textarea:focus {
+  border-color: #1769aa;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(23, 105, 170, 0.18);
+}
+.task-editor input,
+.task-editor select {
+  min-height: 40px;
+  border-radius: 8px;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  border: 1px solid #c2d1c8;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.task-editor input:focus,
+.task-editor select:focus {
+  border-color: #1769aa;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(23, 105, 170, 0.18);
+}
+.tasks-dialog .editor-actions,
 .editor-actions {
   position: sticky;
-  bottom: -16px;
-  padding: 12px 0;
-  background: #f4f5f7;
+  bottom: -24px;
+  margin: 16px -24px -24px -24px;
+  padding: 14px 24px;
+  background: #ffffff;
+  border-top: 1px solid #c2d1c8;
+  box-shadow: 0 -2px 8px #14284a10;
   display: flex;
-  gap: 10px;
-  z-index: 1;
+  gap: 12px;
+  justify-content: flex-end;
+  z-index: 15;
+  border-radius: 0 0 12px 12px;
 }
 .editor-row {
   display: flex;
@@ -382,4 +417,508 @@
 }
 .tasks-app .report-category-bar progress {
   accent-color: #7cacdf;
+}
+
+.workspace-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: #ffffff;
+  border: 1px solid #dce6f3;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin: 16px 0;
+  box-shadow: 0 1px 3px rgba(23, 40, 53, 0.02);
+}
+
+.workspace-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+/* Навігація по датах та стрілочки */
+.workspace-nav-buttons {
+  display: inline-flex;
+  align-items: center;
+  background: #f4f8fd;
+  border: 1px solid #d8e2ef;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.workspace-nav-buttons button {
+  background: transparent;
+  border: none;
+  min-height: 38px;
+  min-width: 38px;
+  padding: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #25364b;
+  box-shadow: none !important;
+}
+
+.workspace-nav-buttons button:hover:not(:disabled) {
+  background: #e4effb;
+}
+
+.workspace-date-label {
+  padding: 0 12px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #25364b;
+  white-space: nowrap;
+}
+
+.segmented-control {
+  display: inline-flex;
+  background: #f4f8fd;
+  border: 1px solid #d8e2ef;
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.segmented-control button {
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #596b82;
+  box-shadow: none !important;
+}
+
+.segmented-control button:hover:not(:disabled) {
+  background: #e4effb;
+  color: #25364b;
+}
+
+.segmented-control button[aria-pressed="true"] {
+  background: #1769e0;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Інлайн лейбли та селекти в тулбарі */
+.workspace-inline-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #596b82;
+}
+
+.workspace-inline-label select {
+  min-height: 38px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #d8e2ef;
+  background-color: #ffffff;
+  color: #25364b;
+}
+
+/* Адаптивність мобільних тулбарів */
+@media (max-width: 768px) {
+  .workspace-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .workspace-toolbar-group {
+    justify-content: space-between;
+    width: 100%;
+  }
+  .workspace-employee-filter {
+    width: 100%;
+  }
+  .workspace-inline-label {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .workspace-inline-label select {
+    flex: 1;
+  }
+}
+
+.task-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.task-field-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0;
+  font-weight: 500;
+  color: #344563;
+  font-size: 13px;
+}
+
+.required-star {
+  color: #de350b;
+}
+
+.timezone-hint {
+  display: block;
+  margin: 8px 0 16px;
+  color: #5e6c84;
+  font-size: 12px;
+}
+
+.task-checkbox-row {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin: 14px 0 !important;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.task-interrupt-confirm {
+  background: #fffae6;
+  border: 1px solid #ffe380;
+  padding: 10px 14px;
+  border-radius: 6px;
+}
+
+/* Expandable sections (Checklist & Dependencies) */
+.editor-expandable-section {
+  background: #f4f5f7;
+  border: 1px solid #dfe1e6;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 16px 0;
+}
+
+.editor-expandable-section summary {
+  font-weight: 600;
+  color: #172b4d;
+  cursor: pointer;
+  user-select: none;
+}
+
+.expandable-content {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Checklist rows & actions */
+.checklist-input-wrap {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  flex: 1;
+  gap: 8px;
+  margin: 0 !important;
+}
+
+.checklist-index {
+  font-weight: 600;
+  color: #5e6c84;
+  min-width: 20px;
+}
+
+.checklist-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.secondary-action-btn {
+  background: #ffffff;
+  border: 1px dashed #b3bac5;
+  color: #0052cc;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.secondary-action-btn:hover {
+  background: #ebecf0;
+  border-color: #0052cc;
+}
+
+/* Dependencies search & results */
+.dependency-search-bar {
+  display: flex;
+  gap: 8px;
+}
+
+.dependency-search-bar input {
+  flex: 1;
+}
+
+.dependency-candidates-list {
+  max-height: 160px;
+  overflow-y: auto;
+  border: 1px solid #dfe1e6;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.dependency-result {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #f4f5f7;
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.dependency-result:hover {
+  background: #ebecf0;
+}
+
+.task-id-badge {
+  background: #dfe1e6;
+  color: #172b4d;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 11px;
+  margin-right: 6px;
+}
+
+.btn-danger-icon {
+  background: transparent;
+  border: none;
+  color: #de350b;
+  font-size: 18px;
+  font-weight: bold;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.btn-danger-icon:hover {
+  background: #ffebe6;
+}
+
+.recurrence-wrapper {
+  margin-top: 16px;
+  border-top: 1px solid #dfe1e6;
+  padding-top: 16px;
+}
+
+.schedule-meta-range {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 12px 0 16px;
+  font-size: 13px;
+  color: #5e6c84;
+  font-weight: 500;
+}
+
+.schedule-timezone-badge {
+  background: #ebecf0;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #344563;
+}
+
+.schedule-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.schedule-day-card {
+  background: white;
+  border: 1px solid #dfe1e6;
+  border-radius: 8px;
+  padding: 10px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 1px 2px rgba(9, 30, 66, 0.04);
+  transition: box-shadow 0.15s ease;
+}
+
+.schedule-day-card:hover {
+  box-shadow: 0 3px 6px rgba(9, 30, 66, 0.08);
+}
+
+.tasks-workspace .schedule-day {
+  width: 100%;
+  text-align: left;
+  border: none;
+  padding: 6px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #f4f5f7;
+  color: #172b4d;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.tasks-workspace .schedule-day:hover:not(:disabled) {
+  background: #ebecf0;
+}
+
+.schedule-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.schedule-event {
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  background: #deebff;
+  border: 1px solid #b3d4ff;
+  position: relative;
+}
+
+.schedule-event-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.schedule-event strong {
+  color: #0747a6;
+  font-size: 12px;
+}
+
+.schedule-event p {
+  margin: 2px 0 0;
+  color: #172b4d;
+}
+
+.schedule-event-emp {
+  font-weight: 500;
+  color: #42526e !important;
+}
+
+.schedule-event-time {
+  font-size: 11px;
+  color: #5e6c84 !important;
+}
+
+.schedule-event-delete {
+  background: transparent;
+  border: none;
+  color: #de350b;
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  border-radius: 3px;
+}
+
+.schedule-event-delete:hover {
+  background: #ffebe6;
+}
+
+/* Кольори для різних типів подій */
+.event-day_off {
+  background: #f4f5f7;
+  border-color: #dfe1e6;
+}
+.event-day_off strong {
+  color: #42526e;
+}
+
+.event-vacation {
+  background: #e3fcef;
+  border-color: #abf5d1;
+}
+.event-vacation strong {
+  color: #006644;
+}
+
+.event-meeting {
+  background: #eae6ff;
+  border-color: #c0b6f2;
+}
+.event-meeting strong {
+  color: #403294;
+}
+
+.event-absence {
+  background: #ffebe6;
+  border-color: #ffbdad;
+}
+.event-absence strong {
+  color: #bf2600;
+}
+
+.schedule-day-footer {
+  border-top: 1px solid #f4f5f7;
+  padding-top: 6px;
+  margin-top: auto;
+}
+
+.schedule-empty {
+  font-size: 11px;
+  color: #70798c;
+  margin: 2px 0;
+}
+
+.schedule-calendar small {
+  font-size: 11px;
+  color: #5e6c84;
+}
+
+.schedule-today-btn {
+  background: #ffffff !important;
+  border: none;
+  padding: 0 12px;
+  font-weight: 600;
+  font-size: 13px;
+  color: #172b4d;
+  cursor: pointer;
+}
+
+.schedule-today-btn:hover {
+  background: #ebecf0 !important;
+}
+
+@media (max-width: 1200px) {
+  .schedule-calendar {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 800px) {
+  .schedule-calendar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 500px) {
+  .schedule-calendar {
+    grid-template-columns: 1fr;
+  }
 }

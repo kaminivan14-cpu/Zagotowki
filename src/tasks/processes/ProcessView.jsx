@@ -13,6 +13,7 @@ import {
   dependencyEdges,
 } from "./model";
 import { P } from "./labels";
+
 export default function ProcessView({
   instance,
   data,
@@ -26,9 +27,11 @@ export default function ProcessView({
 }) {
   const [rating, setRating] = useState(instance.rating || 5),
     [comment, setComment] = useState(instance.rating_comment || "");
+
   const current = instance.template
     ? instance
     : data.instances.find((i) => i.id === instance.id) || instance;
+
   const version = data.versions.find((v) => v.id === current.version_id),
     doc = current.execution_snapshot ||
       version?.definition ||
@@ -37,11 +40,13 @@ export default function ProcessView({
     tasks = current.tasks || [],
     progress = processProgress(tasks),
     edges = dependencyEdges(doc);
+
   const ends = tasks
       .map((t) => t.deadline_at)
       .filter(Boolean)
       .sort(),
     end = ends.at(-1);
+
   const rows = doc.stages.length
     ? doc.stages.map((s, i) => ({
         ...s,
@@ -64,32 +69,51 @@ export default function ProcessView({
         index: i,
         tasks: tasks.filter((t) => t.stage === name),
       }));
+
   return (
     <Dialog title={current.name} onClose={onClose}>
       <header className="process-view-heading">
-        <p>
-          {current.template
-            ? version?.status === "published"
-              ? tr("Опублікована")
-              : tr("Чернетка")
-            : progress === 100
-              ? tr("Виконано")
-              : tr("В роботі")}{" "}
-          · {tr("Версія")} {version?.number || current.number}
-        </p>
+        <div className="process-view-status-group">
+          <span
+            className={`process-badge ${current.template ? "status-active" : progress === 100 ? "status-completed" : "status-working"}`}
+          >
+            {current.template
+              ? version?.status === "published"
+                ? tr("Опублікована")
+                : tr("Чернетка")
+              : progress === 100
+                ? tr("Виконано")
+                : tr("В роботі")}
+          </span>
+          <span className="process-version-tag">
+            {tr("Версія")} {version?.number || current.number}
+          </span>
+        </div>
+
         {!current.template && (
-          <>
-            <p>
-              {P.start}: {dateLabel(current.starts_on)} · {P.end}:{" "}
-              {end ? dateLabel(end.slice(0, 10)) : P.noEnd}
+          <div className="process-view-dates-progress">
+            <p className="process-dates-label">
+              <span>
+                {P.start}: <strong>{dateLabel(current.starts_on)}</strong>
+              </span>
+              <span className="separator">·</span>
+              <span>
+                {P.end}:{" "}
+                <strong>{end ? dateLabel(end.slice(0, 10)) : P.noEnd}</strong>
+              </span>
             </p>
-            <label>
-              {P.progress}: {progress}%<progress max="100" value={progress} />
-            </label>
-          </>
+            <div className="process-progress-wrapper">
+              <span className="progress-value">
+                {P.progress}: {progress}%
+              </span>
+              <progress max="100" value={progress} />
+            </div>
+          </div>
         )}
+
         {canManage && version && (
           <button
+            className="secondary-action-btn"
             onClick={() => {
               onClose();
               onEdit(version);
@@ -101,21 +125,25 @@ export default function ProcessView({
           </button>
         )}
       </header>
-      <details>
+
+      <details className="editor-expandable-section process-diagram-details">
         <summary>{tr("Діаграма процесу")}</summary>
-        <ProcessDiagram
-          doc={doc}
-          employees={directory.employees}
-          disabled
-          onSelect={(key) => {
-            const t = tasks.find((t) => t.step_key === key);
-            if (t) {
-              onClose();
-              onDetails(t);
-            }
-          }}
-        />
+        <div className="expandable-content">
+          <ProcessDiagram
+            doc={doc}
+            employees={directory.employees}
+            disabled
+            onSelect={(key) => {
+              const t = tasks.find((t) => t.step_key === key);
+              if (t) {
+                onClose();
+                onDetails(t);
+              }
+            }}
+          />
+        </div>
       </details>
+
       {rows.map((s) => {
         const known = s.tasks.every(
             (t) => t.step?.duration_days != null || t.duration_days != null,
@@ -160,38 +188,70 @@ export default function ProcessView({
                     <tr key={t.key || t.id}>
                       <td>{t.number || `${s.index + 1}.${j + 1}`}</td>
                       <td>
-                        <details>
-                          <summary>{t.title}</summary>
-                          <p>{t.step?.description}</p>
-                          <p>{t.step?.instruction}</p>
-                          <p>{t.step?.expected_result}</p>
-                          <p>
-                            {P.accountable}:{" "}
-                            {(t.step?.raci?.accountable || [])
-                              .map((r) => referenceName(r, directory))
-                              .join(", ") || P.none}
-                          </p>
-                          <p>
-                            {P.consulted}:{" "}
-                            {(t.step?.raci?.consulted || [])
-                              .map((r) => referenceName(r, directory))
-                              .join(", ") || P.none}
-                          </p>
-                          <ul>
-                            {(t.step?.checklist || []).map((x, k) => (
-                              <li key={k}>{x}</li>
-                            ))}
-                          </ul>
-                          {t.id && (
-                            <button
-                              onClick={() => {
-                                onClose();
-                                onDetails(t);
-                              }}
-                            >
-                              {tr("Відкрити завдання")}
-                            </button>
-                          )}
+                        <details className="process-task-details">
+                          <summary className="process-task-title">
+                            {t.title}
+                          </summary>
+                          <div className="process-task-expanded-body">
+                            {t.step?.description && (
+                              <p className="task-desc">{t.step.description}</p>
+                            )}
+                            {t.step?.instruction && (
+                              <div className="task-instruction-box">
+                                <strong>Інструкція:</strong>
+                                <p>{t.step.instruction}</p>
+                              </div>
+                            )}
+                            {t.step?.expected_result && (
+                              <p className="task-result-box">
+                                <strong>Очікуваний результат:</strong>{" "}
+                                {t.step.expected_result}
+                              </p>
+                            )}
+
+                            <div className="process-raci-grid">
+                              <p>
+                                <span>{P.accountable}:</span>{" "}
+                                <strong>
+                                  {(t.step?.raci?.accountable || [])
+                                    .map((r) => referenceName(r, directory))
+                                    .join(", ") || P.none}
+                                </strong>
+                              </p>
+                              <p>
+                                <span>{P.consulted}:</span>{" "}
+                                <strong>
+                                  {(t.step?.raci?.consulted || [])
+                                    .map((r) => referenceName(r, directory))
+                                    .join(", ") || P.none}
+                                </strong>
+                              </p>
+                            </div>
+
+                            {t.step?.checklist?.length > 0 && (
+                              <div className="process-task-checklist font-small">
+                                <strong>Чекліст:</strong>
+                                <ul>
+                                  {t.step.checklist.map((x, k) => (
+                                    <li key={k}>{x}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
+                            {t.id && (
+                              <button
+                                type="button"
+                                className="primary-action-link"
+                                onClick={() => {
+                                  onClose();
+                                  onDetails(t);
+                                }}
+                              >
+                                {tr("Відкрити завдання")} →
+                              </button>
+                            )}
+                          </div>
                         </details>
                       </td>
                       <td>{durationText(t.step || t)}</td>
@@ -254,12 +314,17 @@ export default function ProcessView({
           </details>
         );
       })}
-      <small>{P.stageSummary}</small>
+
+      <small className="planning-help display-block margin-top-12">
+        {P.stageSummary}
+      </small>
+
       {!current.template &&
         canManage &&
         tasks.length > 0 &&
         tasks.every((t) => ["completed", "cancelled"].includes(t.status)) && (
           <form
+            className="process-rating-form"
             onSubmit={async (e) => {
               e.preventDefault();
               await run("process_rate", {
@@ -270,25 +335,30 @@ export default function ProcessView({
             }}
           >
             <h3>{tr("Оцінити процес")}</h3>
-            <label>
-              {tr("Оцінка")}
-              <input
-                type="number"
-                min="1"
-                max="5"
-                step="0.5"
-                value={rating}
-                onChange={(e) => setRating(e.target.value)}
-              />
-            </label>
-            <label>
-              {tr("Коментар")}
-              <textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-              />
-            </label>
-            <button disabled={busy}>{tr("Зберегти оцінку")}</button>
+            <div className="editor-grid">
+              <label className="task-field-block">
+                <span>{tr("Оцінка")}</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="5"
+                  step="0.5"
+                  value={rating}
+                  onChange={(e) => setRating(e.target.value)}
+                />
+              </label>
+              <label className="task-field-block">
+                <span>{tr("Коментар")}</span>
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder={tr("Ваш коментар про хід виконання процесів...")}
+                />
+              </label>
+            </div>
+            <button disabled={busy} className="primary">
+              {tr("Зберегти оцінку")}
+            </button>
           </form>
         )}
     </Dialog>

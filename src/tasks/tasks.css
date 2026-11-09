@@ -1,10 +1,23 @@
 .tasks-app {
   color-scheme: light;
   color: #172b26;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
+    "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
   text-align: left;
   padding: 16px;
   background: #f4f5f7;
+  min-height: 100vh;
+  box-sizing: border-box;
 }
+
+.tasks-app *,
+.tasks-app *::before,
+.tasks-app *::after {
+  box-sizing: border-box;
+}
+
+/* Header */
 .tasks-app .tasks-header {
   display: flex;
   justify-content: space-between;
@@ -12,19 +25,54 @@
   gap: 16px;
   border-radius: 12px;
   padding: 20px;
+  margin-bottom: 12px;
 }
+
 .tasks-app .tasks-header h1 {
   color: white;
   font-size: 28px;
   margin: 0;
+  letter-spacing: -0.01em;
 }
+
 .tasks-app .tasks-header p {
   color: #d5e3dc;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
 }
+
+.tasks-app .tasks-header p button {
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #d5e3dc;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  min-height: unset;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+
+.tasks-app .tasks-header p button:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+}
+
+/* Main Area */
 .tasks-app main {
   max-width: 1100px;
+  margin: 0 auto;
   padding: 24px 0;
 }
+
 .tasks-app h2,
 .tasks-app h3,
 .tasks-app h4 {
@@ -33,18 +81,24 @@
   line-height: 1.3;
   margin: 12px 0;
 }
+
 .tasks-app h2 {
   font-size: 26px;
 }
+
 .tasks-app h3 {
   font-size: 19px;
 }
+
 .tasks-app p {
   margin: 10px 0;
 }
+
 .tasks-app p:empty {
   display: none;
 }
+
+/* Navigation & Actions */
 .tasks-app nav,
 .tasks-app .task-actions {
   display: flex;
@@ -52,10 +106,14 @@
   flex-wrap: wrap;
   align-items: center;
 }
+
 .tasks-app nav {
   padding: 14px 0;
   border-bottom: 1px solid #c2d1c8;
+  margin-bottom: 16px;
 }
+
+/* Controls: Buttons, Inputs, Selects, Textareas */
 .tasks-app button,
 .tasks-app input,
 .tasks-app select,
@@ -68,32 +126,50 @@
   padding: 10px 14px;
   min-height: 46px;
   max-width: 100%;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
 }
+
 .tasks-app button {
   font-weight: 600;
   cursor: pointer;
   touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
+
 .tasks-app button:hover:not(:disabled) {
   background: #e8f0ec;
 }
+
 .tasks-app .primary,
 .tasks-app button[aria-pressed="true"] {
   background: #215649;
   color: white;
   border-color: #215649;
 }
+
 .tasks-app .primary:hover:not(:disabled) {
   background: #163f34;
 }
+
 .tasks-app button:disabled {
   opacity: 0.6;
   cursor: wait;
 }
+
 .tasks-app :is(button, input, select, textarea):focus-visible {
-  outline: 3px solid #1769aa;
-  outline-offset: 3px;
+  outline: none;
+  border-color: #1769aa;
+  box-shadow: 0 0 0 3px rgba(23, 105, 170, 0.25);
+  outline-offset: 1px;
 }
+
+/* Labels & Form Elements */
 .tasks-app label {
   display: flex;
   gap: 8px;
@@ -101,132 +177,273 @@
   flex-wrap: wrap;
   margin: 12px 0;
 }
+
 .tasks-app input[type="checkbox"] {
   min-height: 24px;
   width: 24px;
   accent-color: #215649;
+  cursor: pointer;
 }
+
 .tasks-app textarea {
   width: 100%;
   min-height: 90px;
+  resize: vertical;
 }
+
 .tasks-app fieldset {
   border: 0;
   padding: 0;
   min-width: 0;
 }
+
 .tasks-app form {
   margin: 20px 0;
   padding: 16px;
   border: 1px solid #c2d1c8;
   border-radius: 10px;
   background: white;
+  box-shadow: 0 4px 12px rgba(23, 40, 53, 0.05);
 }
+
+/* Task Cards & Containers */
 .tasks-app .task-day {
   padding: 16px 0;
   border-bottom: 1px solid #c2d1c8;
 }
+
 .tasks-app .task-week {
   margin-bottom: 24px;
 }
+
 .tasks-app .task-card {
   background: white;
   border: 1px solid #c2d1c8;
   border-radius: 10px;
   padding: 16px;
   margin: 12px 0;
+  box-shadow: 0 2px 4px rgba(23, 40, 53, 0.03);
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
 }
+
+.tasks-app .task-card:hover {
+  box-shadow: 0 4px 8px rgba(23, 40, 53, 0.08);
+}
+
 .tasks-app .task-card h3 {
   margin-top: 0;
 }
+
 .tasks-app .task-title {
   border: 0;
   padding: 0;
   min-height: 32px;
   text-align: left;
+  background: transparent;
+  font-weight: 600;
 }
+
+.tasks-app .task-title:hover {
+  background: transparent;
+  text-decoration: underline;
+}
+
 .tasks-app .task-work {
   max-width: 860px;
   margin: 0 auto;
 }
+
 .tasks-app .task-work .task-actions button {
   min-height: 64px;
   font-size: 20px;
 }
+
 .tasks-app .task-description {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
 .tasks-app progress {
   width: 100%;
   max-width: 360px;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
   accent-color: #215649;
 }
+
+/* Alerts & Warnings */
 .tasks-app [role="alert"]:not(:empty),
 .tasks-app .task-warning,
 .tasks-app aside {
   background: #fff3cd;
   color: #624708;
-  padding: 12px;
+  padding: 12px 16px;
   border-radius: 8px;
+  border: 1px solid #ffeeba;
+  margin: 12px 0;
 }
+
+/* Calendar Grid */
 .tasks-app .task-calendar {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 8px;
   margin: 20px 0;
 }
+
 .tasks-app .task-calendar article {
   background: white;
   border: 1px solid #c2d1c8;
   padding: 8px;
   border-radius: 8px;
   overflow-wrap: anywhere;
+  box-shadow: 0 1px 3px rgba(23, 40, 53, 0.03);
 }
+
 .tasks-app .task-calendar h3 {
   font-size: 15px;
 }
+
 .tasks-app .task-calendar p {
   font-size: 13px;
 }
+
+/* Tables */
 .tasks-app .task-table {
   overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid #c2d1c8;
+  margin: 16px 0;
 }
+
 .tasks-app table {
   border-collapse: collapse;
   width: 100%;
   background: white;
 }
+
+.tasks-app th {
+  background: #eef2ef;
+  font-weight: 700;
+  color: #31443c;
+  font-size: 13px;
+  border-bottom: 2px solid #c2d1c8;
+}
+
 .tasks-app th,
 .tasks-app td {
   padding: 12px;
   border-bottom: 1px solid #c2d1c8;
   text-align: left;
 }
+
+.tasks-app tr:last-child td {
+  border-bottom: none;
+}
+
+/* Timeline */
 .tasks-app .task-timeline {
   padding-left: 24px;
+  border-left: 2px solid #c2d1c8;
+  margin: 16px 0 16px 12px;
 }
+
 .tasks-app .task-timeline li {
-  padding: 8px 0;
+  padding: 8px 0 8px 12px;
+  position: relative;
 }
+
+.tasks-app .task-timeline li::before {
+  content: "";
+  position: absolute;
+  left: -31px;
+  top: 14px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #215649;
+  border: 2px solid white;
+}
+
 .tasks-app .tasks-dialog {
   width: min(720px, 94vw);
   max-height: 90vh;
   border: 1px solid #899f94;
   border-radius: 12px;
   padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 48px rgba(17, 24, 39, 0.25);
 }
+
 .tasks-app .tasks-dialog .tasks-app {
   min-height: auto;
+  overflow-y: auto;
+  flex: 1;
+  padding: 20px 24px 24px;
+  position: relative;
+  background: white;
 }
+
 .tasks-app .tasks-dialog::backdrop {
-  background: #11182788;
+  background: rgba(17, 24, 39, 0.55);
+  backdrop-filter: blur(2px);
 }
+
+.tasks-app
+  .tasks-dialog:not(:has(.process-wizard)):not(:has(.process-launch-wizard))
+  > .tasks-app
+  > h2 {
+  position: sticky;
+  top: -20px;
+  z-index: 15;
+  background: #f4f5f7;
+  margin: -20px -24px 16px -24px;
+  padding: 16px 56px 14px 24px;
+  border-bottom: 1px solid #c2d1c8;
+  box-shadow: 0 2px 6px rgba(23, 40, 53, 0.06);
+}
+
+.tasks-app .tasks-dialog > .tasks-app > button:last-child {
+  position: sticky;
+  bottom: -24px;
+  margin: 16px -24px -24px -24px;
+  padding: 12px 24px;
+  width: calc(100% + 48px);
+  max-width: calc(100% + 48px);
+  background: #ffffff;
+  border: 0;
+  border-top: 1px solid #c2d1c8;
+  border-radius: 0 0 12px 12px;
+  box-shadow: 0 -4px 12px rgba(20, 40, 74, 0.06);
+  z-index: 15;
+}
+
+.critical-task-content {
+  padding: 4px 0;
+}
+.critical-task-duration {
+  color: #536760;
+  font-size: 14px;
+  margin: 4px 0 16px;
+}
+.critical-task-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
 @media (max-width: 900px) {
   .tasks-app .task-calendar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
 @media (max-width: 600px) {
   .tasks-app {
     padding: 10px;
@@ -252,10 +469,12 @@
     width: 24px;
   }
 }
+
 .tasks-app button[aria-pressed="true"]:hover:not(:disabled) {
   background: #163f34;
   color: white;
 }
+
 .tasks-app .task-datetime-field {
   display: flex;
   flex-direction: column;
@@ -263,6 +482,7 @@
   min-width: 0;
   max-width: 100%;
 }
+
 .tasks-app .task-datetime-preview {
   display: block;
   color: #43576e;
@@ -270,7 +490,8 @@
   line-height: 1.4;
   font-variant-numeric: tabular-nums;
 }
-/* One-task execution view; other Tasks tabs retain their layouts. */
+
+/* Task Execution View */
 .task-execution {
   width: min(100%, 840px);
   margin: 0 auto;
@@ -279,18 +500,21 @@
 .execution-date {
   color: #536760;
   font-size: 0.95rem;
+  font-weight: 500;
 }
 .execution-welcome,
 .execution-empty,
 .execution-task {
   background: #fff;
   border: 1px solid #d4dfda;
-  border-radius: 18px;
+  border-radius: 12px;
   padding: clamp(18px, 4vw, 36px);
+  box-shadow: 0 2px 6px rgba(23, 40, 53, 0.04);
 }
 .execution-welcome,
 .execution-empty {
   padding-block: 48px;
+  text-align: center;
 }
 .tasks-app .execution-cta {
   min-height: 64px;
@@ -305,6 +529,11 @@
 .execution-state {
   color: #245c4d;
   font-weight: 700;
+  background: #e4f2ed;
+  padding: 3px 10px;
+  border-radius: 6px;
+  display: inline-block;
+  font-size: 13px;
 }
 .execution-meta {
   display: grid;
@@ -316,16 +545,24 @@
 .execution-meta dt {
   font-size: 0.85rem;
   color: #536760;
+  font-weight: 600;
 }
 .execution-meta dd {
   margin: 4px 0;
   overflow-wrap: anywhere;
+  font-weight: 500;
 }
 .execution-checklist label {
   display: flex;
   align-items: center;
   gap: 14px;
   min-height: 52px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.1s;
+}
+.execution-checklist label:hover {
+  background: #f4f5f7;
 }
 .execution-secondary {
   display: flex;
@@ -335,18 +572,26 @@
 }
 .execution-task details {
   margin: 20px 0;
+  background: #f8faf9;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #d4dfda;
 }
 .execution-task summary {
   min-height: 44px;
   cursor: pointer;
+  font-weight: 600;
 }
 .execution-task footer {
   border-top: 1px solid #e0e7e3;
   padding-top: 24px;
+  margin-top: 24px;
 }
 .task-execution :focus-visible {
-  outline: 3px solid #177ac6;
-  outline-offset: 3px;
+  outline: none;
+  border-color: #177ac6;
+  box-shadow: 0 0 0 3px rgba(23, 122, 198, 0.25);
+  outline-offset: 1px;
 }
 @media (max-width: 480px) {
   .execution-meta {
@@ -360,20 +605,47 @@
 .tasks-app .execution-task > header {
   background: transparent;
   color: inherit;
-  padding: 16px 0;
+  padding: 0 0 16px;
   margin: 0;
   display: block;
+  border-bottom: 1px solid #e0e7e3;
+  margin-bottom: 16px;
 }
 .tasks-app .execution-task > header p {
   color: #536760;
 }
 .tasks-app .execution-task > header .execution-state {
-  color: #245c4d;
+  margin-top: 8px;
 }
 .tasks-app .execution-task > header h2 {
-  color: #1f2937;
+  color: #172b26;
+  margin-top: 6px;
 }
 .tasks-app .execution-checklist label {
   flex-direction: row;
   align-items: center;
+}
+
+/* Зменшуємо проміжок під навігаційною панеллю */
+.tasks-app nav.tasks-nav-bar {
+  margin-bottom: 8px !important; /* Було 16px, робимо компактніше */
+  padding-bottom: 8px !important;
+}
+
+/* Якщо під навбаром є лінія або інбокс результатів, прибираємо зайвий відступ */
+.tasks-app nav.tasks-nav-bar + * {
+  margin-top: 4px;
+}
+
+/* Щоб самі екрани (workspace / planning тощо) починалися ближче до навігації */
+.tasks-app main {
+  padding-top: 8px !important;
+}
+
+.tasks-workspace {
+  margin-top: 0;
+}
+
+.tasks-workspace > .workspace-heading:first-child {
+  margin-top: 0;
 }

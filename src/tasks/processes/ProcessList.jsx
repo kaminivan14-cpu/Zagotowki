@@ -4,6 +4,7 @@ import { dateLabel } from "../dateTime";
 import { isFinished, processProgress } from "./model";
 import { assignmentName, responsiblePosition } from "./model";
 import { P } from "./labels";
+
 function instanceStatus(i) {
   if (isFinished(i))
     return i.tasks.every((t) => t.status === "completed")
@@ -40,6 +41,7 @@ export default function ProcessList({
     risk: tr("Ризик"),
     active: tr("Виконується"),
   };
+
   const [search, setSearch] = useState(""),
     [category, setCategory] = useState(""),
     [owner, setOwner] = useState(""),
@@ -49,6 +51,7 @@ export default function ProcessList({
     [rating, setRating] = useState(""),
     [grid, setGrid] = useState(false),
     [archived, setArchived] = useState(false);
+
   const finished = (i) =>
     i.finished_at ||
     (i.tasks || [])
@@ -57,6 +60,7 @@ export default function ProcessList({
       .sort()
       .at(-1) ||
     i.created_at;
+
   const all =
     tab === "templates"
       ? data.templates
@@ -88,6 +92,7 @@ export default function ProcessList({
                 stages: [],
               },
           }));
+
   const rows = all
     .filter(
       (r) =>
@@ -126,6 +131,7 @@ export default function ProcessList({
             ),
           ),
     );
+
   const canManage = context.capabilities.includes("processes.manage"),
     owners =
       tab === "templates"
@@ -143,6 +149,7 @@ export default function ProcessList({
             ).values(),
           ]
         : directory.employees;
+
   const headers =
     tab === "templates"
       ? [
@@ -181,6 +188,7 @@ export default function ProcessList({
             tr("Статус"),
             P.actions,
           ];
+
   const launch = (r) =>
     setLaunch({
       version_id: r.published.id,
@@ -189,6 +197,7 @@ export default function ProcessList({
       assignments: {},
       versions: r.versions.filter((v) => v.status === "published"),
     });
+
   const actions = (r) => (
     <div className="process-row-actions">
       <button
@@ -280,6 +289,7 @@ export default function ProcessList({
       )}
     </div>
   );
+
   return (
     <>
       <div className="process-filters">
@@ -355,7 +365,9 @@ export default function ProcessList({
           >
             <option value="">{tr("Усі оцінки")}</option>
             {Array.from({ length: 9 }, (_, i) => 1 + i * 0.5).map((n) => (
-              <option key={n}>{n}</option>
+              <option key={n} value={n}>
+                {n}
+              </option>
             ))}
           </select>
         )}
@@ -388,6 +400,7 @@ export default function ProcessList({
           ▦
         </button>
       </div>
+
       <div
         className={`admin-table-wrap ${grid ? "process-grid-view" : ""}`}
         role="region"
@@ -518,7 +531,14 @@ export default function ProcessList({
             })}
           </tbody>
         </table>
-        {!rows.length && <p>{P.empty}</p>}
+        {!rows.length && (
+          <p
+            className="workspace-muted"
+            style={{ padding: "20px", textAlign: "center" }}
+          >
+            {P.empty}
+          </p>
+        )}
       </div>
       <p className="process-table-footer">
         {tr("Показано {shown} з {total} процесів", {

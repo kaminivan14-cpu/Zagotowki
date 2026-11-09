@@ -1,5 +1,4 @@
 import ModalClose from "../../ui/ModalClose";
-import LanguageSwitcher from "../../i18n";
 import { tr } from "../../i18n/runtime";
 import { useContext, useEffect, useRef } from "react";
 import { TaskFeedback } from "../feedback";
@@ -30,7 +29,6 @@ export default function Dialog({
     >
       <ModalClose onClose={onClose} disabled={busy} />
       <div className="tasks-app">
-        <LanguageSwitcher />
         <h2>{title}</h2>
         <p role="alert">{feedback.error}</p>
         {feedback.error && (

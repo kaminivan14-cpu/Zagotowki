@@ -75,6 +75,7 @@ export default function ProcessWizard({
     [inspector, setInspector] = useState("main"),
     [error, setError] = useState(""),
     [dirty, setDirty] = useState(!initial.id);
+
   const update = (d) => {
       const before = processSteps(doc),
         after = processSteps(d);
@@ -101,6 +102,7 @@ export default function ProcessWizard({
     tasks = processSteps(doc),
     current = tasks.find((t) => t.key === selected),
     patch = (k, p) => update(patchTask(doc, k, p));
+
   const undoEdge = () => {
     if (readonly || busy || !edgeHistory.length) return;
     try {
@@ -117,11 +119,13 @@ export default function ProcessWizard({
       setError(tr("Неможливо скасувати зв’язок після зміни правил процесу."));
     }
   };
+
   const stage = (key, patch) =>
     update({
       ...doc,
       stages: doc.stages.map((s) => (s.key === key ? { ...s, ...patch } : s)),
     });
+
   const addStage = () =>
     update({
       ...doc,
@@ -135,6 +139,7 @@ export default function ProcessWizard({
         },
       ],
     });
+
   const addTask = (key) => {
     const t = {
       ...blankTask(),
@@ -145,11 +150,13 @@ export default function ProcessWizard({
     setSelected(t.key);
     setEdge(null);
   };
+
   const move = (items, i, offset) => {
     const copy = [...items];
     [copy[i], copy[i + offset]] = [copy[i + offset], copy[i]];
     return copy;
   };
+
   async function save(publish = false) {
     setError("");
     try {
@@ -191,6 +198,7 @@ export default function ProcessWizard({
     )
       onClose();
   }
+
   const field = (label, key, area = false) => (
     <label>
       {label}
@@ -207,6 +215,7 @@ export default function ProcessWizard({
       )}
     </label>
   );
+
   return (
     <Dialog
       title={initial.id ? tr("Редагувати процес") : tr("Створити процес")}
@@ -215,805 +224,837 @@ export default function ProcessWizard({
       onClose={onClose}
     >
       <div className="process-wizard">
-        <header className="process-wizard-header">
-          <p>
-            {step === 0
-              ? tr("Заповніть основні дані шаблону процесу.")
-              : step === 1
-                ? tr(
-                    "Додайте етапи та завдання. Встановіть відповідальні посади, терміни та залежності.",
-                  )
-                : tr(
-                    "Налаштуйте діаграму процесу. Зв’язки спрямовані зверху вниз.",
-                  )}
-          </p>
-          <button
-            type="button"
-            disabled={readonly || busy}
-            onClick={() => save()}
-          >
-            {tr("Зберегти як чернетку")}
-          </button>
-        </header>
-        <nav className="process-stepper">
-          {titles.map((title, i) => (
+        <div className="process-wizard-sticky">
+          <header className="process-wizard-header">
+            <div className="process-wizard-title-group">
+              <h2>
+                {initial.id ? tr("Редагувати процес") : tr("Створити процес")}
+              </h2>
+              <p>
+                {step === 0
+                  ? tr("Заповніть основні дані шаблону процесу.")
+                  : step === 1
+                    ? tr(
+                        "Додайте етапи та завдання. Встановіть відповідальні посади, терміни та залежності.",
+                      )
+                    : tr(
+                        "Налаштуйте діаграму процесу. Зв’язки спрямовані зверху вниз.",
+                      )}
+              </p>
+            </div>
             <button
               type="button"
-              aria-current={step === i ? "step" : undefined}
-              key={title}
-              onClick={() => setStep(i)}
+              disabled={readonly || busy}
+              onClick={() => save()}
             >
-              <span>{i + 1}</span>
-              {title}
+              {tr("Зберегти як чернетку")}
             </button>
-          ))}
-        </nav>
-        <p role="alert">{error}</p>
-        {initial.definition.schema_version !== 3 && !readonly && (
-          <p className="process-notice">
-            {tr(
-              "Ця версія використовувала попередні правила призначення. Оберіть посади для нової версії. Запущені процеси залишаються незмінними.",
-            )}
-          </p>
-        )}
-        <div
-          className={`process-wizard-layout ${step === 2 ? "diagram-layout" : ""}`}
-        >
-          <fieldset
-            disabled={step !== 2 && (readonly || busy)}
-            className="process-wizard-main"
+          </header>
+          <nav className="process-stepper">
+            {titles.map((title, i) => (
+              <button
+                type="button"
+                aria-current={step === i ? "step" : undefined}
+                key={title}
+                onClick={() => setStep(i)}
+              >
+                <span>{i + 1}</span>
+                {title}
+              </button>
+            ))}
+          </nav>
+        </div>
+        <div className="process-wizard-scroll">
+          <p role="alert">{error}</p>
+          {initial.definition.schema_version !== 3 && !readonly && (
+            <p className="process-notice">
+              {tr(
+                "Ця версія використовувала попередні правила призначення. Оберіть посади для нової версії. Запущені процеси залишаються незмінними.",
+              )}
+            </p>
+          )}
+          <div
+            className={`process-wizard-layout ${step === 2 ? "diagram-layout" : ""}`}
           >
-            {step === 0 && (
-              <div className="process-basic">
-                {field(tr("Назва процесу *"), "name")}
-                {field(tr("Опис"), "description", true)}
-                {field(tr("Мета *"), "goal", true)}
-                {field(tr("Результат очікуваний *"), "expected_result", true)}
-                <label>
-                  {tr("Відповідальний за процес *")}
-                  <RoleSelect
-                    {...{ roles }}
-                    value={doc.responsible_position}
-                    onChange={(r) =>
-                      update({ ...doc, responsible_position: r })
-                    }
-                  />
-                </label>
-                <label>
-                  {tr("Коли виконується *")}
-                  <select
-                    value={doc.launch_type || "manual"}
-                    onChange={(e) =>
-                      update({ ...doc, launch_type: e.target.value })
-                    }
-                  >
-                    <option value="manual">{tr("Вручну")}</option>
-                    <option value="automatic">
-                      {tr("Автоматично — чернетка налаштувань")}
-                    </option>
-                  </select>
-                </label>
-                {doc.launch_type === "automatic" && (
-                  <small>
-                    {tr(
-                      "Автоматичний запуск ще не налаштований. Доступне лише збереження чернетки.",
-                    )}
-                  </small>
-                )}
-                <RecurrenceFields
-                  label={tr("Повторювати процес")}
-                  value={doc.recurrence}
-                  onChange={(recurrence) => update({ ...doc, recurrence })}
-                />
-                <details>
-                  <summary>{tr("Параметри строків")}</summary>
+            <fieldset
+              disabled={step !== 2 && (readonly || busy)}
+              className="process-wizard-main"
+            >
+              {step === 0 && (
+                <div className="process-basic">
+                  {field(tr("Назва процесу *"), "name")}
+                  {field(tr("Опис"), "description", true)}
+                  {field(tr("Мета *"), "goal", true)}
+                  {field(tr("Результат очікуваний *"), "expected_result", true)}
                   <label>
-                    {tr("Буфер від старту, днів")}
-                    <input
-                      type="number"
-                      min="0"
-                      max="3660"
-                      value={doc.start_offset_days ?? 0}
+                    {tr("Відповідальний за процес *")}
+                    <RoleSelect
+                      {...{ roles }}
+                      value={doc.responsible_position}
+                      onChange={(r) =>
+                        update({ ...doc, responsible_position: r })
+                      }
+                    />
+                  </label>
+                  <label>
+                    {tr("Коли виконується *")}
+                    <select
+                      value={doc.launch_type || "manual"}
+                      onChange={(e) =>
+                        update({ ...doc, launch_type: e.target.value })
+                      }
+                    >
+                      <option value="manual">{tr("Вручну")}</option>
+                      <option value="automatic">
+                        {tr("Автоматично — чернетка налаштувань")}
+                      </option>
+                    </select>
+                  </label>
+                  {doc.launch_type === "automatic" && (
+                    <small>
+                      {tr(
+                        "Автоматичний запуск ще не налаштований. Доступне лише збереження чернетки.",
+                      )}
+                    </small>
+                  )}
+                  <RecurrenceFields
+                    label={tr("Повторювати процес")}
+                    value={doc.recurrence}
+                    onChange={(recurrence) => update({ ...doc, recurrence })}
+                  />
+                  <details>
+                    <summary>{tr("Параметри строків")}</summary>
+                    <label>
+                      {tr("Буфер від старту, днів")}
+                      <input
+                        type="number"
+                        min="0"
+                        max="3660"
+                        value={doc.start_offset_days ?? 0}
+                        onChange={(e) =>
+                          update({
+                            ...doc,
+                            start_offset_days: Number(e.target.value),
+                          })
+                        }
+                      />
+                    </label>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={!!doc.sequential_stages}
+                        onChange={(e) =>
+                          update({
+                            ...doc,
+                            sequential_stages: e.target.checked,
+                          })
+                        }
+                      />
+                      {tr("Послідовне виконання етапів")}
+                    </label>
+                  </details>
+                  <label>
+                    {tr("Залучені посади до виконання процесу *")}
+                    <RoleSelect
+                      {...{ roles }}
+                      multiple
+                      label={tr("Залучені посади")}
+                      value={doc.involved_positions}
+                      onChange={(r) =>
+                        update({ ...doc, involved_positions: r })
+                      }
+                    />
+                  </label>
+                  <label>
+                    {tr("Категорія")}
+                    <select
+                      value={doc.category_id || ""}
                       onChange={(e) =>
                         update({
                           ...doc,
-                          start_offset_days: Number(e.target.value),
+                          category_id: Number(e.target.value) || null,
                         })
                       }
-                    />
-                  </label>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={!!doc.sequential_stages}
-                      onChange={(e) =>
-                        update({ ...doc, sequential_stages: e.target.checked })
-                      }
-                    />
-                    {tr("Послідовне виконання етапів")}
-                  </label>
-                </details>
-                <label>
-                  {tr("Залучені посади до виконання процесу *")}
-                  <RoleSelect
-                    {...{ roles }}
-                    multiple
-                    label={tr("Залучені посади")}
-                    value={doc.involved_positions}
-                    onChange={(r) => update({ ...doc, involved_positions: r })}
-                  />
-                </label>
-                <label>
-                  {tr("Категорія")}
-                  <select
-                    value={doc.category_id || ""}
-                    onChange={(e) =>
-                      update({
-                        ...doc,
-                        category_id: Number(e.target.value) || null,
-                      })
-                    }
-                  >
-                    <option value="">{tr("Без категорії")}</option>
-                    {context.categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <Files
-                  ids={doc.attachments}
-                  versionId={version.id}
-                  onChange={
-                    readonly
-                      ? undefined
-                      : (ids) => update({ ...doc, attachments: ids })
-                  }
-                  {...{ run, busy }}
-                />
-              </div>
-            )}
-            {step === 1 && (
-              <>
-                <div className="process-section-heading">
-                  <h3>{tr("Етапи процесу")}</h3>
-                  <button type="button" onClick={addStage}>
-                    {tr("＋ Додати етап")}
-                  </button>
-                </div>
-                {doc.stages.map((s, i) => (
-                  <details className="process-stage-builder" key={s.key} open>
-                    <summary>
-                      <span className="stage-number">{i + 1}</span>
-                      <strong>{s.name}</strong>
-                      <small>{s.description}</small>
-                      <span>{tr("{n} завдань", { n: s.tasks.length })}</span>
-                    </summary>
-                    <div className="process-stage-controls">
-                      <input
-                        aria-label={tr("Назва етапу {n}", { n: i + 1 })}
-                        value={s.name}
-                        onChange={(e) => stage(s.key, { name: e.target.value })}
-                      />
-                      <input
-                        aria-label={tr("Опис етапу {n}", { n: i + 1 })}
-                        value={s.description || ""}
-                        onChange={(e) =>
-                          stage(s.key, { description: e.target.value })
-                        }
-                      />
-                      <label>
-                        {tr("Дедлайн етапу: днів від старту")}
-                        <input
-                          type="number"
-                          min="0"
-                          max="3660"
-                          value={s.deadline_offset_days ?? ""}
-                          onChange={(e) =>
-                            stage(s.key, {
-                              deadline_offset_days:
-                                e.target.value === ""
-                                  ? null
-                                  : Number(e.target.value),
-                            })
-                          }
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        disabled={i === 0}
-                        aria-label={tr("Етап вгору")}
-                        onClick={() =>
-                          update({ ...doc, stages: move(doc.stages, i, -1) })
-                        }
-                      >
-                        ↑
-                      </button>
-                      <button
-                        type="button"
-                        disabled={i === doc.stages.length - 1}
-                        aria-label={tr("Етап вниз")}
-                        onClick={() =>
-                          update({ ...doc, stages: move(doc.stages, i, 1) })
-                        }
-                      >
-                        ↓
-                      </button>
-                      <button
-                        type="button"
-                        disabled={s.tasks.length > 0}
-                        title={tr("Спочатку видаліть або перемістіть завдання")}
-                        onClick={() =>
-                          update({
-                            ...doc,
-                            stages: doc.stages.filter((x) => x.key !== s.key),
-                          })
-                        }
-                      >
-                        {tr("Видалити етап")}
-                      </button>
-                    </div>
-                    <div className="process-stage-table">
-                      <table>
-                        <thead>
-                          <tr>
-                            {[
-                              "#",
-                              tr("Назва завдання"),
-                              tr("Опис завдання"),
-                              tr("Відповідальна посада"),
-                              tr("Тривалість"),
-                              tr("Залежності"),
-                              tr("Дії"),
-                            ].map((t) => (
-                              <th key={t}>{t}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {s.tasks.map((t, j) => (
-                            <tr key={t.key} data-task-key={t.key}>
-                              <td>
-                                {i + 1}.{j + 1}
-                              </td>
-                              <td>
-                                <input
-                                  aria-label={tr("Назва завдання {n}", {
-                                    n: `${i + 1}.${j + 1}`,
-                                  })}
-                                  value={t.title}
-                                  onChange={(e) =>
-                                    patch(t.key, { title: e.target.value })
-                                  }
-                                />
-                              </td>
-                              <td>
-                                <textarea
-                                  aria-label={tr("Опис завдання {n}", {
-                                    n: `${i + 1}.${j + 1}`,
-                                  })}
-                                  value={t.description || ""}
-                                  onChange={(e) =>
-                                    patch(t.key, {
-                                      description: e.target.value,
-                                    })
-                                  }
-                                />
-                              </td>
-                              <td>
-                                <RoleSelect
-                                  roles={roles}
-                                  label={tr("Посада {n}", {
-                                    n: `${i + 1}.${j + 1}`,
-                                  })}
-                                  value={t.responsible_position}
-                                  onChange={(r) =>
-                                    patch(t.key, { responsible_position: r })
-                                  }
-                                />
-                              </td>
-                              <td>
-                                <Duration
-                                  capacity={
-                                    context.settings
-                                      .default_daily_task_capacity_minutes
-                                  }
-                                  task={t}
-                                  onChange={(p) => patch(t.key, p)}
-                                />
-                              </td>
-                              <td>
-                                <DependencySelect
-                                  doc={doc}
-                                  task={t}
-                                  onChange={(depends_on) =>
-                                    patch(t.key, { depends_on })
-                                  }
-                                />
-                              </td>
-                              <td>
-                                <button
-                                  type="button"
-                                  aria-label={tr("Деталі {n}", {
-                                    n: `${i + 1}.${j + 1}`,
-                                  })}
-                                  onClick={() => {
-                                    setSelected(t.key);
-                                    setStep(2);
-                                  }}
-                                >
-                                  …
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={j === 0}
-                                  aria-label={tr("Завдання вгору")}
-                                  onClick={() =>
-                                    stage(s.key, {
-                                      tasks: move(s.tasks, j, -1),
-                                    })
-                                  }
-                                >
-                                  ↑
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={j === s.tasks.length - 1}
-                                  aria-label={tr("Завдання вниз")}
-                                  onClick={() =>
-                                    stage(s.key, { tasks: move(s.tasks, j, 1) })
-                                  }
-                                >
-                                  ↓
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    <button type="button" onClick={() => addTask(s.key)}>
-                      {tr("＋ Додати завдання")}
-                    </button>
-                  </details>
-                ))}
-              </>
-            )}
-            {step === 2 && (
-              <ProcessDiagram
-                doc={doc}
-                selected={selected}
-                onSelect={(key) => {
-                  setSelected(key);
-                  setEdge(null);
-                }}
-                onSelectEdge={setEdge}
-                selectedEdge={edge}
-                onRewire={(link, target) =>
-                  update(editDependency(doc, link, link.from, target))
-                }
-                onConnect={(from, to) =>
-                  update(editDependency(doc, null, from, to, "add"))
-                }
-                onUndoEdge={undoEdge}
-                canUndoEdge={edgeHistory.length > 0}
-                onAddStage={addStage}
-                onAddTask={addTask}
-                disabled={readonly || busy}
-              />
-            )}
-          </fieldset>
-          <aside className="process-inspector">
-            {step < 2 ? (
-              <>
-                <h3>{tr("ⓘ Підказки")}</h3>
-                {questions.map((q, i) => (
-                  <details key={q}>
-                    <summary>{q}</summary>
-                    <p>{answers[i]}</p>
-                  </details>
-                ))}
-              </>
-            ) : edge ? (
-              <EdgeInspector
-                key={`${edge.from}-${edge.to}`}
-                doc={doc}
-                edge={edge}
-                disabled={readonly || busy}
-                onChange={(d) => {
-                  update(d);
-                  setEdge(null);
-                }}
-              />
-            ) : current ? (
-              <>
-                <h3>{tr("Завдання {n}", { n: current.number })}</h3>
-                <nav>
-                  {[
-                    ["main", tr("Основні")],
-                    ["dependencies", tr("Залежності")],
-                    ["extra", tr("Додатково")],
-                  ].map(([k, label]) => (
-                    <button
-                      key={k}
-                      type="button"
-                      aria-pressed={inspector === k}
-                      onClick={() => setInspector(k)}
                     >
-                      {label}
+                      <option value="">{tr("Без категорії")}</option>
+                      {context.categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <Files
+                    ids={doc.attachments}
+                    versionId={version.id}
+                    onChange={
+                      readonly
+                        ? undefined
+                        : (ids) => update({ ...doc, attachments: ids })
+                    }
+                    {...{ run, busy }}
+                  />
+                </div>
+              )}
+              {step === 1 && (
+                <>
+                  <div className="process-section-heading">
+                    <h3>{tr("Етапи процесу")}</h3>
+                    <button type="button" onClick={addStage}>
+                      {tr("＋ Додати етап")}
                     </button>
-                  ))}
-                </nav>
-                <fieldset disabled={readonly || busy}>
-                  {inspector === "main" && (
-                    <>
-                      <label>
-                        {tr("Назва завдання")}
+                  </div>
+                  {doc.stages.map((s, i) => (
+                    <details className="process-stage-builder" key={s.key} open>
+                      <summary>
+                        <span className="stage-number">{i + 1}</span>
+                        <strong>{s.name}</strong>
+                        <small>{s.description}</small>
+                        <span>{tr("{n} завдань", { n: s.tasks.length })}</span>
+                      </summary>
+                      <div className="process-stage-controls">
                         <input
-                          value={current.title}
+                          aria-label={tr("Назва етапу {n}", { n: i + 1 })}
+                          value={s.name}
                           onChange={(e) =>
-                            patch(current.key, { title: e.target.value })
+                            stage(s.key, { name: e.target.value })
                           }
                         />
-                      </label>
-                      <label>
-                        {tr("Опис завдання")}
-                        <textarea
-                          value={current.description || ""}
-                          onChange={(e) =>
-                            patch(current.key, { description: e.target.value })
-                          }
-                        />
-                      </label>
-                      <label>
-                        {tr("Виконавець / Посада")}
-                        <RoleSelect
-                          roles={roles}
-                          value={current.responsible_position}
-                          onChange={(r) =>
-                            patch(current.key, { responsible_position: r })
-                          }
-                        />
-                      </label>
-                      <label>
-                        {tr("Тривалість")}
-                        <Duration
-                          capacity={
-                            context.settings.default_daily_task_capacity_minutes
-                          }
-                          task={current}
-                          onChange={(p) => patch(current.key, p)}
-                        />
-                      </label>
-                      <label>
-                        {tr("Статус за замовчуванням")}
                         <input
-                          readOnly
-                          value={tr(
-                            "Не розпочато — залежить від попередніх завдань",
-                          )}
-                        />
-                      </label>
-                      <label>
-                        {tr("Іконка")}
-                        <select
-                          value={current.icon || "▤"}
+                          aria-label={tr("Опис етапу {n}", { n: i + 1 })}
+                          value={s.description || ""}
                           onChange={(e) =>
-                            patch(current.key, { icon: e.target.value })
-                          }
-                        >
-                          {["▤", "✓", "⚙", "◷", "☆", "⚑"].map((x) => (
-                            <option key={x}>{x}</option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        {tr("Етап")}
-                        <select
-                          value={current.stageKey}
-                          onChange={(e) => {
-                            const next = doc.stages.map((s) => ({
-                              ...s,
-                              tasks: s.tasks.filter(
-                                (t) => t.key !== current.key,
-                              ),
-                            }));
-                            const original = doc.stages
-                              .flatMap((s) => s.tasks)
-                              .find((t) => t.key === current.key);
-                            next
-                              .find((s) => s.key === e.target.value)
-                              .tasks.push(original);
-                            update({ ...doc, stages: next });
-                          }}
-                        >
-                          {doc.stages.map((s) => (
-                            <option key={s.key} value={s.key}>
-                              {s.name}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </>
-                  )}
-                  {inspector === "dependencies" && (
-                    <>
-                      <label>
-                        {tr("Попередні завдання")}
-                        <DependencySelect
-                          doc={doc}
-                          task={current}
-                          onChange={(depends_on) =>
-                            patch(current.key, { depends_on })
+                            stage(s.key, { description: e.target.value })
                           }
                         />
-                      </label>
-                      <h4>{tr("Наступні завдання")}</h4>
-                      {tasks
-                        .filter((t) =>
-                          (t.depends_on || []).includes(current.key),
-                        )
-                        .map((t) => (
-                          <button
-                            type="button"
-                            key={t.key}
-                            onClick={() => setSelected(t.key)}
-                          >
-                            {t.number} {t.title}
-                          </button>
-                        ))}
-                    </>
-                  )}
-                  {inspector === "extra" && (
-                    <>
-                      <label>
-                        {tr("Пріоритет")}
-                        <select
-                          value={current.priority}
-                          onChange={(e) =>
-                            patch(current.key, { priority: e.target.value })
-                          }
-                        >
-                          {Object.entries(priorities).map(([k, v]) => (
-                            <option key={k} value={k}>
-                              {v}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        {tr("Категорія")}
-                        <select
-                          value={current.category_id || ""}
-                          onChange={(e) =>
-                            patch(current.key, {
-                              category_id: Number(e.target.value) || null,
-                            })
-                          }
-                        >
-                          <option value="">{tr("Без категорії")}</option>
-                          {context.categories.map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.name}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        {tr("Відділ")}
-                        <select
-                          value={current.department_id || ""}
-                          onChange={(e) =>
-                            patch(current.key, {
-                              department_id: Number(e.target.value) || null,
-                            })
-                          }
-                        >
-                          <option value="">{tr("Під час запуску")}</option>
-                          {directory.departments
-                            .filter((d) => d.active)
-                            .map((d) => (
-                              <option key={d.id} value={d.id}>
-                                {d.name}
-                              </option>
-                            ))}
-                        </select>
-                      </label>
-                      <label>
-                        {tr("Дедлайн завдання: днів від старту")}
-                        <input
-                          type="number"
-                          min="0"
-                          max="3660"
-                          value={current.deadline_offset_days ?? ""}
-                          onChange={(e) =>
-                            patch(current.key, {
-                              deadline_offset_days:
-                                e.target.value === ""
-                                  ? null
-                                  : Number(e.target.value),
-                            })
-                          }
-                        />
-                      </label>
-                      <label>
-                        {tr("Строк від старту, днів")}
-                        <input
-                          type="number"
-                          min="0"
-                          max="3660"
-                          value={current.offset_days ?? 0}
-                          onChange={(e) =>
-                            patch(current.key, {
-                              offset_days: Number(e.target.value),
-                            })
-                          }
-                        />
-                      </label>
-                      <label>
-                        {tr("Рахувати строк від")}
-                        <select
-                          value={current.relative_to || ""}
-                          onChange={(e) =>
-                            patch(current.key, {
-                              relative_to: e.target.value || null,
-                            })
-                          }
-                        >
-                          <option value="">{tr("Дати старту процесу")}</option>
-                          {tasks
-                            .filter((t) => t.key !== current.key)
-                            .map((t) => (
-                              <option key={t.key} value={t.key}>
-                                {t.number} {t.title}
-                              </option>
-                            ))}
-                        </select>
-                      </label>
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={current.parallel !== false}
-                          onChange={(e) =>
-                            patch(current.key, { parallel: e.target.checked })
-                          }
-                        />
-                        {tr("Можна виконувати паралельно")}
-                      </label>
-                      <label>
-                        {tr("Чек-лист")}
-                        <textarea
-                          value={(current.checklist || []).join("\n")}
-                          onChange={(e) =>
-                            patch(current.key, {
-                              checklist: e.target.value
-                                .split("\n")
-                                .filter(Boolean),
-                            })
-                          }
-                        />
-                      </label>
-                      <label>
-                        {tr("Інструкція")}
-                        <textarea
-                          value={current.instruction || ""}
-                          onChange={(e) =>
-                            patch(current.key, { instruction: e.target.value })
-                          }
-                        />
-                      </label>
-                      <label>
-                        {tr("Очікуваний результат")}
-                        <textarea
-                          value={current.expected_result || ""}
-                          onChange={(e) =>
-                            patch(current.key, {
-                              expected_result: e.target.value,
-                            })
-                          }
-                        />
-                      </label>
-                      <label>
-                        {tr("Тип результату")}
-                        <select
-                          value={current.result_type}
-                          onChange={(e) =>
-                            patch(current.key, { result_type: e.target.value })
-                          }
-                        >
-                          {Object.entries(resultTypes).map(([k, v]) => (
-                            <option key={k} value={k}>
-                              {v}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={!!current.requires_confirmation}
-                          onChange={(e) =>
-                            patch(current.key, {
-                              requires_confirmation: e.target.checked,
-                            })
-                          }
-                        />
-                        {tr("Потрібне підтвердження (посада A)")}
-                      </label>
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={!!current.required_file}
-                          onChange={(e) =>
-                            patch(current.key, {
-                              required_file: e.target.checked,
-                            })
-                          }
-                        />
-                        {tr("Обов’язковий файл")}
-                      </label>
-                      {[
-                        ["accountable", tr("A · Відповідальний")],
-                        ["consulted", tr("C · Консультований")],
-                        ["informed", tr("I · Поінформований")],
-                      ].map(([k, label]) => (
-                        <label key={k}>
-                          {label}
-                          <RoleSelect
-                            roles={roles}
-                            label={label}
-                            multiple={k !== "accountable"}
-                            value={
-                              k === "accountable"
-                                ? current.raci?.[k]?.[0]?.id
-                                : (current.raci?.[k] || []).map((r) => r.id)
-                            }
-                            onChange={(v) =>
-                              patch(current.key, {
-                                raci: {
-                                  ...current.raci,
-                                  [k]: (Array.isArray(v) ? v : [v])
-                                    .filter(Boolean)
-                                    .map((id) => ({ type: "position", id })),
-                                },
+                        <label>
+                          {tr("Дедлайн етапу: днів від старту")}
+                          <input
+                            type="number"
+                            min="0"
+                            max="3660"
+                            value={s.deadline_offset_days ?? ""}
+                            onChange={(e) =>
+                              stage(s.key, {
+                                deadline_offset_days:
+                                  e.target.value === ""
+                                    ? null
+                                    : Number(e.target.value),
                               })
                             }
                           />
                         </label>
-                      ))}
-                      <Files
-                        ids={current.attachments}
-                        versionId={version.id}
-                        onChange={
-                          readonly
-                            ? undefined
-                            : (ids) => patch(current.key, { attachments: ids })
+                        <button
+                          type="button"
+                          disabled={i === 0}
+                          aria-label={tr("Етап вгору")}
+                          onClick={() =>
+                            update({ ...doc, stages: move(doc.stages, i, -1) })
+                          }
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          disabled={i === doc.stages.length - 1}
+                          aria-label={tr("Етап вниз")}
+                          onClick={() =>
+                            update({ ...doc, stages: move(doc.stages, i, 1) })
+                          }
+                        >
+                          ↓
+                        </button>
+                        <button
+                          type="button"
+                          disabled={s.tasks.length > 0}
+                          title={tr(
+                            "Спочатку видаліть або перемістіть завдання",
+                          )}
+                          onClick={() =>
+                            update({
+                              ...doc,
+                              stages: doc.stages.filter((x) => x.key !== s.key),
+                            })
+                          }
+                        >
+                          {tr("Видалити етап")}
+                        </button>
+                      </div>
+                      <div className="process-stage-table">
+                        <table>
+                          <thead>
+                            <tr>
+                              {[
+                                "#",
+                                tr("Назва завдання"),
+                                tr("Опис завдання"),
+                                tr("Відповідальна посада"),
+                                tr("Тривалість"),
+                                tr("Залежності"),
+                                tr("Дії"),
+                              ].map((t) => (
+                                <th key={t}>{t}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {s.tasks.map((t, j) => (
+                              <tr key={t.key} data-task-key={t.key}>
+                                <td>
+                                  {i + 1}.{j + 1}
+                                </td>
+                                <td>
+                                  <input
+                                    aria-label={tr("Назва завдання {n}", {
+                                      n: `${i + 1}.${j + 1}`,
+                                    })}
+                                    value={t.title}
+                                    onChange={(e) =>
+                                      patch(t.key, { title: e.target.value })
+                                    }
+                                  />
+                                </td>
+                                <td>
+                                  <textarea
+                                    aria-label={tr("Опис завдання {n}", {
+                                      n: `${i + 1}.${j + 1}`,
+                                    })}
+                                    value={t.description || ""}
+                                    onChange={(e) =>
+                                      patch(t.key, {
+                                        description: e.target.value,
+                                      })
+                                    }
+                                  />
+                                </td>
+                                <td>
+                                  <RoleSelect
+                                    roles={roles}
+                                    label={tr("Посада {n}", {
+                                      n: `${i + 1}.${j + 1}`,
+                                    })}
+                                    value={t.responsible_position}
+                                    onChange={(r) =>
+                                      patch(t.key, { responsible_position: r })
+                                    }
+                                  />
+                                </td>
+                                <td>
+                                  <Duration
+                                    capacity={
+                                      context.settings
+                                        .default_daily_task_capacity_minutes
+                                    }
+                                    task={t}
+                                    onChange={(p) => patch(t.key, p)}
+                                  />
+                                </td>
+                                <td>
+                                  <DependencySelect
+                                    doc={doc}
+                                    task={t}
+                                    onChange={(depends_on) =>
+                                      patch(t.key, { depends_on })
+                                    }
+                                  />
+                                </td>
+                                <td>
+                                  <button
+                                    type="button"
+                                    aria-label={tr("Деталі {n}", {
+                                      n: `${i + 1}.${j + 1}`,
+                                    })}
+                                    onClick={() => {
+                                      setSelected(t.key);
+                                      setStep(2);
+                                    }}
+                                  >
+                                    …
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={j === 0}
+                                    aria-label={tr("Завдання вгору")}
+                                    onClick={() =>
+                                      stage(s.key, {
+                                        tasks: move(s.tasks, j, -1),
+                                      })
+                                    }
+                                  >
+                                    ↑
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={j === s.tasks.length - 1}
+                                    aria-label={tr("Завдання вниз")}
+                                    onClick={() =>
+                                      stage(s.key, {
+                                        tasks: move(s.tasks, j, 1),
+                                      })
+                                    }
+                                  >
+                                    ↓
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <button type="button" onClick={() => addTask(s.key)}>
+                        {tr("＋ Додати завдання")}
+                      </button>
+                    </details>
+                  ))}
+                </>
+              )}
+              {step === 2 && (
+                <ProcessDiagram
+                  doc={doc}
+                  selected={selected}
+                  onSelect={(key) => {
+                    setSelected(key);
+                    setEdge(null);
+                  }}
+                  onSelectEdge={setEdge}
+                  selectedEdge={edge}
+                  onRewire={(link, target) =>
+                    update(editDependency(doc, link, link.from, target))
+                  }
+                  onConnect={(from, to) =>
+                    update(editDependency(doc, null, from, to, "add"))
+                  }
+                  onUndoEdge={undoEdge}
+                  canUndoEdge={edgeHistory.length > 0}
+                  onAddStage={addStage}
+                  onAddTask={addTask}
+                  disabled={readonly || busy}
+                />
+              )}
+            </fieldset>
+            <aside className="process-inspector">
+              {step < 2 ? (
+                <>
+                  <h3>{tr("ⓘ Підказки")}</h3>
+                  {questions.map((q, i) => (
+                    <details key={q}>
+                      <summary>{q}</summary>
+                      <p>{answers[i]}</p>
+                    </details>
+                  ))}
+                </>
+              ) : edge ? (
+                <EdgeInspector
+                  key={`${edge.from}-${edge.to}`}
+                  doc={doc}
+                  edge={edge}
+                  disabled={readonly || busy}
+                  onChange={(d) => {
+                    update(d);
+                    setEdge(null);
+                  }}
+                />
+              ) : current ? (
+                <>
+                  <h3>{tr("Завдання {n}", { n: current.number })}</h3>
+                  <nav>
+                    {[
+                      ["main", tr("Основні")],
+                      ["dependencies", tr("Залежності")],
+                      ["extra", tr("Додатково")],
+                    ].map(([k, label]) => (
+                      <button
+                        key={k}
+                        type="button"
+                        aria-pressed={inspector === k}
+                        onClick={() => setInspector(k)}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </nav>
+                  <fieldset disabled={readonly || busy}>
+                    {inspector === "main" && (
+                      <>
+                        <label>
+                          {tr("Назва завдання")}
+                          <input
+                            value={current.title}
+                            onChange={(e) =>
+                              patch(current.key, { title: e.target.value })
+                            }
+                          />
+                        </label>
+                        <label>
+                          {tr("Опис завдання")}
+                          <textarea
+                            value={current.description || ""}
+                            onChange={(e) =>
+                              patch(current.key, {
+                                description: e.target.value,
+                              })
+                            }
+                          />
+                        </label>
+                        <label>
+                          {tr("Виконавець / Посада")}
+                          <RoleSelect
+                            roles={roles}
+                            value={current.responsible_position}
+                            onChange={(r) =>
+                              patch(current.key, { responsible_position: r })
+                            }
+                          />
+                        </label>
+                        <label>
+                          {tr("Тривалість")}
+                          <Duration
+                            capacity={
+                              context.settings
+                                .default_daily_task_capacity_minutes
+                            }
+                            task={current}
+                            onChange={(p) => patch(current.key, p)}
+                          />
+                        </label>
+                        <label>
+                          {tr("Статус за замовчуванням")}
+                          <input
+                            readOnly
+                            value={tr(
+                              "Не розпочато — залежить від попередніх завдань",
+                            )}
+                          />
+                        </label>
+                        <label>
+                          {tr("Іконка")}
+                          <select
+                            value={current.icon || "▤"}
+                            onChange={(e) =>
+                              patch(current.key, { icon: e.target.value })
+                            }
+                          >
+                            {["▤", "✓", "⚙", "◷", "☆", "⚑"].map((x) => (
+                              <option key={x}>{x}</option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>
+                          {tr("Етап")}
+                          <select
+                            value={current.stageKey}
+                            onChange={(e) => {
+                              const next = doc.stages.map((s) => ({
+                                ...s,
+                                tasks: s.tasks.filter(
+                                  (t) => t.key !== current.key,
+                                ),
+                              }));
+                              const original = doc.stages
+                                .flatMap((s) => s.tasks)
+                                .find((t) => t.key === current.key);
+                              next
+                                .find((s) => s.key === e.target.value)
+                                .tasks.push(original);
+                              update({ ...doc, stages: next });
+                            }}
+                          >
+                            {doc.stages.map((s) => (
+                              <option key={s.key} value={s.key}>
+                                {s.name}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </>
+                    )}
+                    {inspector === "dependencies" && (
+                      <>
+                        <label>
+                          {tr("Попередні завдання")}
+                          <DependencySelect
+                            doc={doc}
+                            task={current}
+                            onChange={(depends_on) =>
+                              patch(current.key, { depends_on })
+                            }
+                          />
+                        </label>
+                        <h4>{tr("Наступні завдання")}</h4>
+                        {tasks
+                          .filter((t) =>
+                            (t.depends_on || []).includes(current.key),
+                          )
+                          .map((t) => (
+                            <button
+                              type="button"
+                              key={t.key}
+                              onClick={() => setSelected(t.key)}
+                            >
+                              {t.number} {t.title}
+                            </button>
+                          ))}
+                      </>
+                    )}
+                    {inspector === "extra" && (
+                      <>
+                        <label>
+                          {tr("Пріоритет")}
+                          <select
+                            value={current.priority}
+                            onChange={(e) =>
+                              patch(current.key, { priority: e.target.value })
+                            }
+                          >
+                            {Object.entries(priorities).map(([k, v]) => (
+                              <option key={k} value={k}>
+                                {v}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>
+                          {tr("Категорія")}
+                          <select
+                            value={current.category_id || ""}
+                            onChange={(e) =>
+                              patch(current.key, {
+                                category_id: Number(e.target.value) || null,
+                              })
+                            }
+                          >
+                            <option value="">{tr("Без категорії")}</option>
+                            {context.categories.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.name}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>
+                          {tr("Відділ")}
+                          <select
+                            value={current.department_id || ""}
+                            onChange={(e) =>
+                              patch(current.key, {
+                                department_id: Number(e.target.value) || null,
+                              })
+                            }
+                          >
+                            <option value="">{tr("Під час запуску")}</option>
+                            {directory.departments
+                              .filter((d) => d.active)
+                              .map((d) => (
+                                <option key={d.id} value={d.id}>
+                                  {d.name}
+                                </option>
+                              ))}
+                          </select>
+                        </label>
+                        <label>
+                          {tr("Дедлайн завдання: днів від старту")}
+                          <input
+                            type="number"
+                            min="0"
+                            max="3660"
+                            value={current.deadline_offset_days ?? ""}
+                            onChange={(e) =>
+                              patch(current.key, {
+                                deadline_offset_days:
+                                  e.target.value === ""
+                                    ? null
+                                    : Number(e.target.value),
+                              })
+                            }
+                          />
+                        </label>
+                        <label>
+                          {tr("Строк від старту, днів")}
+                          <input
+                            type="number"
+                            min="0"
+                            max="3660"
+                            value={current.offset_days ?? 0}
+                            onChange={(e) =>
+                              patch(current.key, {
+                                offset_days: Number(e.target.value),
+                              })
+                            }
+                          />
+                        </label>
+                        <label>
+                          {tr("Рахувати строк від")}
+                          <select
+                            value={current.relative_to || ""}
+                            onChange={(e) =>
+                              patch(current.key, {
+                                relative_to: e.target.value || null,
+                              })
+                            }
+                          >
+                            <option value="">
+                              {tr("Дати старту процесу")}
+                            </option>
+                            {tasks
+                              .filter((t) => t.key !== current.key)
+                              .map((t) => (
+                                <option key={t.key} value={t.key}>
+                                  {t.number} {t.title}
+                                </option>
+                              ))}
+                          </select>
+                        </label>
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={current.parallel !== false}
+                            onChange={(e) =>
+                              patch(current.key, { parallel: e.target.checked })
+                            }
+                          />
+                          {tr("Можна виконувати паралельно")}
+                        </label>
+                        <label>
+                          {tr("Чек-лист")}
+                          <textarea
+                            value={(current.checklist || []).join("\n")}
+                            onChange={(e) =>
+                              patch(current.key, {
+                                checklist: e.target.value
+                                  .split("\n")
+                                  .filter(Boolean),
+                              })
+                            }
+                          />
+                        </label>
+                        <label>
+                          {tr("Інструкція")}
+                          <textarea
+                            value={current.instruction || ""}
+                            onChange={(e) =>
+                              patch(current.key, {
+                                instruction: e.target.value,
+                              })
+                            }
+                          />
+                        </label>
+                        <label>
+                          {tr("Очікуваний результат")}
+                          <textarea
+                            value={current.expected_result || ""}
+                            onChange={(e) =>
+                              patch(current.key, {
+                                expected_result: e.target.value,
+                              })
+                            }
+                          />
+                        </label>
+                        <label>
+                          {tr("Тип результату")}
+                          <select
+                            value={current.result_type}
+                            onChange={(e) =>
+                              patch(current.key, {
+                                result_type: e.target.value,
+                              })
+                            }
+                          >
+                            {Object.entries(resultTypes).map(([k, v]) => (
+                              <option key={k} value={k}>
+                                {v}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={!!current.requires_confirmation}
+                            onChange={(e) =>
+                              patch(current.key, {
+                                requires_confirmation: e.target.checked,
+                              })
+                            }
+                          />
+                          {tr("Потрібне підтвердження (посада A)")}
+                        </label>
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={!!current.required_file}
+                            onChange={(e) =>
+                              patch(current.key, {
+                                required_file: e.target.checked,
+                              })
+                            }
+                          />
+                          {tr("Обов’язковий файл")}
+                        </label>
+                        {[
+                          ["accountable", tr("A · Відповідальний")],
+                          ["consulted", tr("C · Консультований")],
+                          ["informed", tr("I · Поінформований")],
+                        ].map(([k, label]) => (
+                          <label key={k}>
+                            {label}
+                            <RoleSelect
+                              roles={roles}
+                              label={label}
+                              multiple={k !== "accountable"}
+                              value={
+                                k === "accountable"
+                                  ? current.raci?.[k]?.[0]?.id
+                                  : (current.raci?.[k] || []).map((r) => r.id)
+                              }
+                              onChange={(v) =>
+                                patch(current.key, {
+                                  raci: {
+                                    ...current.raci,
+                                    [k]: (Array.isArray(v) ? v : [v])
+                                      .filter(Boolean)
+                                      .map((id) => ({ type: "position", id })),
+                                  },
+                                })
+                              }
+                            />
+                          </label>
+                        ))}
+                        <Files
+                          ids={current.attachments}
+                          versionId={version.id}
+                          onChange={
+                            readonly
+                              ? undefined
+                              : (ids) =>
+                                  patch(current.key, { attachments: ids })
+                          }
+                          {...{ run, busy }}
+                        />
+                      </>
+                    )}
+                    <button
+                      className="danger"
+                      type="button"
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            tr("Видалити завдання та його зв’язки?"),
+                          )
+                        ) {
+                          update(removeTask(doc, current.key));
+                          setSelected(null);
                         }
-                        {...{ run, busy }}
-                      />
-                    </>
-                  )}
-                  <button
-                    className="danger"
-                    type="button"
-                    onClick={() => {
-                      if (
-                        window.confirm(tr("Видалити завдання та його зв’язки?"))
-                      ) {
-                        update(removeTask(doc, current.key));
-                        setSelected(null);
-                      }
-                    }}
-                  >
-                    {tr("Видалити завдання")}
-                  </button>
-                </fieldset>
-              </>
-            ) : (
-              <p>{tr("Оберіть завдання на діаграмі для редагування.")}</p>
-            )}
-          </aside>
+                      }}
+                    >
+                      {tr("Видалити завдання")}
+                    </button>
+                  </fieldset>
+                </>
+              ) : (
+                <p>{tr("Оберіть завдання на діаграмі для редагування.")}</p>
+              )}
+            </aside>
+          </div>
         </div>
         <footer className="process-wizard-footer">
           <button type="button" disabled={busy} onClick={onClose}>
@@ -1052,6 +1093,7 @@ export default function ProcessWizard({
     </Dialog>
   );
 }
+
 function Duration({ task, onChange, capacity }) {
   const day = Number(capacity),
     presets =

@@ -9,6 +9,7 @@ import RecurrenceFields from "../../shared/RecurrenceFields";
 import { noRecurrence } from "../../shared/recurrence";
 import { tr } from "../../i18n/runtime";
 import { useLocale } from "../../i18n/useLocale";
+
 export default function TaskCreateDialog({
   context,
   people,
@@ -23,6 +24,7 @@ export default function TaskCreateDialog({
     [estimate, setEstimate] = useState("30"),
     [recurrence, setRecurrence] = useState(noRecurrence),
     [interrupt, setInterrupt] = useState(false);
+
   const form = useRef(null),
     progress = useRef({ task: null, index: 0, operations: [] }),
     [saved, setSaved] = useState(false),
@@ -31,10 +33,12 @@ export default function TaskCreateDialog({
     [candidates, setCandidates] = useState([]),
     [query, setQuery] = useState(""),
     [searching, setSearching] = useState(false);
+
   const canInterrupt = context.capabilities.includes("tasks.interrupt"),
     assignees = people.some((p) => p.id === context.employee_id)
       ? people
       : [{ id: context.employee_id, name: tr("Собі") }, ...people];
+
   async function search() {
     setSearching(true);
     try {
@@ -53,6 +57,7 @@ export default function TaskCreateDialog({
       setSearching(false);
     }
   }
+
   async function submit(e) {
     e.preventDefault();
     const f = new FormData(e.currentTarget),
@@ -74,10 +79,12 @@ export default function TaskCreateDialog({
         planned_date: initialPlannedDate || null,
         recurrence,
       };
+
       if (!args.title || !args.deadline_at || !args.estimated_minutes) {
         setError(tr("Заповніть обов’язкові поля."));
         return;
       }
+
       const result = await run("create", args);
       if (!result) return;
       p.task = result;
@@ -98,6 +105,7 @@ export default function TaskCreateDialog({
       ];
       setSaved(true);
     }
+
     while (p.index < p.operations.length) {
       const op = p.operations[p.index],
         result = await run(op.action, {
@@ -111,6 +119,7 @@ export default function TaskCreateDialog({
     }
     onClose();
   }
+
   return (
     <Dialog
       hideClose
@@ -128,24 +137,39 @@ export default function TaskCreateDialog({
       >
         <p role="alert">{error}</p>
         {saved && (
-          <p role="status">
+          <p role="status" className="task-saved-status">
             {tr(
               "Завдання створено. Зберігаємо пункти та залежності; у разі помилки повторіть дію.",
             )}
           </p>
         )}
+
         <fieldset disabled={busy || saved}>
-          <label>
-            {tr("Назва")}
-            <input name="title" required maxLength={300} autoFocus />
+          <label className="task-field-block">
+            <span>
+              {tr("Назва")} <span className="required-star">*</span>
+            </span>
+            <input
+              name="title"
+              required
+              maxLength={300}
+              autoFocus
+              placeholder={tr("Введіть назву завдання...")}
+            />
           </label>
-          <label>
-            {tr("Опис")}
-            <textarea name="description" maxLength={20000} />
+
+          <label className="task-field-block">
+            <span>{tr("Опис")}</span>
+            <textarea
+              name="description"
+              maxLength={20000}
+              placeholder={tr("Додайте детальний опис або вимоги...")}
+            />
           </label>
+
           <div className="editor-grid">
-            <label>
-              {tr("Категорія")}
+            <label className="task-field-block">
+              <span>{tr("Категорія")}</span>
               <select name="category_id">
                 <option value="">{tr("Без категорії")}</option>
                 {context.categories.map((c) => (
@@ -155,8 +179,9 @@ export default function TaskCreateDialog({
                 ))}
               </select>
             </label>
-            <label>
-              {tr("Пріоритет")}
+
+            <label className="task-field-block">
+              <span>{tr("Пріоритет")}</span>
               <select name="priority" required defaultValue="medium">
                 {Object.entries(priorities).map(([k, v]) => (
                   <option key={k} value={k}>
@@ -165,8 +190,9 @@ export default function TaskCreateDialog({
                 ))}
               </select>
             </label>
-            <label>
-              {tr("Орієнтовний час, хв")}
+
+            <label className="task-field-block">
+              <span>{tr("Орієнтовний час, хв")}</span>
               <input
                 name="estimated_minutes"
                 required
@@ -177,8 +203,9 @@ export default function TaskCreateDialog({
                 onChange={(e) => setEstimate(e.target.value)}
               />
             </label>
-            <label>
-              {tr("Дедлайн")}
+
+            <label className="task-field-block">
+              <span>{tr("Дедлайн")}</span>
               <DateTimeInput
                 name="deadline"
                 type="datetime-local"
@@ -186,8 +213,9 @@ export default function TaskCreateDialog({
                 defaultValue={`${addDays(context.today, 7)}T17:00`}
               />
             </label>
-            <label>
-              {tr("Виконавець")}
+
+            <label className="task-field-block">
+              <span>{tr("Виконавець")}</span>
               <select
                 required
                 value={target}
@@ -201,130 +229,178 @@ export default function TaskCreateDialog({
               </select>
             </label>
           </div>
-          <small>
-            {tr("Часовий пояс")}: {context.settings.company_timezone}
+
+          <small className="timezone-hint">
+            {tr("Часовий пояс")}:{" "}
+            <strong>{context.settings.company_timezone}</strong>
           </small>
+
           {canInterrupt && (
-            <label>
+            <label className="task-checkbox-row">
               <input
                 type="checkbox"
                 checked={interrupt}
                 onChange={(e) => setInterrupt(e.target.checked)}
               />
-              {tr("Переривання роботи")}
+              <span>{tr("Переривання роботи")}</span>
             </label>
           )}
+
           {interrupt && (
-            <label>
+            <label className="task-checkbox-row task-interrupt-confirm">
               <input type="checkbox" required />
-              {tr("Підтверджую негайне переривання поточної роботи")}
+              <span>
+                {tr("Підтверджую негайне переривання поточної роботи")}
+              </span>
             </label>
           )}
-          <details>
-            <summary>{tr("Підзавдання")}</summary>
-            {checklist.map((text, i) => (
-              <div className="editor-row" key={i}>
-                <label>
-                  {tr("Пункт")} {i + 1}
-                  <input
-                    value={text}
-                    maxLength={2000}
-                    required
-                    onChange={(e) =>
-                      setChecklist((old) =>
-                        old.map((x, j) => (j === i ? e.target.value : x)),
-                      )
-                    }
-                  />
-                </label>
-                <button
-                  type="button"
-                  aria-label={`${tr("Видалити")} ${i + 1}`}
-                  onClick={() =>
-                    setChecklist((old) => old.filter((_, j) => j !== i))
-                  }
-                >
-                  ×
-                </button>
-                <button
-                  type="button"
-                  disabled={i === 0}
-                  aria-label={`${tr("Перемістити вгору")} ${i + 1}`}
-                  onClick={() =>
-                    setChecklist((old) => {
-                      const a = [...old];
-                      [a[i - 1], a[i]] = [a[i], a[i - 1]];
-                      return a;
-                    })
-                  }
-                >
-                  ↑
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => setChecklist((old) => [...old, ""])}
-            >
-              {tr("+ Додати пункт")}
-            </button>
-          </details>
-          <details>
-            <summary>{tr("Залежності")}</summary>
-            <button type="button" disabled={searching} onClick={search}>
-              {tr("+ Додати залежність")}
-            </button>
-            <label>
-              {tr("Пошук завдань")}
-              <input value={query} onChange={(e) => setQuery(e.target.value)} />
-            </label>
-            {candidates
-              .filter(
-                (t) =>
-                  t.title
-                    .toLocaleLowerCase()
-                    .includes(query.toLocaleLowerCase()) &&
-                  !dependencies.some((d) => d.id === t.id),
-              )
-              .slice(0, 20)
-              .map((t) => (
-                <button
-                  className="dependency-result"
-                  type="button"
-                  key={t.id}
-                  onClick={() => setDependencies((old) => [...old, t])}
-                >
-                  #{t.id} · {t.title}
-                </button>
+
+          {/* Блок підзавдань (Checklist) */}
+          <details className="editor-expandable-section">
+            <summary>
+              {tr("Підзавдання")} ({checklist.length})
+            </summary>
+            <div className="expandable-content">
+              {checklist.map((text, i) => (
+                <div className="editor-row" key={i}>
+                  <label className="checklist-input-wrap">
+                    <span className="checklist-index">{i + 1}.</span>
+                    <input
+                      value={text}
+                      maxLength={2000}
+                      required
+                      placeholder={tr("Введіть пункт підзавдання...")}
+                      onChange={(e) =>
+                        setChecklist((old) =>
+                          old.map((x, j) => (j === i ? e.target.value : x)),
+                        )
+                      }
+                    />
+                  </label>
+                  <div className="checklist-actions">
+                    <button
+                      type="button"
+                      disabled={i === 0}
+                      aria-label={`${tr("Перемістити вгору")} ${i + 1}`}
+                      onClick={() =>
+                        setChecklist((old) => {
+                          const a = [...old];
+                          [a[i - 1], a[i]] = [a[i], a[i - 1]];
+                          return a;
+                        })
+                      }
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-danger-icon"
+                      aria-label={`${tr("Видалити")} ${i + 1}`}
+                      onClick={() =>
+                        setChecklist((old) => old.filter((_, j) => j !== i))
+                      }
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
               ))}
-            {dependencies.map((t) => (
-              <div className="editor-row" key={t.id}>
-                <span>{t.title}</span>
-                <button
-                  type="button"
-                  aria-label={`${tr("Видалити")} ${t.title}`}
-                  onClick={() =>
-                    setDependencies((old) => old.filter((d) => d.id !== t.id))
-                  }
-                >
-                  ×
+              <button
+                type="button"
+                className="secondary-action-btn"
+                onClick={() => setChecklist((old) => [...old, ""])}
+              >
+                {tr("+ Додати пункт")}
+              </button>
+            </div>
+          </details>
+
+          {/* Блок залежностей (Dependencies) */}
+          <details className="editor-expandable-section">
+            <summary>
+              {tr("Залежності")} ({dependencies.length})
+            </summary>
+            <div className="expandable-content">
+              <div className="dependency-search-bar">
+                <input
+                  value={query}
+                  placeholder={tr("Пошук завдань за назвою...")}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+                <button type="button" disabled={searching} onClick={search}>
+                  {searching ? tr("Пошук...") : tr("Знайти завдання")}
                 </button>
               </div>
-            ))}
+
+              {candidates.length > 0 && (
+                <div className="dependency-candidates-list">
+                  {candidates
+                    .filter(
+                      (t) =>
+                        t.title
+                          .toLocaleLowerCase()
+                          .includes(query.toLocaleLowerCase()) &&
+                        !dependencies.some((d) => d.id === t.id),
+                    )
+                    .slice(0, 10)
+                    .map((t) => (
+                      <button
+                        className="dependency-result"
+                        type="button"
+                        key={t.id}
+                        onClick={() => setDependencies((old) => [...old, t])}
+                      >
+                        <span className="task-id-badge">#{t.id}</span> {t.title}
+                      </button>
+                    ))}
+                </div>
+              )}
+
+              <div className="selected-dependencies">
+                {dependencies.map((t) => (
+                  <div className="editor-row" key={t.id}>
+                    <span className="selected-dep-title">
+                      #{t.id} · {t.title}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn-danger-icon"
+                      aria-label={`${tr("Видалити")} ${t.title}`}
+                      onClick={() =>
+                        setDependencies((old) =>
+                          old.filter((d) => d.id !== t.id),
+                        )
+                      }
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
           </details>
-          <label>
-            {tr("Коментар")}
-            <textarea name="comment" maxLength={2000} />
+
+          <label className="task-field-block">
+            <span>{tr("Коментар")}</span>
+            <textarea
+              name="comment"
+              maxLength={2000}
+              placeholder={tr("Залишити початковий коментар до завдання...")}
+            />
           </label>
-          <RecurrenceFields
-            label={tr("Повторювати завдання")}
-            value={recurrence}
-            onChange={setRecurrence}
-          />
+
+          <div className="recurrence-wrapper">
+            <RecurrenceFields
+              label={tr("Повторювати завдання")}
+              value={recurrence}
+              onChange={setRecurrence}
+            />
+          </div>
         </fieldset>
+
         <div className="editor-actions">
           <button disabled={busy} className="primary" type="submit">
-            {tr(saved ? "Продовжити збереження" : "Створити")}
+            {tr(saved ? "Продовжити збереження" : "Створити завдання")}
           </button>
           <button disabled={busy} type="button" onClick={onClose}>
             {tr("Скасувати")}

@@ -1,11 +1,16 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import LanguageSwitcher from './i18n'
-import AuthGate from './auth/AuthGate.jsx'
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import "./index.css";
+import LanguageSwitcher from "./i18n";
+import AuthGate from "./auth/AuthGate.jsx";
 
-createRoot(document.getElementById('root')).render(
+createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <LanguageSwitcher /><AuthGate />
+    <div className="app-root-container">
+      <div className="global-top-bar">
+        <LanguageSwitcher />
+      </div>
+      <AuthGate />
+    </div>
   </StrictMode>,
-)
+);

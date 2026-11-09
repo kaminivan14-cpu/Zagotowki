@@ -1,1 +1,336 @@
-.access-screen{min-width:0}.access-explanation{max-width:900px;color:#52665f}.access-screen nav{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}.access-screen nav button[aria-pressed=true]{background:#225448;color:white}.access-role-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,285px),1fr));gap:16px}.access-role{border:1px solid #d9e3df;background:white;border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px}.access-role h3,.access-role p{margin:0}.access-role p{font-size:.9rem;color:#52665f}.access-role>button{margin-top:auto;align-self:flex-start}.access-badge{align-self:flex-start;border-radius:20px;padding:4px 10px;background:#edf4ef;font-size:.85rem}.access-modules{display:flex;flex-wrap:wrap;gap:8px;list-style:none;padding:0}.access-modules li{padding:5px 8px;border-radius:6px;background:#eef4f1;font-size:.85rem}.access-modules li[data-allowed=false]{background:#f2f2f2;color:#68726c}.access-permissions{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px}.access-permissions li{margin-bottom:9px}.access-permissions small,.access-users small{display:block;color:#62776c;font-size:.75rem;overflow-wrap:anywhere}.access-users{padding:0;list-style:none}.access-users li,.access-person{display:flex;align-items:center;gap:10px}.access-users li{padding:10px 0;border-bottom:1px solid #e2e9e5;flex-wrap:wrap}.access-users li>span:nth-child(2){flex:1}.access-screen button{min-height:44px}.access-screen :focus-visible{outline:3px solid #267ad1;outline-offset:3px}
+.access-screen {
+  min-width: 0;
+  padding-bottom: 48px;
+}
+
+.access-explanation {
+  max-width: 900px;
+  color: #52665f;
+}
+
+/* 1. Горизонтальна панель вкладок у стилі Jira */
+.access-tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 2px solid #dfe1e6;
+  margin: 16px 0 20px 0;
+}
+
+.access-tab-btn {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 6px 6px 0 0 !important;
+  color: #42526e !important;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 8px 16px !important;
+  min-height: 40px !important;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+  box-shadow: none !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.access-tab-btn:hover:not(:disabled) {
+  background: rgba(9, 30, 66, 0.06) !important;
+  color: #172b4d !important;
+}
+
+.access-tab-btn.active,
+.access-tab-btn[aria-selected="true"] {
+  background: #deebff !important;
+  color: #0052cc !important;
+  border-bottom-color: #0052cc !important;
+}
+
+/* Бейджики-лічильники у вкладках */
+.nav-badge-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(9, 30, 66, 0.08);
+  color: #42526e;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+.access-tab-btn.active .nav-badge-count {
+  background: #0052cc;
+  color: #ffffff;
+}
+
+/* 2. Тулбар: Пошук + Швидкі фільтри на одній лінії */
+.access-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.access-search-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 260px;
+  max-width: 380px;
+  margin: 0;
+}
+
+.access-search-block > span {
+  font-size: 12px;
+  font-weight: 600;
+  color: #5e6c84;
+}
+
+.access-search-block input {
+  width: 100%;
+}
+
+.access-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Кнопки-теги для швидких фільтрів статусу */
+.filter-tag-btn {
+  background: rgba(9, 30, 66, 0.04) !important;
+  color: #42526e !important;
+  border: none !important;
+  padding: 6px 14px !important;
+  min-height: 38px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  border-radius: 4px !important;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.filter-tag-btn:hover:not(:disabled) {
+  background: rgba(9, 30, 66, 0.08) !important;
+  color: #091e42 !important;
+}
+
+.filter-tag-btn.active {
+  background: #0052cc !important;
+  color: #ffffff !important;
+}
+
+/* 3. Сітка ролей та картки */
+.access-role-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 285px), 1fr));
+  gap: 16px;
+}
+
+.access-role {
+  border: 1px solid #d9e3df;
+  background: white;
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.access-role h3,
+.access-role p {
+  margin: 0;
+}
+
+.access-role p {
+  font-size: 0.9rem;
+  color: #52665f;
+}
+
+.access-role > button {
+  margin-top: auto;
+  align-self: flex-start;
+}
+
+.access-badge {
+  align-self: flex-start;
+  border-radius: 20px;
+  padding: 4px 10px;
+  background: #edf4ef;
+  font-size: 0.85rem;
+}
+
+.access-modules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+}
+
+.access-modules li {
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: #eef4f1;
+  font-size: 0.85rem;
+}
+
+.access-modules li[data-allowed="false"] {
+  background: #f2f2f2;
+  color: #68726c;
+}
+
+.access-permissions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  gap: 12px;
+}
+
+.access-permissions li {
+  margin-bottom: 9px;
+}
+
+.access-permissions small,
+.access-users small {
+  display: block;
+  color: #62776c;
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.access-users {
+  padding: 0;
+  list-style: none;
+}
+
+.access-users li,
+.access-person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.access-users li {
+  padding: 10px 0;
+  border-bottom: 1px solid #e2e9e5;
+  flex-wrap: wrap;
+}
+
+.access-users li > span:nth-child(2) {
+  flex: 1;
+}
+
+/* 4. Загальні елементи та доступність */
+.access-screen button {
+  min-height: 44px;
+}
+
+.access-screen :focus-visible {
+  outline: 3px solid #267ad1;
+  outline-offset: 3px;
+}
+
+.access-row-btn {
+  padding: 6px 12px !important;
+  min-height: 32px !important;
+  font-size: 13px !important;
+}
+
+.access-empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #5e6c84;
+}
+
+.access-empty-state .empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 6px 0;
+  color: #172b4d;
+}
+
+.access-empty-state .empty-subtitle {
+  font-size: 14px;
+  margin: 0;
+}
+
+.access-loading-state {
+  text-align: center;
+  padding: 32px;
+  color: #5e6c84;
+  background: #ffffff;
+  border: 1px solid #dfe1e6;
+  border-radius: 8px;
+}
+
+.access-error-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.edit-subsection-card {
+  border: 1px solid #dfe1e6;
+  border-radius: 6px;
+  padding: 16px;
+  background: #fafbfc;
+  margin-bottom: 14px;
+}
+
+.edit-subsection-card p {
+  margin: 0 0 6px 0;
+}
+
+.edit-subsection-card p:last-child {
+  margin-bottom: 0;
+}
+
+.access-user-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding: 10px 14px;
+}
+
+.user-card-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.access-dialog-container {
+  padding-bottom: 24px;
+}
+
+.access-hint {
+  font-size: 0.85rem;
+  color: #5e6c84;
+  font-style: italic;
+  margin: 0 0 16px 0 !important;
+}
+
+.sub-title {
+  margin: 14px 0 6px 0;
+  color: #172b4d;
+  font-size: 14px;
+}
+
+.hierarchy-list {
+  padding-left: 18px;
+  margin: 0 0 12px 0;
+}
+
+.empty-text {
+  margin: 0 0 12px 0 !important;
+  color: #6b778c;
+}

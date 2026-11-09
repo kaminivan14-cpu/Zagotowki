@@ -426,23 +426,29 @@
 }
 .process-options {
   position: absolute;
-  z-index: 30;
-  background: white;
-  box-shadow: 0 8px 25px #14284a20;
-  border: 1px solid #e4eaf3;
-  border-radius: 9px;
+  z-index: 40;
+  background: #ffffff;
+  box-shadow: 0 10px 28px rgba(20, 40, 74, 0.16);
+  border: 1px solid #dce4ee;
+  border-radius: 10px;
   padding: 10px;
-  min-width: 230px;
-  max-width: 320px;
+  min-width: 240px;
+  max-width: 340px;
   max-height: 320px;
-  overflow: auto;
+  overflow-y: auto;
 }
 .process-options label {
   display: flex !important;
   align-items: center;
   gap: 8px;
-  padding: 8px;
+  padding: 6px 8px;
   font-size: 13px !important;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.process-options label:hover {
+  background: #f0f4fa;
 }
 .process-options label input {
   width: auto !important;
@@ -450,12 +456,25 @@
 .process-options > input {
   width: 100%;
   min-width: 0;
+  box-sizing: border-box;
+  margin-bottom: 8px;
+  border: 1px solid #dce4ee;
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 12px;
+}
+.process-options > input:focus {
+  border-color: #2563ff;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(37, 99, 255, 0.15);
 }
 .process-options strong {
   display: block;
   font-size: 12px;
   background: #eff4fb;
   padding: 6px;
+  border-radius: 4px;
+  margin: 6px 0 2px;
 }
 .process-row-actions .process-options {
   right: 0;
@@ -489,46 +508,204 @@
 dialog.tasks-dialog:has(.process-wizard) {
   width: min(1600px, 98vw);
   max-width: 98vw;
-  padding: 20px;
+  height: 92vh;
+  max-height: 92vh;
+  padding: 0;
   background: #f7f9fd;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.tasks-app .tasks-dialog:has(.process-wizard) > .tasks-app {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  background: #f7f9fd;
+}
+.tasks-app .tasks-dialog:has(.process-wizard) > .tasks-app > h2 {
+  display: none !important;
+}
+.tasks-app .process-wizard,
+.process-wizard {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #f7f9fd;
+}
+/* Sticky header wrapper */
+.process-wizard-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg-dialog, #ffffff);
+  border-bottom: 1px solid #e4eaf3;
+  box-shadow: 0 2px 8px rgba(20, 40, 74, 0.06);
+  flex-shrink: 0;
+  padding: 16px 24px 0;
 }
 .process-wizard-header {
   display: flex;
-  gap: 10px;
-  align-items: center !important;
+  gap: 16px;
+  align-items: flex-start !important;
+  justify-content: space-between;
   background: none !important;
   color: inherit !important;
   padding: 0 !important;
+  padding-right: 48px !important;
 }
-.process-wizard-header p {
+.process-wizard-title-group {
   flex: 1;
+  min-width: 0;
+}
+.process-wizard-title-group h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1b2640;
+  margin: 0 0 4px 0;
+}
+.process-wizard-header p,
+.process-wizard-title-group p {
   color: #6b7a99;
   font-size: 13px;
+  margin: 0;
+  line-height: 1.4;
 }
 .process-stepper {
   justify-content: center;
+  display: flex;
+  border-bottom: 1px solid #e4eaf3;
+  gap: 12px;
+  margin-top: 10px;
 }
 .process-stepper span,
 .stage-number {
   display: inline-grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
-  margin-right: 10px;
+  width: 28px;
+  height: 28px;
+  margin-right: 8px;
   border-radius: 50%;
   background: #e8f2ff;
   color: #2563ff;
+  font-size: 13px;
+  font-weight: 600;
 }
 .process-stepper button[aria-current="step"] span,
 .stage-number {
   background: #2563ff;
   color: white;
 }
+/* Content area scrolls below the sticky header */
+.process-wizard-body,
+.process-wizard-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
 .process-wizard-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
   gap: 20px;
-  margin: 20px 0;
+  margin: 0 0 20px;
+}
+/* ProcessLaunch wizard styles */
+.tasks-app .tasks-dialog:has(.process-launch-wizard),
+dialog.tasks-dialog:has(.process-launch-wizard) {
+  width: min(800px, 96vw);
+  max-width: 96vw;
+  height: min(88vh, 780px);
+  max-height: 88vh;
+  padding: 0;
+  background: #f7f9fd;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.tasks-app .tasks-dialog:has(.process-launch-wizard) > .tasks-app {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  background: #f7f9fd;
+}
+.tasks-app .tasks-dialog:has(.process-launch-wizard) > .tasks-app > h2 {
+  display: none !important;
+}
+.process-launch-wizard {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #f7f9fd;
+}
+.process-launch-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg-dialog, #ffffff);
+  border-bottom: 1px solid #e4eaf3;
+  box-shadow: 0 2px 8px rgba(20, 40, 74, 0.06);
+  flex-shrink: 0;
+  padding: 16px 24px;
+}
+.process-launch-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-right: 48px;
+}
+.process-launch-title-group h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1b2640;
+  margin: 0 0 4px 0;
+}
+.process-launch-title-group p {
+  color: #6b7a99;
+  font-size: 13px;
+  margin: 0;
+}
+.process-launch-wizard form.process-launch {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.process-launch-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 24px;
+  display: grid;
+  gap: 14px;
+}
+.process-launch-footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 14px 24px;
+  background: #ffffff;
+  border-top: 1px solid #e4eaf3;
+  box-shadow: 0 -2px 8px rgba(20, 40, 74, 0.05);
+  z-index: 20;
+  flex-shrink: 0;
 }
 .process-wizard fieldset {
   border: 0;
@@ -709,31 +886,52 @@ dialog.tasks-dialog:has(.process-wizard) {
 .process-multiselect summary {
   cursor: pointer;
   list-style: none;
-  border: 1px solid #e4eaf3;
-  background: white;
-  padding: 9px;
-  border-radius: 7px;
-  font-size: 12px;
-  min-height: 34px;
+  border: 1px solid #dce4ee;
+  background: #ffffff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.process-multiselect summary:hover {
+  border-color: #2563ff;
+  background: #fafcff;
+}
+.process-multiselect[open] summary {
+  border-color: #2563ff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 255, 0.15);
 }
 .process-chip {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   background: #e7efff;
+  color: #175cd3;
   border-radius: 5px;
-  padding: 2px 6px;
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 500;
   margin-right: 3px;
 }
+/* Footer: sticky at the bottom of the flex column */
 .process-wizard-footer {
   position: sticky;
-  bottom: -20px;
+  bottom: 0;
   display: flex;
   gap: 10px;
   align-items: center;
-  padding: 14px;
+  padding: 14px 20px;
   background: #fff;
   border-top: 1px solid #e4eaf3;
-  z-index: 35;
+  z-index: 20;
   flex-wrap: wrap;
+  box-shadow: 0 -2px 8px #14284a0d;
 }
 .process-wizard-footer > .primary {
   margin-left: auto;
@@ -879,6 +1077,23 @@ dialog.tasks-dialog:has(.process-wizard) {
 .process-launch label:has(input[type="checkbox"]) {
   flex-direction: row;
 }
+.process-launch input,
+.process-launch select,
+.process-launch textarea {
+  min-height: 40px;
+  border-radius: 8px;
+  border: 1px solid #dbe4ef;
+  padding: 8px 12px;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+.process-launch button {
+  min-height: 42px;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+}
 .process-workspace :focus-visible,
 .process-wizard :focus-visible {
   outline: 3px solid #83b5ff;
@@ -901,6 +1116,9 @@ dialog.tasks-dialog:has(.process-wizard) {
   .process-options {
     position: fixed;
     max-height: 45vh;
+  }
+  .process-wizard-scroll {
+    padding: 14px;
   }
 }
 @media (max-width: 760px) {
@@ -932,6 +1150,7 @@ dialog.tasks-dialog:has(.process-wizard) {
   }
   .process-wizard-footer {
     bottom: 0;
+    padding: 12px 14px;
   }
   .process-filters > * {
     flex: 1;
@@ -946,6 +1165,9 @@ dialog.tasks-dialog:has(.process-wizard) {
   }
   .process-graph-scroll {
     max-height: 55vh;
+  }
+  .process-wizard-scroll {
+    padding: 12px;
   }
 }
 .process-graph-band {
@@ -1207,4 +1429,162 @@ dialog.tasks-dialog:has(.process-wizard) {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+}
+
+/* Поліпшення інспектора та деталей всередині ProcessView */
+.process-view-status-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.process-version-tag {
+  background: #f4f5f7;
+  color: #596b82;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.process-view-dates-progress {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.process-dates-label {
+  font-size: 13px;
+  color: #596b82;
+  margin: 0;
+}
+
+.process-dates-label .separator {
+  margin: 0 6px;
+  color: #98a6bf;
+}
+
+.process-progress-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  max-width: 220px;
+}
+
+.progress-value {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.process-task-details summary {
+  font-weight: 600;
+  color: #172b4d;
+  cursor: pointer;
+}
+
+.process-task-expanded-body {
+  margin-top: 8px;
+  padding: 10px;
+  background: #f8fbff;
+  border: 1px solid #e1ecf8;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-instruction-box,
+.task-result-box {
+  font-size: 13px;
+  background: #ffffff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid #dfe1e6;
+}
+
+.process-raci-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  font-size: 12px;
+  background: #ffffff;
+  padding: 8px 12px;
+  border-radius: 4px;
+}
+
+.primary-action-link {
+  background: transparent;
+  border: none;
+  color: #0052cc;
+  font-weight: 600;
+  text-align: left;
+  padding: 4px 0;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.process-rating-form {
+  background: #ffffff;
+  border: 1px solid #dfe1e6;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.process-rating-form h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.process-launch-modal-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 680px; /* Ідеальна професійна ширина для форм на великих екранах */
+  max-height: 75vh; /* Запобігає виході за межі екрана */
+  margin: 0 auto;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+/* Форма як флекс-контейнер */
+.process-launch-modal-container .process-launch {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 75vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: none;
+  background: transparent;
+}
+
+/* Область з полями, яка плавно скролиться */
+.process-launch-modal-container .process-launch-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 10px 4px 20px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Стабільний футер внизу форми */
+.process-launch-modal-container .process-launch-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 14px 20px;
+  background: #ffffff;
+  border-top: 1px solid #dfe1e6;
+  box-shadow: 0 -4px 12px rgba(9, 30, 66, 0.04);
+  margin-top: 8px;
+  z-index: 20;
 }
