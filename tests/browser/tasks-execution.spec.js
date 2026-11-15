@@ -26,7 +26,11 @@ async function setup(page,{active=false,empty=false,critical=false}={}){
    if(args.p_action==='critical_start'){previous=current;previous.status='paused';current={...urgent,status:'in_progress'};urgent=null}
    if(args.p_action==='complete'){current.status='completed';current=previous;previous=null;if(current)current.status='in_progress'}
    data=current||{}
-  }else throw Error('Unexpected RPC '+name)
+  }
+  else if(name==='tasks_notifications_unread')data=0
+  else if(name==='tasks_notifications')data={items:[],unread:0,latest_id:null}
+  else if(name==='tasks_parent_candidates')data=[]
+  else throw Error('Unexpected RPC '+name)
   await r.fulfill({contentType:'application/json',body:JSON.stringify(data)})
  });await page.goto('/');return calls
 }

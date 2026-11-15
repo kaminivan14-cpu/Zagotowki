@@ -47,7 +47,11 @@ async function setup(page,{admin=true,accessError=false}={}){
    if(a==='process_publish'){versions.find(v=>v.id===p.version_id).status='published';data={version_id:p.version_id}}
    if(a==='process_version'||a==='process_duplicate'){const old=versions.find(v=>v.id===p.version_id),v={...structuredClone(old),id:versions.length+1,number:old.number+1,revision:1,status:'draft'};versions.push(v);data={version_id:v.id,template_id:v.template_id}}
    if(a==='process_launch'){const v=versions.find(v=>v.id===p.version_id);instances.push({id:instances.length+1,version_id:v.id,number:v.number,name:v.definition.name,owner_employee_id:1,starts_on:p.starts_on,tasks:v.definition.stages.flatMap(s=>s.tasks.map((t,i)=>({id:i+10,title:t.title,status:'planned',stage:s.name})))});data={instance_id:instances.length}}
-  }else throw Error('Unexpected request '+name)
+  }
+  else if(name==='tasks_notifications_unread')data=0
+  else if(name==='tasks_notifications')data={items:[],unread:0,latest_id:null}
+  else if(name==='tasks_parent_candidates')data=[]
+  else throw Error('Unexpected request '+name)
   await r.fulfill({contentType:'application/json',body:JSON.stringify(data)})
  });await page.goto('/');return calls
 }

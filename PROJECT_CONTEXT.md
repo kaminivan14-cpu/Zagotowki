@@ -181,3 +181,43 @@ pracowników oraz realny test sesji i izolacji lokali. Szczegóły i bramki bezp
 - Six-role transactional Production smoke PASS; workflow/API/delete/callback/Worktime functions and RLS unchanged. Three explicitly requested persistent test orders: 695–697 in SB_Wroclaw, NEW, no integration SBID/callback. Admin/manager dispatches them using the existing action.
 - Minimal frontend module-gate change on `codex/orders-role-access`; PR/checks/operator merge approval required before Production frontend rollout.
 - Details: `docs/orders-role-access-production.md`.
+
+
+## 17. Work module update — checkpoint 2026-11-12
+
+- Branch `feature/claude-refactoring`, local only: no push, no remote migration, no UAT/PROD operation.
+- Migration `202611110001_work_hierarchy.sql` (additive): soft delete, attachment removal metadata,
+  `Task_notifications`, direct-child completion guard, `set_parent`/`delete`/`attachment_remove`/notification
+  commands, `update` with `deadline_at`, hierarchy-aware `tasks_list(jsonb)`, richer `tasks_details`,
+  `tasks_parent_candidates`, `tasks_notifications(_unread)`.
+- Frontend: compact header + sidebar shell (`src/tasks/shell`), shared UI primitives (`src/ui`), ClickUp-style
+  nested task list, wide create form, task workspace with subtasks/attachments/activity, notification centre.
+  Reports/Schedule hidden (code kept, see `docs/work-module-decisions.md` У-006).
+- Docs: `docs/work-module-audit.md`, `docs/work-module-requirements-matrix.md`, `docs/work-module-decisions.md`,
+  `docs/work-module-rollout.md`.
+- Checks (2026-11-12, local): `npm run lint` clean; `npm test` 184/184 (PGlite migration chain + unit);
+  `vite build --mode uat` OK; `npx playwright test` 228 passed, 6 skipped (Reports/Schedule, TODO У-006),
+  1 failed = `tasks-admin.spec.js` «diagram target drag … 375», which fails identically on `HEAD` (D-17).
+  Docker-based suites and hosted UAT acceptance were NOT run.
+- Popover/menu/bell triggers are real `<button aria-expanded>` elements (D-18); the plan form opens by default
+  for unplanned tasks (D-19). Browser specs no longer write screenshots for the shell suite.
+- 2026-11-12 isolation pass: Tasks has its own UI library in `src/tasks/components/ui/` (`Tasks*` components,
+  `tasks-ui.css`, `tk-` classes, `--tk-*` tokens). Global `src/ui` and `src/i18n` LanguageSwitcher are unchanged and
+  not imported by Tasks; a unit test guards this. Language switching lives in the Tasks header only (D-20). Header
+  has a visible «Модулі» button (D-22); `?task=<id>` deep links open a task (D-23). Checks: lint clean, 186/186 unit,
+  build OK, browser 229 passed / 6 skipped / 1 pre-existing failure (D-17).
+
+- 2026-11-12 finalisation: migration `202611120001_work_finalize.sql` (legacy .doc/.xls allowed, server-side
+  attachment type/size checks, no notification for an unchanged assignee). Agreed policies: deletion D-26,
+  reassignment notifications D-27. Legacy Tasks screens now use the Tasks UI library (D-29). New tests:
+  `tests/work-finalize.test.mjs`, deep-link / module-navigation / disabled-sections / attachment / visual-audit
+  browser tests in `tasks-shell.spec.js`. Checks: lint 0, Node 189/189 (+4/4 finalize), build OK, browser 236
+  passed / 6 skipped / 1 pre-existing failure (D-31, fails identically on `adf7936`).
+  UAT migration NOT run: no Supabase CLI, access token or UAT DB credentials here; backup unconfirmable
+  (`docs/work-module-rollout.md` §6). Repo `.env` points at the PROD ref — do not use it for UAT checks.
+- 2026-11-12 final local verification: full Tasks redesign (D-33 … D-41). Approved: default list view «Всі завдання»
+  (no `view` default), DOC/DOCX/XLS/XLSX with 20 MiB limit plus server-side name/type check (migration
+  `202611120002`), bulk delete (single-task delete per row, parents excluded, result message). Checks: lint 0, Node 190/190,
+  build OK, browser 237 passed / 6 skipped / 1 pre-existing failure (D-31). UAT migration and hosted acceptance NOT run
+  (blocked; rollout §6, §8). The configured Supabase project (PROD ref) holds test data per the operator.
+

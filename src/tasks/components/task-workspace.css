@@ -1,0 +1,1029 @@
+/* Task workspace dialog (РБ-012), create form (РБ-006), recurrence control (РБ-005) */
+.tasks-app .tasks-dialog.tasks-dialog-wide {
+  width: min(1180px, 96vw);
+  max-height: 94vh;
+}
+/* (0,4,0): must beat the legacy `.tasks-app .tasks-dialog .tasks-app` padding regardless of CSS load order. */
+.tasks-app .tasks-dialog.tasks-dialog-plain > .tasks-app {
+  padding: 0;
+  background: var(--tk-bg, #f3f5f9);
+}
+.tasks-app .tasks-dialog-plain .tasks-dialog-alert:empty {
+  display: none;
+}
+.tasks-app .tasks-dialog-plain .tasks-dialog-alert:not(:empty) {
+  margin: 12px 20px 0;
+}
+.tasks-app .tasks-dialog-plain .tasks-dialog-retry {
+  margin: 8px 20px 0;
+}
+.work-shell-dialog {
+  color-scheme: light;
+  color: var(--tk-text);
+  font-size: 14px;
+  text-align: left;
+}
+/* Workspace */
+.task-workspace-head {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  padding: 16px 64px 12px 24px;
+  background: var(--tk-surface);
+  border-bottom: 1px solid var(--tk-border);
+  display: grid;
+  gap: 8px;
+}
+.task-crumbs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  font-size: 13px;
+  color: var(--tk-text-3);
+}
+.task-crumbs > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.work-shell .task-crumb,
+.tasks-app .task-crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 260px;
+  min-height: 28px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--tk-text-2);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tasks-app .task-crumb:hover {
+  background: var(--tk-primary-soft);
+  color: var(--tk-primary);
+}
+.task-workspace-titlebar {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.tasks-app .task-workspace-title {
+  flex: 1;
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.3;
+  color: var(--tk-text);
+  overflow-wrap: anywhere;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.task-title-form {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.tasks-app .task-title-form input {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 700;
+}
+.task-workspace-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.tasks-app .task-workspace-head .task-manual-actions {
+  margin: 4px 0 0;
+}
+.tasks-app .task-workspace-head .task-manual-actions .task-actions button {
+  min-height: 38px;
+  font-size: 14px;
+}
+.tasks-app .task-workspace-head .task-manual-actions form {
+  margin: 10px 0 0;
+  padding: 12px;
+}
+.task-workspace-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 18px;
+  padding: 18px 24px 24px;
+}
+.task-workspace-main {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.task-section {
+  background: var(--tk-surface);
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius);
+  padding: 14px 16px;
+}
+.tasks-app .task-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--tk-text);
+}
+.tasks-app .task-description {
+  margin: 0;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.task-description-view {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+.task-description-editor {
+  display: grid;
+  gap: 8px;
+}
+.tasks-app .task-description-editor textarea {
+  width: 100%;
+}
+.task-subtasks {
+  display: grid;
+  gap: 8px;
+}
+.task-subtasks-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.task-subtask-list,
+.task-checklist,
+.task-attachment-list,
+.task-comment-list,
+.task-dependency-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.task-subtask {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--tk-border);
+  min-height: 44px;
+}
+.task-subtask.is-done .task-subtask-title {
+  color: var(--tk-text-3);
+  text-decoration: line-through;
+}
+.tasks-app .task-subtask-title {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 30px;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--tk-text);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.tasks-app .task-subtask-title:hover {
+  color: var(--tk-primary);
+}
+.task-subtask-progress {
+  display: inline-flex;
+}
+.task-subtask-deadline {
+  white-space: nowrap;
+}
+.tasks-app .task-checklist .tk-check {
+  min-height: 36px;
+}
+.task-checklist .is-done {
+  color: var(--tk-text-3);
+  text-decoration: line-through;
+}
+.task-inline-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.tasks-app .task-inline-form input {
+  flex: 1;
+  min-width: 140px;
+}
+.tasks-app .task-inline-form .task-datetime-field {
+  flex: 1;
+  min-width: 170px;
+}
+.task-attachments {
+  display: grid;
+  gap: 10px;
+}
+.task-attachment {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border: 1px solid var(--tk-border);
+  border-radius: 8px;
+  min-height: 52px;
+}
+.task-attachment-preview {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  background: var(--tk-bg);
+  display: grid;
+  place-items: center;
+  color: var(--tk-text-3);
+  overflow: hidden;
+  flex: none;
+}
+.task-attachment-thumb {
+  width: 42px;
+  height: 42px;
+  object-fit: cover;
+}
+.task-attachment-info {
+  flex: 1;
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.tasks-app .task-attachment-name {
+  display: block;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--tk-text);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.tasks-app button.task-attachment-name:hover {
+  color: var(--tk-primary);
+}
+.task-attachment-info small {
+  color: var(--tk-text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.task-attachment-actions {
+  display: inline-flex;
+  gap: 2px;
+}
+.task-attachment-failed,
+.task-attachment-upload_failed,
+.task-attachment-rejected {
+  border-color: #f3b4b4;
+}
+.task-attachment-add {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.task-comment {
+  display: flex;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--tk-border);
+}
+.task-comment:last-child {
+  border-bottom: 0;
+}
+.tasks-app .task-comment-meta {
+  margin: 0;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 13px;
+}
+.task-comment-meta time {
+  color: var(--tk-text-3);
+  font-size: 12px;
+}
+.tasks-app .task-comment-text {
+  margin: 2px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.task-comment-form {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+.task-activity {
+  display: grid;
+  gap: 12px;
+}
+.tasks-app .task-activity-day h4 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--tk-text-3);
+}
+.tasks-app .task-timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+.tasks-app .task-activity-item {
+  display: flex;
+  gap: 10px;
+  padding: 4px 0;
+}
+.task-activity-body {
+  flex: 1;
+  min-width: 0;
+}
+.tasks-app .task-activity-body > p {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  align-items: baseline;
+}
+.task-activity-body time {
+  margin-left: auto;
+  color: var(--tk-text-3);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.task-activity-comment {
+  margin: 4px 0 0;
+  padding: 6px 10px;
+  border-left: 3px solid var(--tk-border-strong);
+  color: var(--tk-text-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.task-activity-changes {
+  margin: 4px 0 0;
+  display: grid;
+  gap: 2px;
+  font-size: 13px;
+}
+.task-activity-changes div {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.task-activity-changes dt {
+  color: var(--tk-text-3);
+  min-width: 120px;
+}
+.task-activity-changes dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.task-activity-changes s {
+  color: var(--tk-text-3);
+}
+/* Properties column */
+.task-workspace-props {
+  min-width: 0;
+}
+.task-props {
+  position: sticky;
+  top: 0;
+  margin: 0;
+  display: grid;
+  gap: 2px;
+  background: var(--tk-surface);
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius);
+  padding: 6px 14px;
+}
+.task-prop {
+  display: grid;
+  gap: 4px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--tk-border);
+}
+.task-prop:last-child {
+  border-bottom: 0;
+}
+.task-prop dt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--tk-text-3);
+  font-weight: 600;
+}
+.task-prop dd {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  min-width: 0;
+}
+.tasks-app .task-prop dd > select,
+.tasks-app .task-prop dd > input {
+  width: 100%;
+  min-height: 36px;
+  padding: 5px 10px;
+  border: 1px solid var(--tk-border-strong);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.task-prop dd small {
+  color: var(--tk-text-3);
+}
+.task-parent-value {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+}
+.task-dependency-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.task-plan-form {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+.task-search-select {
+  position: relative;
+  width: 100%;
+}
+.task-search-results {
+  margin-top: 6px;
+  padding: 6px;
+  border: 1px solid var(--tk-border);
+  border-radius: 8px;
+  background: var(--tk-surface);
+  box-shadow: var(--tk-shadow);
+  display: grid;
+  gap: 2px;
+  max-height: 260px;
+  overflow: auto;
+}
+.tasks-app .task-search-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 36px;
+  margin: 0;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--tk-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.tasks-app .task-search-item:hover {
+  background: var(--tk-primary-soft);
+}
+.tasks-app .task-search-results p {
+  margin: 4px 8px;
+}
+/* Recurrence control */
+.recurrence-control {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+}
+.recurrence-control-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.recurrence-control-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  flex: 1;
+  min-width: 180px;
+}
+.tasks-app .recurrence-control-select select {
+  flex: 1;
+  min-height: 38px;
+}
+.tasks-app .recurrence-control-summary {
+  margin: 0;
+  font-size: 13px;
+  color: var(--tk-primary);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.recurrence-control-panel {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--tk-border);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+.tasks-app .recurrence-control-panel .recurrence-fields {
+  border: 0;
+  padding: 0;
+}
+.tasks-app .recurrence-control-panel .recurrence-fields legend {
+  font-weight: 600;
+  font-size: 13px;
+}
+.tasks-app .recurrence-control-panel label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0;
+  font-size: 13px;
+}
+.tasks-app .recurrence-control-panel input:not([type="checkbox"]),
+.tasks-app .recurrence-control-panel select {
+  min-height: 34px;
+  padding: 4px 8px;
+  width: auto;
+}
+.tasks-app .recurrence-control-panel input[type="number"] {
+  width: 80px;
+}
+.tasks-app .recurrence-control-panel details summary {
+  min-height: 32px;
+  padding: 4px 0;
+  font-size: 13px;
+}
+.recurrence-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+/* Create form (previous layout).
+   TODO: Unused since 2026-11-12 — the dialog now uses the tk-create-* layout at the end of this file. */
+.tasks-app .task-create {
+  margin: 0;
+  padding: 0 24px 0;
+}
+.task-create-head {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  margin: 0 -24px;
+  padding: 16px 64px 12px 24px;
+  background: var(--tk-surface);
+  border-bottom: 1px solid var(--tk-border);
+}
+.task-create-crumbs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  font-size: 13px;
+  color: var(--tk-text-3);
+}
+.tasks-app .task-create-head h2 {
+  margin: 4px 0 2px;
+  font-size: 22px;
+}
+.tasks-app .task-create-head p {
+  margin: 0;
+}
+.tasks-app .task-create .tk-inline-error,
+.tasks-app .task-create-status {
+  margin: 12px 0 0;
+}
+.task-create-status {
+  color: var(--tk-text-2);
+}
+.tasks-app .task-create-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 16px;
+  padding: 16px 0 8px;
+  border: 0;
+  margin: 0;
+}
+.task-create-side .tk-card {
+  position: sticky;
+  top: 90px;
+}
+.tasks-app .task-create .tk-card-title {
+  margin: 0;
+  font-size: 15px;
+}
+.tasks-app .task-create-hint {
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+.task-create-list {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+.task-create-list .editor-row {
+  width: 100%;
+}
+.task-create-list-number {
+  color: var(--tk-text-3);
+  font-size: 13px;
+  width: 22px;
+  flex: none;
+}
+.tasks-app .task-create-list .editor-row input {
+  flex: 1;
+  min-height: 36px;
+}
+.task-create-dependency {
+  padding: 4px 8px;
+  border: 1px solid var(--tk-border);
+  border-radius: 8px;
+}
+.task-create-switch {
+  display: grid;
+  gap: 4px;
+}
+.tasks-app .task-create-actions {
+  margin: 0 -24px;
+  bottom: 0;
+  justify-content: space-between;
+}
+@media (max-width: 900px) {
+  .task-workspace-body,
+  .tasks-app .task-create-grid {
+    grid-template-columns: 1fr;
+  }
+  .task-props,
+  .task-create-side .tk-card {
+    position: static;
+  }
+  .task-workspace-head,
+  .task-workspace-body {
+    padding-inline: 14px;
+  }
+  .task-workspace-head {
+    padding-right: 24px;
+    padding-top: 56px;
+  }
+  .tasks-app .task-create {
+    padding-inline: 14px;
+  }
+  .task-create-head,
+  .tasks-app .task-create-actions {
+    margin-inline: -14px;
+    padding-inline: 14px;
+  }
+  .task-create-head {
+    padding-right: 14px;
+    padding-top: 56px;
+  }
+  .tasks-app .task-workspace-title {
+    font-size: 19px;
+  }
+  .task-subtask {
+    flex-wrap: wrap;
+  }
+}
+
+/* ===== Create Task dialog (2026-11-12 redesign) =====
+   Fixed header and footer, one scrollable body; sections on the left, task parameters on the right. */
+.tasks-app .tasks-dialog.tk-create-dialog {
+  width: min(1240px, calc(100vw - 48px));
+  height: min(920px, calc(100dvh - 48px));
+  max-height: none;
+}
+.tasks-app .tasks-dialog.tk-create-dialog > .tasks-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+  background: var(--tk-bg);
+}
+.tk-create {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  margin: 0;
+}
+.work-shell .tk-create-head {
+  padding: 20px 72px 16px 28px;
+  background: var(--tk-surface);
+  border-bottom: 1px solid var(--tk-border);
+  color: var(--tk-text);
+  border-radius: 0;
+}
+.work-shell .tk-create-crumbs {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--tk-text-3);
+}
+.tk-create-crumbs [aria-current] {
+  color: var(--tk-text-2);
+  font-weight: 600;
+}
+.work-shell .tk-create-head h2 {
+  margin: 6px 0 4px;
+  font-size: 22px;
+  line-height: 1.25;
+  font-weight: 700;
+  color: var(--tk-text);
+}
+.work-shell .tk-create-head p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--tk-text-3);
+}
+.tk-create-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px 28px 28px;
+}
+.tk-create-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-radius: var(--tk-radius-sm);
+  background: var(--tk-primary-soft);
+  color: var(--tk-text-2);
+  font-size: 14px;
+}
+.tk-create-message.tk-create-error {
+  background: var(--tk-danger-soft);
+  color: var(--tk-danger);
+}
+.work-shell .tk-create-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 20px;
+  align-items: start;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.tk-create-main {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.tk-create-section,
+.work-shell .tk-create-side {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px 20px 20px;
+  background: var(--tk-surface);
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius);
+  color: var(--tk-text);
+}
+.work-shell .tk-create-section-head {
+  display: grid;
+  gap: 4px;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  border: 0;
+  border-radius: 0;
+}
+.work-shell .tk-create-section-head h3,
+.work-shell .tk-create-side-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--tk-text);
+}
+.tk-create-section-head h3 .tk-icon,
+.tk-create-side-title .tk-icon,
+.tk-create-group-title .tk-icon {
+  color: var(--tk-primary);
+}
+.tk-create-section-head h3 small {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--tk-text-3);
+}
+.tk-create-section-head p {
+  margin: 0;
+  padding-left: 28px;
+  font-size: 13px;
+  color: var(--tk-text-3);
+}
+.work-shell .tk-create-side-title {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--tk-border);
+}
+.tk-create-pair {
+  display: grid;
+  gap: 14px;
+}
+.tk-create-group {
+  display: grid;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--tk-border);
+}
+.tk-create-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tk-text);
+}
+.tk-create-side .recurrence-control-select > .tk-icon {
+  display: none;
+}
+.tk-create-confirm {
+  font-size: 13px;
+}
+.tk-create-list {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+.tk-create-items {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tk-create-item {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 6px;
+}
+.tk-create-item-number {
+  font-size: 13px;
+  color: var(--tk-text-3);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.work-shell .tk-create-item input {
+  width: 100%;
+}
+.work-shell .tk-create-add {
+  padding-inline: 0;
+}
+.tk-create-dependencies {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tk-create-dependencies li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 4px 6px 4px 12px;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius-sm);
+}
+.tk-create-dependencies .tk-truncate {
+  flex: 1;
+}
+.work-shell .tk-create-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 28px;
+  background: var(--tk-surface);
+  border-top: 1px solid var(--tk-border);
+}
+.work-shell .tk-create-foot .tk-btn-primary {
+  min-width: 148px;
+}
+@media (max-width: 1100px) {
+  .work-shell .tk-create-grid {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+}
+/* Tablet: one column; task parameters follow the main sections. */
+@media (max-width: 900px) {
+  .tasks-app .tasks-dialog.tk-create-dialog {
+    width: calc(100vw - 32px);
+    height: calc(100dvh - 32px);
+  }
+  .work-shell .tk-create-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .work-shell .tk-create-head {
+    padding: 16px 64px 14px 20px;
+  }
+  .tk-create-body {
+    padding: 16px 20px 24px;
+  }
+  .work-shell .tk-create-foot {
+    padding: 12px 20px;
+  }
+  .tk-create-pair {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+/* Phone: full-screen sheet, stacked fields. */
+@media (max-width: 600px) {
+  .tasks-app .tasks-dialog.tk-create-dialog {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    border-radius: 0;
+  }
+  .tk-create-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .work-shell .tk-create-head h2 {
+    font-size: 19px;
+  }
+  .tk-create-section,
+  .work-shell .tk-create-side {
+    padding: 14px;
+  }
+  .tk-create-section-head p {
+    padding-left: 0;
+  }
+}
+
+/* Workspace on mid-width screens (2026-11-12): sections shrink with the column, subtask metadata wraps under
+   the title instead of running beneath the properties panel. */
+.task-workspace-main > *,
+.task-section {
+  min-width: 0;
+}
+.task-subtask {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+.task-subtask > :first-child + * {
+  min-width: 0;
+}
+@media (min-width: 901px) and (max-width: 1180px) {
+  .task-workspace-body {
+    grid-template-columns: minmax(0, 1fr) 280px;
+  }
+}
+.work-shell .task-subtask .task-subtask-title {
+  flex: 1 1 160px;
+  min-width: 140px;
+}
