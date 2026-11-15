@@ -16,13 +16,11 @@ export default function NoPlanScreen({
         <div
           className="produkt empty-plan"
           style={{
-            textAlign: 'center',
-            padding: 'var(--empty-plan-padding, 50px 30px)',
+            textAlign: "center",
+            padding: "var(--empty-plan-padding, 50px 30px)",
           }}
         >
-          <div style={{ fontSize: '55px' }}>
-            ✅
-          </div>
+          <div style={{ fontSize: "55px" }}>✅</div>
 
           <h2>Brak zadań do wykonania</h2>
 
@@ -30,9 +28,7 @@ export default function NoPlanScreen({
             Aktualnie nie ma aktywnego planu produkcji.
           </p>
 
-          <p style={{ opacity: 0.6 }}>
-            👤 {pracownik?.name}
-          </p>
+          <p style={{ opacity: 0.6 }}>👤 {pracownik?.name}</p>
         </div>
 
         <button
@@ -40,19 +36,17 @@ export default function NoPlanScreen({
           onClick={pobierzHistorie}
           disabled={ladowanieHistorii}
         >
-          {ladowanieHistorii
-            ? 'Ładowanie...'
-            : '📊 Historia'}
+          {ladowanieHistorii ? "Ładowanie..." : "📊 Historia"}
         </button>
 
         <button
           className="powrot"
           onClick={wylogujPracownika}
-          style={{ marginLeft: 'var(--inline-action-offset, 10px)' }}
+          style={{ marginLeft: "var(--inline-action-offset, 10px)" }}
         >
           🚪 Wyloguj
         </button>
       </main>
     </div>
-  )
+  );
 }

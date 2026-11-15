@@ -1,18 +1,301 @@
-import {tr} from '../../i18n/runtime'
-import ProcessDiagram from './ProcessDiagram'
-import {assignmentName,responsiblePosition} from './model'
-import {useState} from 'react'
-import Dialog from '../components/Dialog'
-import {dateLabel} from '../dateTime'
-import {processSteps,processProgress,taskState,durationText,referenceName,dependencyEdges} from './model'
-import {P} from './labels'
-export default function ProcessView({instance,data,directory,onClose,onDetails,onEdit,canManage,run,busy}){
- const [rating,setRating]=useState(instance.rating||5),[comment,setComment]=useState(instance.rating_comment||'')
- const current=instance.template?instance:data.instances.find(i=>i.id===instance.id)||instance
- const version=data.versions.find(v=>v.id===current.version_id),doc=current.execution_snapshot||version?.definition||current.doc||{stages:[]},steps=processSteps(doc),tasks=current.tasks||[],progress=processProgress(tasks),edges=dependencyEdges(doc)
- const ends=tasks.map(t=>t.deadline_at).filter(Boolean).sort(),end=ends.at(-1)
- const rows=doc.stages.length?doc.stages.map((s,i)=>({...s,index:i,tasks:s.tasks.map(t=>{const live=tasks.find(x=>x.step_key===t.key||x.step?.key===t.key)||tasks.find(x=>x.title===t.title&&x.stage===s.name);return {...t,...live,step:live?.step||t,number:steps.find(x=>x.key===t.key)?.number}})})):[...new Set(tasks.map(t=>t.stage))].map((name,i)=>({key:name,name,index:i,tasks:tasks.filter(t=>t.stage===name)}))
- return <Dialog title={current.name} onClose={onClose}><header className="process-view-heading"><p>{current.template?(version?.status==='published'?tr('Опублікована'):tr('Чернетка')):progress===100?tr('Виконано'):tr('В роботі')} · {tr('Версія')} {version?.number||current.number}</p>{!current.template&&<><p>{P.start}: {dateLabel(current.starts_on)} · {P.end}: {end?dateLabel(end.slice(0,10)):P.noEnd}</p><label>{P.progress}: {progress}%<progress max="100" value={progress}/></label></>}{canManage&&version&&<button onClick={()=>{onClose();onEdit(version)}}>{version.status==='draft'?tr('Редагувати процес'):tr('Переглянути версію')}</button>}</header>
- <details><summary>{tr('Діаграма процесу')}</summary><ProcessDiagram doc={doc} employees={directory.employees} disabled onSelect={key=>{const t=tasks.find(t=>t.step_key===key);if(t){onClose();onDetails(t)}}}/></details>
- {rows.map(s=>{const known=s.tasks.every(t=>t.step?.duration_days!=null||t.duration_days!=null),days=s.tasks.reduce((n,t)=>n+Number(t.step?.duration_days??t.duration_days??0),0);return <details open key={s.key||s.index} className={`process-operational-stage stage-tone-${s.index%4}`}><summary><strong>{s.index+1}. {s.name}</strong> · {tr('{n} завдань',{n:s.tasks.length})} {known&&`· ~${tr('{n} дн.',{n:days})}`} {!current.template&&`· ${processProgress(s.tasks)}%`}</summary><div className="admin-table-wrap"><table><thead><tr>{['#',tr('Завдання'),tr('Тривалість'),P.dependencies,tr('R · Виконавець'),P.informed,tr('Статус')].map(c=><th key={c}>{c}</th>)}</tr></thead><tbody>{s.tasks.map((t,j)=><tr key={t.key||t.id}><td>{t.number||`${s.index+1}.${j+1}`}</td><td><details><summary>{t.title}</summary><p>{t.step?.description}</p><p>{t.step?.instruction}</p><p>{t.step?.expected_result}</p><p>{P.accountable}: {(t.step?.raci?.accountable||[]).map(r=>referenceName(r,directory)).join(', ')||P.none}</p><p>{P.consulted}: {(t.step?.raci?.consulted||[]).map(r=>referenceName(r,directory)).join(', ')||P.none}</p><ul>{(t.step?.checklist||[]).map((x,k)=><li key={k}>{x}</li>)}</ul>{t.id&&<button onClick={()=>{onClose();onDetails(t)}}>{tr('Відкрити завдання')}</button>}</details></td><td>{durationText(t.step||t)}</td><td>{current.template?edges.filter(e=>e.to===t.key).map(e=>steps.find(x=>x.key===e.from)?.number||e.from).join(', ')||'—':(t.dependencies||[]).map(id=>{const predecessor=tasks.find(x=>x.id===id);return steps.find(x=>x.key===predecessor?.step_key)?.number||predecessor?.title||`#${id}`}).join(', ')||'—'}</td><td>{directory.employees.find(e=>e.id===(t.assigned_to_employee_id||t.step?.assigned_to_employee_id))?.name||(current.template&&responsiblePosition(t)?assignmentName(responsiblePosition(t),doc):directory.departments.find(d=>d.id===t.step?.department_id)?.name)||P.none}</td><td>{(t.step?.raci?.informed||[]).map(r=>referenceName(r,directory)).join(', ')||P.none}</td><td><span className={`process-status status-${taskState(t)}`}>{P.states[taskState(t)]}</span></td></tr>)}</tbody></table></div></details>})}<small>{P.stageSummary}</small>{!current.template&&canManage&&tasks.length>0&&tasks.every(t=>['completed','cancelled'].includes(t.status))&&<form onSubmit={async e=>{e.preventDefault();await run('process_rate',{instance_id:current.id,rating:Number(rating),rating_comment:comment})}}><h3>{tr('Оцінити процес')}</h3><label>{tr('Оцінка')}<input type="number" min="1" max="5" step="0.5" value={rating} onChange={e=>setRating(e.target.value)}/></label><label>{tr('Коментар')}<textarea value={comment} onChange={e=>setComment(e.target.value)}/></label><button disabled={busy}>{tr('Зберегти оцінку')}</button></form>}</Dialog>
+import { tr } from "../../i18n/runtime";
+import ProcessDiagram from "./ProcessDiagram";
+import { assignmentName, responsiblePosition } from "./model";
+import { useState } from "react";
+import TasksDialog from "../components/ui/TasksDialog";
+import { dateLabel } from "../dateTime";
+import {
+  processSteps,
+  processProgress,
+  taskState,
+  durationText,
+  referenceName,
+  dependencyEdges,
+} from "./model";
+import { P } from "./labels";
+import TasksButton from "../components/ui/TasksButton";
+export default function ProcessView({
+  instance,
+  data,
+  directory,
+  onClose,
+  onDetails,
+  onEdit,
+  canManage,
+  run,
+  busy,
+}) {
+  const [rating, setRating] = useState(instance.rating || 5),
+    [comment, setComment] = useState(instance.rating_comment || "");
+  const current = instance.template
+    ? instance
+    : data.instances.find((i) => i.id === instance.id) || instance;
+  const version = data.versions.find((v) => v.id === current.version_id),
+    doc = current.execution_snapshot ||
+      version?.definition ||
+      current.doc || { stages: [] },
+    steps = processSteps(doc),
+    tasks = current.tasks || [],
+    progress = processProgress(tasks),
+    edges = dependencyEdges(doc);
+  const ends = tasks
+      .map((t) => t.deadline_at)
+      .filter(Boolean)
+      .sort(),
+    end = ends.at(-1);
+  const rows = doc.stages.length
+    ? doc.stages.map((s, i) => ({
+        ...s,
+        index: i,
+        tasks: s.tasks.map((t) => {
+          const live =
+            tasks.find((x) => x.step_key === t.key || x.step?.key === t.key) ||
+            tasks.find((x) => x.title === t.title && x.stage === s.name);
+          return {
+            ...t,
+            ...live,
+            step: live?.step || t,
+            number: steps.find((x) => x.key === t.key)?.number,
+          };
+        }),
+      }))
+    : [...new Set(tasks.map((t) => t.stage))].map((name, i) => ({
+        key: name,
+        name,
+        index: i,
+        tasks: tasks.filter((t) => t.stage === name),
+      }));
+  return (
+    <TasksDialog title={current.name} onClose={onClose}>
+      <header className="process-view-heading">
+        <p>
+          {current.template
+            ? version?.status === "published"
+              ? tr("Опублікована")
+              : tr("Чернетка")
+            : progress === 100
+              ? tr("Виконано")
+              : tr("В роботі")}{" "}
+          · {tr("Версія")} {version?.number || current.number}
+        </p>
+        {!current.template && (
+          <>
+            <p>
+              {P.start}: {dateLabel(current.starts_on)} · {P.end}:{" "}
+              {end ? dateLabel(end.slice(0, 10)) : P.noEnd}
+            </p>
+            <label>
+              {P.progress}: {progress}%<progress max="100" value={progress} />
+            </label>
+          </>
+        )}
+        {canManage && version && (
+          <TasksButton
+            type="submit"
+            onClick={() => {
+              onClose();
+              onEdit(version);
+            }}
+          >
+            {version.status === "draft"
+              ? tr("Редагувати процес")
+              : tr("Переглянути версію")}
+          </TasksButton>
+        )}
+      </header>
+      <details>
+        <summary>{tr("Діаграма процесу")}</summary>
+        <ProcessDiagram
+          doc={doc}
+          employees={directory.employees}
+          disabled
+          onSelect={(key) => {
+            const t = tasks.find((t) => t.step_key === key);
+            if (t) {
+              onClose();
+              onDetails(t);
+            }
+          }}
+        />
+      </details>
+      {rows.map((s) => {
+        const known = s.tasks.every(
+            (t) => t.step?.duration_days != null || t.duration_days != null,
+          ),
+          days = s.tasks.reduce(
+            (n, t) => n + Number(t.step?.duration_days ?? t.duration_days ?? 0),
+            0,
+          );
+        return (
+          <details
+            open
+            key={s.key || s.index}
+            className={`process-operational-stage stage-tone-${s.index % 4}`}
+          >
+            <summary>
+              <strong>
+                {s.index + 1}. {s.name}
+              </strong>{" "}
+              · {tr("{n} завдань", { n: s.tasks.length })}{" "}
+              {known && `· ~${tr("{n} дн.", { n: days })}`}{" "}
+              {!current.template && `· ${processProgress(s.tasks)}%`}
+            </summary>
+            <div className="admin-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    {[
+                      "#",
+                      tr("Завдання"),
+                      tr("Тривалість"),
+                      P.dependencies,
+                      tr("R · Виконавець"),
+                      P.informed,
+                      tr("Статус"),
+                    ].map((c) => (
+                      <th key={c}>{c}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {s.tasks.map((t, j) => (
+                    <tr key={t.key || t.id}>
+                      <td>{t.number || `${s.index + 1}.${j + 1}`}</td>
+                      <td>
+                        <details>
+                          <summary>{t.title}</summary>
+                          <p>{t.step?.description}</p>
+                          <p>{t.step?.instruction}</p>
+                          <p>{t.step?.expected_result}</p>
+                          <p>
+                            {P.accountable}:{" "}
+                            {(t.step?.raci?.accountable || [])
+                              .map((r) => referenceName(r, directory))
+                              .join(", ") || P.none}
+                          </p>
+                          <p>
+                            {P.consulted}:{" "}
+                            {(t.step?.raci?.consulted || [])
+                              .map((r) => referenceName(r, directory))
+                              .join(", ") || P.none}
+                          </p>
+                          <ul>
+                            {(t.step?.checklist || []).map((x, k) => (
+                              <li key={k}>{x}</li>
+                            ))}
+                          </ul>
+                          {t.id && (
+                            <TasksButton
+                              type="submit"
+                              onClick={() => {
+                                onClose();
+                                onDetails(t);
+                              }}
+                            >
+                              {tr("Відкрити завдання")}
+                            </TasksButton>
+                          )}
+                        </details>
+                      </td>
+                      <td>{durationText(t.step || t)}</td>
+                      <td>
+                        {current.template
+                          ? edges
+                              .filter((e) => e.to === t.key)
+                              .map(
+                                (e) =>
+                                  steps.find((x) => x.key === e.from)?.number ||
+                                  e.from,
+                              )
+                              .join(", ") || "—"
+                          : (t.dependencies || [])
+                              .map((id) => {
+                                const predecessor = tasks.find(
+                                  (x) => x.id === id,
+                                );
+                                return (
+                                  steps.find(
+                                    (x) => x.key === predecessor?.step_key,
+                                  )?.number ||
+                                  predecessor?.title ||
+                                  `#${id}`
+                                );
+                              })
+                              .join(", ") || "—"}
+                      </td>
+                      <td>
+                        {directory.employees.find(
+                          (e) =>
+                            e.id ===
+                            (t.assigned_to_employee_id ||
+                              t.step?.assigned_to_employee_id),
+                        )?.name ||
+                          (current.template && responsiblePosition(t)
+                            ? assignmentName(responsiblePosition(t), doc)
+                            : directory.departments.find(
+                                (d) => d.id === t.step?.department_id,
+                              )?.name) ||
+                          P.none}
+                      </td>
+                      <td>
+                        {(t.step?.raci?.informed || [])
+                          .map((r) => referenceName(r, directory))
+                          .join(", ") || P.none}
+                      </td>
+                      <td>
+                        <span
+                          className={`process-status status-${taskState(t)}`}
+                        >
+                          {P.states[taskState(t)]}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        );
+      })}
+      <small>{P.stageSummary}</small>
+      {!current.template &&
+        canManage &&
+        tasks.length > 0 &&
+        tasks.every((t) => ["completed", "cancelled"].includes(t.status)) && (
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              await run("process_rate", {
+                instance_id: current.id,
+                rating: Number(rating),
+                rating_comment: comment,
+              });
+            }}
+          >
+            <h3>{tr("Оцінити процес")}</h3>
+            <label>
+              {tr("Оцінка")}
+              <input
+                type="number"
+                min="1"
+                max="5"
+                step="0.5"
+                value={rating}
+                onChange={(e) => setRating(e.target.value)}
+              />
+            </label>
+            <label>
+              {tr("Коментар")}
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+              />
+            </label>
+            <TasksButton type="submit" disabled={busy}>
+              {tr("Зберегти оцінку")}
+            </TasksButton>
+          </form>
+        )}
+    </TasksDialog>
+  );
 }

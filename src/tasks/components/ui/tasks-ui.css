@@ -1,0 +1,1585 @@
+/* Tasks UI library stylesheet (independent copy of src/ui/ui.css). Tokens live on .work-shell (src/tasks/shell/shell.css).
+   Selectors are prefixed with .work-shell so they win over the legacy .tasks-app element rules. */
+.work-shell .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.tk-icon {
+  flex: none;
+  vertical-align: middle;
+}
+.tk-spin {
+  animation: tk-spin 0.9s linear infinite;
+}
+@keyframes tk-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tk-spin {
+    animation-duration: 2s;
+  }
+}
+/* Buttons */
+.work-shell .tk-btn,
+.work-shell summary.tk-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 7px 14px;
+  border: 1px solid var(--tk-border-strong);
+  border-radius: var(--tk-radius-sm);
+  background: var(--tk-surface);
+  color: var(--tk-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  list-style: none;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.work-shell summary.tk-btn::-webkit-details-marker {
+  display: none;
+}
+/* Large touch target (64px) for execution actions on the Work screen. */
+.work-shell .tk-btn-lg {
+  min-height: 64px;
+  padding: 14px 24px;
+  font-size: 18px;
+}
+.work-shell .tk-btn-sm {
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 13px;
+}
+.work-shell .tk-btn-icon {
+  padding-inline: 0;
+  width: 38px;
+}
+.work-shell .tk-btn-sm.tk-btn-icon {
+  width: 32px;
+}
+.work-shell .tk-btn-primary {
+  background: var(--tk-primary);
+  border-color: var(--tk-primary);
+  color: #fff;
+}
+.work-shell .tk-btn-primary:hover:not(:disabled) {
+  background: var(--tk-primary-hover);
+  border-color: var(--tk-primary-hover);
+  color: #fff;
+}
+.work-shell .tk-btn-secondary:hover:not(:disabled) {
+  background: var(--tk-bg);
+  border-color: #b7c2d0;
+}
+.work-shell .tk-btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--tk-text-2);
+}
+.work-shell .tk-btn-ghost:hover:not(:disabled) {
+  background: var(--tk-bg);
+  color: var(--tk-text);
+}
+.work-shell .tk-btn-danger {
+  background: var(--tk-surface);
+  border-color: #f3b4b4;
+  color: var(--tk-danger);
+}
+.work-shell .tk-btn-danger:hover:not(:disabled) {
+  background: var(--tk-danger);
+  border-color: var(--tk-danger);
+  color: #fff;
+}
+.work-shell .tk-btn-link {
+  background: transparent;
+  border-color: transparent;
+  color: var(--tk-primary);
+  padding-inline: 4px;
+}
+.work-shell .tk-btn-link:hover:not(:disabled) {
+  background: var(--tk-primary-soft);
+}
+/* Toggle buttons (aria-pressed) use the primary colour; this also beats the legacy .tasks-app button[aria-pressed] rule. */
+.work-shell .tk-btn[aria-pressed="true"],
+.work-shell .tk-btn[aria-pressed="true"]:hover:not(:disabled) {
+  background: var(--tk-primary);
+  border-color: var(--tk-primary);
+  color: #fff;
+}
+.work-shell .tk-btn:disabled,
+.work-shell summary.tk-btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.work-shell :is(button, summary, input, select, textarea, a, [tabindex]):focus-visible {
+  outline: 3px solid #93b4f5;
+  outline-offset: 2px;
+}
+/* Badges */
+.tk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  background: #eef2f7;
+  color: #475569;
+  max-width: 100%;
+}
+.tk-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.tk-badge-neutral {
+  background: #eef2f7;
+  color: #475569;
+}
+.tk-badge-blue {
+  background: #e6efff;
+  color: #1d4ed8;
+}
+.tk-badge-amber {
+  background: #fff3d6;
+  color: #9a5b00;
+}
+.tk-badge-green {
+  background: #dcf5e7;
+  color: #15803d;
+}
+.tk-badge-red {
+  background: #fde8e8;
+  color: #b91c1c;
+}
+.tk-badge-purple {
+  background: #efe8ff;
+  color: #6d28d9;
+}
+.tk-badge-teal {
+  background: #dff5f3;
+  color: #0f766e;
+}
+.tk-badge-pink {
+  background: #fde7f1;
+  color: #be185d;
+}
+.tk-badge-gray {
+  background: #f1f3f6;
+  color: #6b7280;
+}
+/* Progress */
+.tk-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.work-shell .tk-progress progress {
+  appearance: none;
+  width: 72px;
+  height: 6px;
+  max-width: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--tk-border);
+  color: var(--tk-primary);
+}
+.work-shell .tk-progress progress::-webkit-progress-bar {
+  background: var(--tk-border);
+  border-radius: 999px;
+}
+.work-shell .tk-progress progress::-webkit-progress-value {
+  background: var(--tk-primary);
+  border-radius: 999px;
+}
+.work-shell .tk-progress progress::-moz-progress-bar {
+  background: var(--tk-primary);
+  border-radius: 999px;
+}
+.work-shell .tk-progress progress.complete::-webkit-progress-value {
+  background: var(--tk-success);
+}
+.work-shell .tk-progress progress.complete::-moz-progress-bar {
+  background: var(--tk-success);
+}
+.tk-progress-text {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--tk-text-2);
+}
+.tk-progress-text small {
+  color: var(--tk-text-3);
+}
+.tk-progress-none {
+  color: var(--tk-text-3);
+}
+/* State messages */
+.tk-state {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 28px 20px;
+  border: 1px dashed var(--tk-border-strong);
+  border-radius: var(--tk-radius);
+  background: var(--tk-surface);
+  color: var(--tk-text-2);
+}
+.tk-state-compact {
+  padding: 12px 14px;
+  border-style: solid;
+}
+.tk-state-icon {
+  color: var(--tk-text-3);
+  display: inline-flex;
+}
+.tk-state-error .tk-state-icon {
+  color: var(--tk-danger);
+}
+.work-shell .tk-state-title {
+  display: block;
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--tk-text);
+}
+.work-shell .tk-state p {
+  margin: 0 0 10px;
+}
+.work-shell .tk-state[role="alert"] {
+  background: #fff7f7;
+  color: var(--tk-text-2);
+}
+/* Menus and popovers */
+.tk-menu,
+.tk-popover {
+  position: relative;
+  display: inline-block;
+}
+/* Closed panels must not take part in layout; triggers are real buttons carrying aria-expanded. */
+.tk-menu:not([data-open]) > .tk-menu-items,
+.tk-popover:not([data-open]) > .tk-popover-panel {
+  display: none;
+}
+.tk-menu-items,
+.tk-popover-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  z-index: 60;
+  min-width: 200px;
+  padding: 6px;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius);
+  background: var(--tk-surface);
+  box-shadow: var(--tk-shadow-lg);
+  color: var(--tk-text);
+  text-align: left;
+}
+.tk-popover-panel {
+  padding: 14px;
+  min-width: 260px;
+  max-width: min(92vw, 420px);
+}
+.tk-menu-end .tk-menu-items,
+.tk-popover-end .tk-popover-panel {
+  right: 0;
+}
+.tk-menu-start .tk-menu-items,
+.tk-popover-start .tk-popover-panel {
+  left: 0;
+}
+.work-shell .tk-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--tk-text);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+.work-shell .tk-menu-item:hover:not(:disabled) {
+  background: var(--tk-bg);
+}
+.work-shell .tk-menu-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.work-shell .tk-menu-item.tk-menu-danger {
+  color: var(--tk-danger);
+}
+.work-shell .tk-menu-item.tk-menu-danger:hover:not(:disabled) {
+  background: var(--tk-danger-soft);
+}
+.tk-menu-sep {
+  height: 1px;
+  margin: 6px 4px;
+  background: var(--tk-border);
+}
+/* Tabs */
+.work-shell .tk-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+}
+.work-shell .tk-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--tk-text-2);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.work-shell .tk-tabs-underline button {
+  border-bottom: 2px solid transparent;
+}
+.work-shell .tk-tabs-underline button[aria-pressed="true"] {
+  color: var(--tk-primary);
+  border-bottom-color: var(--tk-primary);
+  background: transparent;
+}
+.work-shell .tk-tabs-pills {
+  padding: 3px;
+  background: var(--tk-bg);
+  border-radius: var(--tk-radius-sm);
+}
+.work-shell .tk-tabs-pills button {
+  border-radius: 6px;
+  min-height: 32px;
+}
+.work-shell .tk-tabs-pills button[aria-pressed="true"] {
+  background: var(--tk-surface);
+  color: var(--tk-text);
+  box-shadow: var(--tk-shadow);
+}
+.work-shell .tk-tabs button:hover:not(:disabled):not([aria-pressed="true"]) {
+  color: var(--tk-text);
+  background: var(--tk-bg);
+}
+.work-shell .tk-tabs button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.tk-tab-count {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #e8edf4;
+  font-size: 12px;
+  color: var(--tk-text-2);
+}
+.work-shell .tk-tabs button[aria-pressed="true"] .tk-tab-count {
+  background: var(--tk-primary-soft);
+  color: var(--tk-primary);
+}
+/* Fields and inputs */
+.work-shell .tk-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  margin: 0;
+}
+.work-shell .tk-field-inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+.work-shell .tk-field-head {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.work-shell .tk-field .tk-field-label,
+.work-shell .tk-field-label {
+  display: block;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tk-text);
+}
+.tk-required {
+  color: var(--tk-danger);
+}
+.work-shell .tk-field-hint {
+  color: var(--tk-text-3);
+  font-size: 12px;
+}
+.work-shell .tk-field-message {
+  color: var(--tk-danger);
+  font-size: 12px;
+}
+.work-shell .tk-field-control {
+  min-width: 0;
+}
+.work-shell .tk-field-control > :is(input, select, textarea, .task-datetime-field) {
+  width: 100%;
+}
+/* Form controls: (0,2,0) via :where(), equal to the global native-control rule, so component rules
+   (search fields, list editors) can refine padding or size with one extra class. */
+.tasks-app.work-shell :where(.tk-form, .tk-field) :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea),
+.tasks-app.work-shell :where(.tk-input) {
+  min-height: 38px;
+  padding: 7px 11px;
+  border: 1px solid var(--tk-border-strong);
+  border-radius: var(--tk-radius-sm);
+  background: var(--tk-surface);
+  color: var(--tk-text);
+  font: inherit;
+  font-size: 14px;
+  box-sizing: border-box;
+  max-width: 100%;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.tasks-app.work-shell :where(.tk-form, .tk-field) textarea {
+  min-height: 84px;
+  resize: vertical;
+  line-height: 1.5;
+}
+.tasks-app.work-shell :where(.tk-form, .tk-field) :where(input, select, textarea):focus {
+  border-color: var(--tk-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16);
+}
+.tasks-app.work-shell :where(.tk-form, .tk-field) :where(input, select, textarea):disabled {
+  background: #f6f8fb;
+  color: var(--tk-text-3);
+}
+.tasks-app.work-shell :where(.tk-form, .tk-field, .tk-check) input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--tk-primary);
+}
+.work-shell .tk-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+  min-height: 32px;
+  cursor: pointer;
+}
+.work-shell form.tk-form,
+.work-shell .tk-form {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.tk-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+.tk-form-grid .tk-span-2 {
+  grid-column: 1 / -1;
+}
+.tk-input-icon {
+  position: relative;
+}
+.tk-input-icon > .tk-icon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--tk-text-3);
+  pointer-events: none;
+}
+.work-shell .tk-input-icon > input {
+  padding-left: 36px;
+}
+/* Segmented choice (priority) */
+.tk-segment {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 6px;
+}
+.work-shell .tk-segment button {
+  min-height: 38px;
+  padding: 6px 8px;
+  border: 1px solid var(--tk-border-strong);
+  border-radius: var(--tk-radius-sm);
+  background: var(--tk-surface);
+  color: var(--tk-text-2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.work-shell .tk-segment button[aria-pressed="true"] {
+  border-color: var(--tk-primary);
+  background: var(--tk-primary-soft);
+  color: var(--tk-primary);
+}
+/* Pagination */
+.tk-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--tk-text-2);
+}
+.tk-pagination nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+}
+.tk-pagination-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.work-shell .tk-pagination button {
+  min-width: 34px;
+  min-height: 34px;
+  padding: 4px 8px;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius-sm);
+  background: var(--tk-surface);
+  color: var(--tk-text-2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.work-shell .tk-pagination button[aria-current="page"] {
+  border-color: var(--tk-primary);
+  color: var(--tk-primary);
+  background: var(--tk-primary-soft);
+}
+.work-shell .tk-pagination button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+/* Dialogs */
+.tk-dialog {
+  border: 1px solid var(--tk-border);
+  border-radius: 14px;
+  padding: 24px;
+  width: min(440px, 94vw);
+  box-shadow: var(--tk-shadow-lg);
+  color: var(--tk-text);
+  font-size: 14px;
+  text-align: left;
+}
+.tk-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.5);
+}
+.tk-confirm h2 {
+  font-size: 18px;
+  margin: 10px 0 6px;
+  color: var(--tk-text);
+}
+.tk-confirm p {
+  margin: 0 0 10px;
+  color: var(--tk-text-2);
+  line-height: 1.5;
+}
+.tk-confirm-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--tk-primary-soft);
+  color: var(--tk-primary);
+}
+.tk-confirm-icon.tk-confirm-danger {
+  background: var(--tk-danger-soft);
+  color: var(--tk-danger);
+}
+.tk-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+.tk-inline-error {
+  color: var(--tk-danger);
+  background: var(--tk-danger-soft);
+  padding: 8px 10px;
+  border-radius: var(--tk-radius-sm);
+}
+/* Tables */
+.tk-table-wrap {
+  overflow: auto;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius);
+  background: var(--tk-surface);
+  position: relative;
+}
+.work-shell .tk-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+  background: var(--tk-surface);
+}
+.work-shell .tk-table th,
+.work-shell .tk-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--tk-border);
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.work-shell .tk-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f8fafc;
+  color: var(--tk-text-3);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.work-shell .tk-table tbody tr:hover > td {
+  background: #fafbfd;
+}
+/* Chips */
+.tk-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px 3px 10px;
+  border-radius: 999px;
+  background: var(--tk-primary-soft);
+  color: var(--tk-primary);
+  font-size: 12px;
+  font-weight: 600;
+}
+.work-shell .tk-chip button {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.work-shell .tk-chip button:hover {
+  background: rgba(37, 99, 235, 0.15);
+}
+/* Global element styles from App.css/tasks.css (header, aside) must not leak into shell components */
+.work-shell :where(header.tk-card-header, header.task-create-head, header.task-workspace-head) {
+  background: transparent;
+  color: inherit;
+  width: auto;
+  padding: 0;
+}
+.work-shell aside.task-create-side,
+.work-shell aside.task-workspace-props,
+.tasks-app aside.task-create-side,
+.tasks-app aside.task-workspace-props {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
+}
+/* Cards and sections */
+.tk-card {
+  background: var(--tk-surface);
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius);
+}
+.work-shell .tk-card-header,
+.tasks-app .tk-card-header {
+  background: transparent;
+  color: inherit;
+  width: auto;
+}
+.tk-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--tk-border);
+}
+.tk-card-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--tk-text);
+}
+.tk-card-title small {
+  color: var(--tk-text-3);
+  font-weight: 500;
+}
+.tk-card-body {
+  padding: 14px 16px;
+}
+.tk-muted {
+  color: var(--tk-text-3);
+}
+.tk-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.tk-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.tk-divider {
+  height: 1px;
+  background: var(--tk-border);
+  margin: 12px 0;
+}
+.tk-person {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.tk-person .org-avatar {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  font-size: 11px;
+}
+.tk-person .org-avatar img {
+  width: 28px;
+  height: 28px;
+}
+.tk-person span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tk-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .tk-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .tk-segment {
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .tk-popover-panel,
+  .tk-menu-items {
+    max-width: calc(100vw - 24px);
+  }
+}
+/* TasksDialog / TasksModalClose: independent of the global modal-close.css. */
+dialog.tk-dialog-with-close {
+  position: relative;
+  padding-top: 0;
+}
+.tk-dialog-with-close .tk-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--tk-border-strong, #cfd8e3);
+  border-radius: var(--tk-radius-sm, 8px);
+  background: var(--tk-surface, #ffffff);
+  color: var(--tk-text, #0f172a);
+  font: inherit;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+.tk-dialog-with-close .tk-modal-close:hover:not(:disabled) {
+  background: var(--tk-bg, #f3f5f9);
+}
+.tk-dialog-with-close .tk-modal-close:focus-visible {
+  outline: 3px solid var(--tk-primary, #2563eb);
+  outline-offset: 2px;
+}
+.tk-dialog-with-close .tk-modal-close:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+/* TasksLanguageSwitcher */
+.tk-language {
+  gap: 6px;
+}
+.tk-language select {
+  cursor: pointer;
+}
+/* Native form controls on every Tasks screen (legacy Processes / Admin / Access / Planning / Work included) use the
+   Tasks tokens and the same 38px control height as TasksButton. :where() keeps the selector at (0,2,0), so it beats the
+   legacy `.tasks-app input` base rule while component-specific layout rules (widths, grids) still apply. */
+.tasks-app.work-shell
+  :where(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="color"]),
+    select,
+    textarea
+  ) {
+  min-height: 38px;
+  padding: 7px 11px;
+  border: 1px solid var(--tk-border-strong);
+  border-radius: var(--tk-radius-sm);
+  background: var(--tk-surface);
+  color: var(--tk-text);
+  font: inherit;
+  font-size: 14px;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+.tasks-app.work-shell :where(input, select, textarea):focus {
+  border-color: var(--tk-primary);
+  box-shadow: 0 0 0 3px var(--tk-primary-soft);
+  outline: none;
+}
+.tasks-app.work-shell :where(input, select, textarea):disabled {
+  background: var(--tk-bg);
+  color: var(--tk-text-3);
+}
+.tasks-app.work-shell :where(input[type="checkbox"], input[type="radio"]) {
+  accent-color: var(--tk-primary);
+}
+/* TasksSearchInput */
+.tk-search {
+  position: relative;
+  display: block;
+  min-width: 0;
+  margin: 0;
+}
+.tk-search .tk-search-icon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--tk-text-3);
+  pointer-events: none;
+}
+.work-shell .tk-search > input {
+  width: 100%;
+  padding-left: 34px;
+}
+/* TasksSwitch */
+.tk-switch-field {
+  display: grid;
+  gap: 4px;
+}
+.tk-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--tk-text);
+}
+.tk-switch {
+  position: relative;
+}
+/* The native checkbox covers the whole label: it stays the click / keyboard / test target. */
+.work-shell .tk-switch input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+.tk-switch-track {
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--tk-border-strong);
+  transition: background-color 0.15s ease;
+}
+.tk-switch-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--tk-surface);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.25);
+  transition: transform 0.15s ease;
+}
+.tk-switch input:checked + .tk-switch-track {
+  background: var(--tk-primary);
+}
+.tk-switch input:checked + .tk-switch-track::after {
+  transform: translateX(16px);
+}
+.tk-switch input:focus-visible + .tk-switch-track {
+  outline: 2px solid var(--tk-primary);
+  outline-offset: 2px;
+}
+.tk-switch input:disabled + .tk-switch-track {
+  opacity: 0.5;
+}
+.tk-switch-description {
+  color: var(--tk-text-3);
+  font-size: 12px;
+  line-height: 1.4;
+}
+/* Shared avatar inside Tasks: Tasks palette instead of the organisation chart's legacy mint. */
+.work-shell .org-avatar {
+  background: var(--tk-primary-soft);
+  color: var(--tk-primary);
+  font-weight: 600;
+}
+/* Every Tasks dialog: Tasks surface, border, radius and backdrop instead of the legacy green frame. */
+.work-shell .tasks-dialog,
+.work-shell dialog.tk-dialog {
+  border: 1px solid var(--tk-border);
+  border-radius: 14px;
+  box-shadow: var(--tk-shadow-lg);
+  color: var(--tk-text);
+}
+.work-shell .tasks-dialog::backdrop,
+.work-shell dialog.tk-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.45);
+}
+
+/* ===== Legacy Tasks screens on the Tasks design system (2026-11-12) =====
+   Planning, Processes, Admin, Access, Organization, Work and Task settings keep their markup and business logic;
+   these rules give their shared structures (page titles, tab bars, tables, disclosures) the same look as the
+   redesigned task list. Selectors start with `.tasks-app.work-shell` (0,2,0+) so they apply regardless of the
+   order in which the lazily loaded screen stylesheets arrive. */
+.tasks-app.work-shell .work-main > section > h2:first-child,
+.tasks-app.work-shell .work-main .task-admin > h2,
+.tasks-app.work-shell .work-main .process-workspace .admin-toolbar h3 {
+  margin: 0 0 16px;
+  font-size: 24px;
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--tk-text);
+}
+.tasks-app.work-shell .work-main :is(.task-admin, .task-planning, .tasks-planning, .task-work, .process-workspace) h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tk-text);
+}
+.tasks-app.work-shell .work-main {
+  font-size: 14px;
+}
+/* Button-style tab bars (<nav aria-label> of TasksButton[aria-pressed]) render as underline tabs. */
+.tasks-app.work-shell .work-main nav[aria-label]:has(> .tk-btn[aria-pressed]) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 20px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--tk-border);
+  background: transparent;
+}
+.tasks-app.work-shell .work-main nav[aria-label] > .tk-btn[aria-pressed] {
+  min-height: 42px;
+  margin-bottom: -1px;
+  padding: 6px 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--tk-text-2);
+  box-shadow: none;
+}
+.tasks-app.work-shell .work-main nav[aria-label] > .tk-btn[aria-pressed]:hover:not(:disabled) {
+  background: transparent;
+  color: var(--tk-text);
+}
+.tasks-app.work-shell .work-main nav[aria-label] > .tk-btn[aria-pressed="true"] {
+  color: var(--tk-primary);
+  border-bottom-color: var(--tk-primary);
+  background: transparent;
+}
+/* Legacy data tables: Tasks table look inside a bordered card. */
+.tasks-app.work-shell .work-main .admin-table-wrap {
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius);
+  background: var(--tk-surface);
+}
+.tasks-app.work-shell .work-main table:not(.tk-table) {
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--tk-surface);
+}
+.tasks-app.work-shell .work-main table:not(.tk-table):not(.process-list) {
+  font-size: 14px;
+}
+/* Inline cell padding: 12px except the Processes table, which compresses to fit (see shell.css). */
+.tasks-app.work-shell .work-main table:not(.tk-table):not(.process-list) :is(th, td) {
+  padding-inline: 12px;
+}
+.tasks-app.work-shell .work-main table:not(.tk-table) th {
+  padding-block: 10px;
+  background: #f8fafc;
+  color: var(--tk-text-3);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: left;
+  border-bottom: 1px solid var(--tk-border);
+}
+.tasks-app.work-shell .work-main table:not(.tk-table) td {
+  padding-block: 10px;
+  border-bottom: 1px solid var(--tk-border);
+  vertical-align: middle;
+  color: var(--tk-text);
+}
+.tasks-app.work-shell .work-main table:not(.tk-table) tbody tr:last-child > td {
+  border-bottom: 0;
+}
+.tasks-app.work-shell .work-main table:not(.tk-table) tbody tr:hover > td {
+  background: #fafbfd;
+}
+/* Disclosures (hints, comments, step options): one chevron style. Styled summaries (menus) keep their own. */
+.tasks-app.work-shell details:not(.process-multiselect):not(.process-row-actions *) > summary:not([class]):not([aria-label]) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+  cursor: pointer;
+  color: var(--tk-text);
+  font-weight: 500;
+}
+.tasks-app.work-shell details:not(.process-multiselect):not(.process-row-actions *) > summary:not([class]):not([aria-label])::-webkit-details-marker {
+  display: none;
+}
+.tasks-app.work-shell details:not(.process-multiselect):not(.process-row-actions *) > summary:not([class]):not([aria-label])::before {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+  opacity: 0.7;
+}
+.tasks-app.work-shell details[open]:not(.process-multiselect) > summary:not([class]):not([aria-label])::before {
+  transform: rotate(45deg);
+}
+/* The legacy `.primary` class on TasksButton must not repaint it in the old blue. */
+.tasks-app.work-shell .tk-btn.primary,
+.tasks-app.work-shell .tk-btn.tk-btn-primary {
+  background: var(--tk-primary);
+  border-color: var(--tk-primary);
+  color: #fff;
+}
+.tasks-app.work-shell .tk-btn.primary:hover:not(:disabled),
+.tasks-app.work-shell .tk-btn.tk-btn-primary:hover:not(:disabled) {
+  background: var(--tk-primary-hover);
+  border-color: var(--tk-primary-hover);
+}
+/* Processes workspace sits on the page background like every other screen. */
+.tasks-app.work-shell .work-main .process-workspace {
+  background: transparent;
+  padding: 0;
+  margin: 0;
+}
+.tasks-app.work-shell .work-main .execution-state {
+  color: var(--tk-primary);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+/* Task workspace dialog header: opaque, padded (the generic header reset removed both). */
+.tasks-app.work-shell .task-workspace-head {
+  padding: 16px 64px 14px 24px;
+  background: var(--tk-surface);
+  border-bottom: 1px solid var(--tk-border);
+}
+.tasks-app.work-shell .tk-dialog-with-close .tk-modal-close {
+  font-size: 24px;
+  color: var(--tk-text-2);
+}
+/* Workspace breadcrumb: plain inline trail (no generic nav rule); crumbs render as compact links. */
+.tasks-app.work-shell .task-workspace-head .task-crumbs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 6px;
+  padding: 0;
+  border: 0;
+  font-size: 13px;
+  color: var(--tk-text-3);
+}
+.tasks-app.work-shell .task-workspace-head .task-crumbs .tk-btn.task-crumb {
+  min-height: 24px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--tk-text-2);
+  font-size: 13px;
+  font-weight: 500;
+}
+.tasks-app.work-shell .task-workspace-head .task-crumbs .tk-btn.task-crumb:hover {
+  color: var(--tk-primary);
+  background: var(--tk-primary-soft);
+}
+.tasks-app.work-shell .task-actions-hint {
+  margin: 8px 0;
+  font-size: 13px;
+  color: var(--tk-text-3);
+}
+.tasks-app.work-shell .process-list h4 {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+/* Planning: the day load check is a compact text link that may wrap inside the narrow day column. */
+.tasks-app.work-shell .tk-btn.planning-balance {
+  min-height: 28px;
+  padding: 2px 0;
+  white-space: normal;
+  text-align: left;
+  justify-content: flex-start;
+  font-size: 12px;
+}
+/* Default (non-plain) TasksDialog: sticky footer bar with the close action on the right. */
+.tasks-app.work-shell .tasks-dialog > .tasks-app > .tk-dialog-foot {
+  position: sticky;
+  bottom: -24px;
+  z-index: 15;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 20px -24px -24px;
+  padding: 12px 24px;
+  background: var(--tk-surface);
+  border-top: 1px solid var(--tk-border);
+}
+/* Checkboxes and radios never inherit the legacy 46px text-control box. */
+.tasks-app.work-shell :where(input[type="checkbox"], input[type="radio"]) {
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  flex: none;
+}
+.tasks-app.work-shell .tk-create-add {
+  justify-self: start;
+}
+.tasks-app.work-shell .tk-create-section .task-search-select,
+.tasks-app.work-shell .tk-create-section .tk-search {
+  width: 100%;
+}
+/* Text size settings (shared preferences dialog opened from the Tasks header): option rows. */
+.tasks-app.work-shell .text-size-settings {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.tasks-app.work-shell .text-size-settings legend {
+  margin-bottom: 8px;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tk-text);
+}
+.tasks-app.work-shell .text-size-settings label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius-sm);
+  background: var(--tk-surface);
+  cursor: pointer;
+  font-weight: 500;
+}
+.tasks-app.work-shell .text-size-settings label:has(input:checked) {
+  border-color: var(--tk-primary);
+  background: var(--tk-primary-soft);
+}
+/* Generic legacy dialog forms (<form> with <label>text<control/></label> children, then action buttons):
+   stacked labels, full-width controls, one action row with the submit action as primary. */
+.tasks-app.work-shell .tasks-dialog form:not([class]) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px 8px;
+}
+.tasks-app.work-shell .tasks-dialog form:not([class]) > :not(.tk-btn):not(button) {
+  flex: 1 1 100%;
+  margin: 0;
+}
+.tasks-app.work-shell .tasks-dialog form:not([class]) > label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tk-text-2);
+}
+.tasks-app.work-shell .tasks-dialog form:not([class]) > label:has(> input[type="checkbox"], > input[type="radio"]) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: var(--tk-text);
+}
+.tasks-app.work-shell .tasks-dialog form:not([class]) > label > :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  width: 100%;
+  font-weight: 400;
+}
+.tasks-app.work-shell .tasks-dialog form:not([class]) > .tk-btn[type="submit"] {
+  background: var(--tk-primary);
+  border-color: var(--tk-primary);
+  color: #fff;
+}
+.tasks-app.work-shell .tasks-dialog form:not([class]) > .tk-btn[type="submit"]:hover:not(:disabled) {
+  background: var(--tk-primary-hover);
+}
+/* Dialog body text uses the Tasks base size (the shell sets 14px only inside the main content area). */
+.tasks-app.work-shell .tasks-dialog {
+  font-size: 14px;
+  line-height: 1.45;
+}
+/* Compact task row (planning month and other card lists). */
+.tasks-app.work-shell .tk-task-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 8px;
+  padding: 12px 16px;
+  background: var(--tk-surface);
+  border: 1px solid var(--tk-border);
+  border-radius: var(--tk-radius);
+}
+.tk-task-card-main {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.tasks-app.work-shell .tk-task-card h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.tasks-app.work-shell .tk-task-card .task-title {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--tk-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.tasks-app.work-shell .tk-task-card .task-title:hover {
+  color: var(--tk-primary);
+}
+.tk-task-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  font-size: 13px;
+  color: var(--tk-text-3);
+}
+.tk-task-card-meta > span:not(.tk-badge):not(.task-priority) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.tasks-app.work-shell .tk-task-card-extra {
+  flex: none;
+  font-size: 13px;
+  color: var(--tk-text-2);
+}
+.tasks-app.work-shell .tk-task-card-extra p {
+  margin: 0;
+}
+.tasks-app.work-shell .task-week > h3 {
+  margin: 20px 0 2px;
+  font-size: 15px;
+}
+.tasks-app.work-shell .task-week > p {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--tk-text-3);
+}
+/* Avatars stay circular wherever a layout stretches flex/grid children (e.g. the employee photo preview). */
+.tasks-app.work-shell .org-avatar {
+  aspect-ratio: 1;
+  justify-self: start;
+  align-self: start;
+  flex-grow: 0;
+}
+/* Employee photo preview only (organisation-chart avatars keep their own 38px size). */
+.tasks-app.work-shell fieldset > .org-avatar:not([style]) {
+  width: 64px;
+  height: 64px;
+  flex-basis: 64px;
+  font-size: 22px;
+}
+/* Native buttons rendered by shared components inside Tasks dialogs (e.g. the e-mail invite form). */
+.tasks-app.work-shell .tasks-dialog button:not([class]) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-height: 38px;
+  padding: 7px 14px;
+  border: 1px solid var(--tk-border-strong);
+  border-radius: var(--tk-radius-sm);
+  background: var(--tk-surface);
+  color: var(--tk-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tasks-app.work-shell .tasks-dialog button:not([class])[type="submit"],
+.tasks-app.work-shell .tasks-dialog form > button:not([class]):first-of-type:not([type="button"]) {
+  background: var(--tk-primary);
+  border-color: var(--tk-primary);
+  color: #fff;
+}
+.tasks-app.work-shell .tasks-dialog button:not([class]):disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.tasks-app.work-shell input[type="file"]::file-selector-button {
+  margin-right: 10px;
+  padding: 6px 12px;
+  border: 1px solid var(--tk-border-strong);
+  border-radius: var(--tk-radius-sm);
+  background: var(--tk-surface);
+  color: var(--tk-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+/* Process launch form: stacked Tasks fields. The legacy `.tasks-app label { align-items: center }` combined with
+   the launch form's column labels centred every control; fields now stretch and align left. */
+.tasks-app.work-shell .process-launch {
+  gap: 16px;
+}
+.tasks-app.work-shell .process-launch label {
+  align-items: stretch;
+  gap: 6px;
+  margin: 0;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tk-text-2);
+}
+.tasks-app.work-shell .process-launch label:has(> input[type="checkbox"]) {
+  align-items: center;
+  font-weight: 500;
+  color: var(--tk-text);
+}
+.tasks-app.work-shell .process-launch label > :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  width: 100%;
+  font-weight: 400;
+}
+.tasks-app.work-shell .process-launch fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+@media (min-width: 700px) {
+  .tasks-app.work-shell .tasks-dialog:has(.process-launch) {
+    width: min(820px, 94vw);
+  }
+  .tasks-app.work-shell .process-launch {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 16px;
+  }
+  .tasks-app.work-shell .process-launch > :is(p, fieldset, details, div, [role="alert"]),
+  .tasks-app.work-shell .process-launch > label:has(textarea),
+  .tasks-app.work-shell .process-launch > label:has(> input[type="checkbox"]) {
+    grid-column: 1 / -1;
+  }
+}
+.tasks-app.work-shell .process-launch > .tk-btn-primary {
+  justify-self: end;
+  grid-column: 1 / -1;
+  min-width: 180px;
+}
+/* Attachment row status lines: inline text, not the generic notice box. */
+.tasks-app.work-shell .task-attachment small[role="alert"],
+.tasks-app.work-shell .task-attachment small[role="status"] {
+  display: block;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  font-size: 12px;
+}
+.tasks-app.work-shell .task-attachment small[role="alert"] {
+  color: var(--tk-danger);
+}
+.tasks-app.work-shell .task-attachment small[role="status"] {
+  color: var(--tk-text-3);
+}
+/* Destructive confirmation: the confirming action is solid red. */
+.tasks-app.work-shell .tk-confirm .tk-btn-danger {
+  background: var(--tk-danger);
+  border-color: var(--tk-danger);
+  color: #fff;
+}
+.tasks-app.work-shell .tk-confirm .tk-btn-danger:hover:not(:disabled) {
+  filter: brightness(0.9);
+}
+/* Admin → «Налаштування роботи та доступів» (TaskSettingsScreen inside a disclosure): each settings form becomes a
+   responsive field grid with stacked labels; headings, notes and actions take the full row; submit is primary. */
+.tasks-app.work-shell .task-admin details > summary:not([class]) {
+  margin: 20px 0 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.tasks-app.work-shell .task-admin details > section > h2 {
+  margin: 8px 0 14px;
+  font-size: 18px;
+  font-weight: 600;
+}
+.tasks-app.work-shell .task-admin details form:not([class]) {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  align-items: end;
+  gap: 14px 16px;
+}
+.tasks-app.work-shell .task-admin details form:not([class]) > :is(h3, h4, p, fieldset, [role="alert"], ul, table, div) {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.tasks-app.work-shell .task-admin details form:not([class]) > label {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tk-text-2);
+}
+.tasks-app.work-shell .task-admin details form:not([class]) > label:has(> input[type="checkbox"]) {
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  color: var(--tk-text);
+}
+.tasks-app.work-shell .task-admin details form:not([class]) > label > :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  width: 100%;
+  font-weight: 400;
+}
+.tasks-app.work-shell .task-admin details form:not([class]) > :is(.tk-btn, button) {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+.tasks-app.work-shell .task-admin details form:not([class]) > .tk-btn[type="submit"] {
+  background: var(--tk-primary);
+  border-color: var(--tk-primary);
+  color: #fff;
+}
+/* Hover on active tabs / pressed buttons must not fall back to the legacy pressed-button hover. */
+.tasks-app.work-shell .tk-tabs-underline button[aria-pressed="true"]:hover:not(:disabled) {
+  background: transparent;
+  color: var(--tk-primary);
+}
+.tasks-app.work-shell .tk-tabs-pills button[aria-pressed="true"]:hover:not(:disabled) {
+  background: var(--tk-surface);
+  color: var(--tk-text);
+}
+.tasks-app.work-shell .tk-btn[aria-pressed="true"]:hover:not(:disabled) {
+  background: var(--tk-primary-hover);
+  border-color: var(--tk-primary-hover);
+  color: #fff;
+}
+.tasks-app.work-shell .work-main nav[aria-label] > .tk-btn[aria-pressed="true"]:hover:not(:disabled) {
+  background: transparent;
+  color: var(--tk-primary);
+}
+/* Attachment-level errors (e.g. no permission to open a file): danger style, not the generic notice box. */
+.tasks-app.work-shell .task-attachments > [role="alert"] {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: var(--tk-radius-sm);
+  background: var(--tk-danger-soft);
+  color: var(--tk-danger);
+  font-size: 13px;
+}

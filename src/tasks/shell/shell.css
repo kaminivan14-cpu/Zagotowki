@@ -1,0 +1,483 @@
+/* Work module shell: design tokens, compact header, persistent sidebar and content area. */
+.work-shell {
+  --tk-bg: #f3f5f9;
+  --tk-surface: #ffffff;
+  --tk-border: #e3e8f0;
+  --tk-border-strong: #cfd8e3;
+  --tk-text: #0f172a;
+  --tk-text-2: #475569;
+  --tk-text-3: #64748b;
+  --tk-primary: #2563eb;
+  --tk-primary-hover: #1d4ed8;
+  --tk-primary-soft: #e8f0ff;
+  --tk-danger: #dc2626;
+  --tk-danger-soft: #fee2e2;
+  --tk-success: #16a34a;
+  --tk-success-soft: #dcfce7;
+  --tk-warning: #d97706;
+  --tk-warning-soft: #fef3c7;
+  --tk-sidebar: #0f172a;
+  --tk-sidebar-text: #cbd5e1;
+  --tk-sidebar-active: #1e293b;
+  --tk-radius: 10px;
+  --tk-radius-sm: 8px;
+  --tk-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.08);
+  --tk-shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.18);
+  --tk-header-height: 60px;
+  --tk-sidebar-width: 236px;
+  color-scheme: light;
+  min-height: 100svh;
+  display: grid;
+  grid-template-columns: var(--tk-sidebar-width) minmax(0, 1fr);
+  grid-template-rows: var(--tk-header-height) minmax(0, 1fr);
+  grid-template-areas:
+    "header header"
+    "sidebar main";
+  background: var(--tk-bg);
+  color: var(--tk-text);
+  font-size: 14px;
+  line-height: 1.45;
+  text-align: left;
+}
+body.work-module-active #root {
+  width: 100%;
+  max-width: none;
+  border-inline: 0;
+  text-align: left;
+}
+/* The global language bar is merged into the Work header (РБ-001). */
+body.work-module-active > #root > .language-switcher {
+  display: none;
+}
+.tasks-app.work-shell {
+  padding: 0;
+  background: var(--tk-bg);
+}
+/* Header */
+.work-shell .work-header {
+  grid-area: header;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: var(--tk-header-height);
+  padding: 0 16px 0 14px;
+  margin: 0;
+  background: var(--tk-surface);
+  border-bottom: 1px solid var(--tk-border);
+  border-radius: 0;
+  color: var(--tk-text);
+}
+.work-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  width: calc(var(--tk-sidebar-width) - 14px);
+}
+.work-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--tk-primary);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.work-brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  min-width: 0;
+}
+.work-shell .work-brand-text h1 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--tk-text);
+  white-space: nowrap;
+}
+.work-brand-text small {
+  color: var(--tk-text-3);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+.work-header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.work-header .tk-language {
+  padding: 0;
+  gap: 6px;
+  margin-right: 6px;
+}
+.work-header .tk-language-label {
+  font-size: 12px;
+  color: var(--tk-text-3);
+}
+.work-shell .work-header .tk-language select {
+  min-height: 32px;
+  padding: 3px 8px;
+  border: 1px solid var(--tk-border-strong);
+  border-radius: var(--tk-radius-sm);
+  background: var(--tk-surface);
+  color: var(--tk-text);
+  font: inherit;
+  font-size: 13px;
+  width: auto;
+}
+.work-shell .work-account {
+  gap: 8px;
+  padding-inline: 6px 8px;
+  max-width: 220px;
+}
+.work-account-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.work-shell .work-account-panel {
+  width: 260px;
+  padding: 10px;
+}
+.work-account-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+}
+.work-account-identity div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.work-account-identity strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.work-account-identity small {
+  color: var(--tk-text-3);
+}
+.work-shell .work-create-compact {
+  display: none;
+}
+/* Sidebar */
+.work-shell .work-sidebar {
+  grid-area: sidebar;
+  position: sticky;
+  top: var(--tk-header-height);
+  align-self: start;
+  height: calc(100svh - var(--tk-header-height));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 12px;
+  background: var(--tk-sidebar);
+  color: var(--tk-sidebar-text);
+  overflow-y: auto;
+}
+.work-shell .work-sidebar-create .work-create {
+  width: 100%;
+  justify-content: center;
+}
+.work-shell .work-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 0 0;
+  border: 0;
+}
+.work-shell .work-nav button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--tk-sidebar-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+.work-shell .work-nav button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+}
+.work-shell .work-nav button[aria-pressed="true"] {
+  background: var(--tk-sidebar-active);
+  color: #fff;
+  box-shadow: inset 3px 0 0 var(--tk-primary);
+}
+.work-shell .work-nav button .tk-icon {
+  color: inherit;
+  opacity: 0.9;
+}
+/* Content */
+.work-shell .work-main {
+  grid-area: main;
+  min-width: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 20px 24px 40px;
+}
+.work-shell .work-main.work-main-narrow {
+  max-width: 1100px;
+}
+.work-notices {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.work-notices:empty {
+  display: none;
+}
+.work-shell .work-notices [role="alert"]:not(:empty) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0;
+  background: #fff3cd;
+  color: #624708;
+  padding: 10px 14px;
+  border-radius: var(--tk-radius-sm);
+}
+/* Legacy screens inside the new shell keep their own styles; normalise their headings only. */
+.work-shell .work-main > section > h2:first-child,
+.work-shell .work-main .task-admin > h2 {
+  margin-top: 0;
+}
+.work-shell .work-loading {
+  display: grid;
+  place-items: center;
+  min-height: 100svh;
+  gap: 12px;
+  padding: 24px;
+}
+.work-shell .work-loading-card {
+  width: min(420px, 100%);
+  display: grid;
+  gap: 12px;
+  padding: 24px;
+  background: var(--tk-surface);
+  border: 1px solid var(--tk-border);
+  border-radius: 14px;
+}
+@media (max-width: 900px) {
+  .work-shell {
+    --tk-sidebar-width: 0px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "header"
+      "main";
+  }
+  .work-brand {
+    width: auto;
+  }
+  .work-shell .work-header {
+    padding: 0 10px;
+    gap: 8px;
+  }
+  .work-shell .work-create-compact {
+    display: inline-flex;
+  }
+  .work-header .tk-language-label,
+  .work-account-name,
+  .work-admin-label {
+    display: none;
+  }
+  .work-header-actions {
+    gap: 0;
+  }
+  .work-shell .work-account {
+    padding-inline: 2px;
+    max-width: none;
+  }
+  .work-shell .work-account .tk-icon-chevronDown {
+    display: none;
+  }
+  .work-shell .work-header .tk-language select {
+    min-height: 32px;
+    padding: 2px 4px;
+    font-size: 12px;
+    max-width: 92px;
+  }
+  .work-shell .work-admin-button {
+    width: 32px;
+    padding-inline: 0;
+  }
+  .work-shell .work-sidebar {
+    position: fixed;
+    inset: auto 0 0 0;
+    height: auto;
+    z-index: 35;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    flex-direction: row;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .work-shell .work-sidebar-create {
+    display: none;
+  }
+  .work-shell .work-nav {
+    flex: 1;
+    flex-direction: row;
+    justify-content: space-around;
+    padding: 0;
+  }
+  .work-shell .work-nav button {
+    flex: 1 1 0;
+    flex-direction: column;
+    gap: 4px;
+    min-height: 52px;
+    padding: 6px 4px;
+    font-size: 11px;
+    text-align: center;
+  }
+  .work-shell .work-nav button[aria-pressed="true"] {
+    box-shadow: none;
+  }
+  .work-shell .work-main {
+    padding: 14px 12px calc(84px + env(safe-area-inset-bottom));
+  }
+}
+@media (max-width: 480px) {
+  .work-brand-text small {
+    display: none;
+  }
+  /* The logo square is decorative; on phones its space goes to the «Модулі» action. */
+  .work-shell .work-logo {
+    display: none;
+  }
+}
+/* The persistent sidebar narrows the content column (1440px viewport → 1156px of content). The Processes table
+   compresses to fit instead of scrolling: tighter cell padding, a wrapping actions column and a narrower description. */
+/* TODO: Disabled — Processes uses the common content padding again (consistent page edges); the table compresses instead.
+.work-shell .work-main.processes-main {
+  padding-inline: 16px;
+}
+*/
+.work-shell .process-workspace table.process-list {
+  min-width: 0;
+  width: 100%;
+}
+.work-shell .process-workspace .process-list th,
+.work-shell .process-workspace .process-list td {
+  padding-inline: 6px;
+}
+.work-shell .process-row-actions button {
+  padding-inline: 8px;
+}
+/* Narrow screens scroll the table anyway; only wide screens trade column width for a non-scrolling table. */
+@media (min-width: 1100px) {
+  .work-shell .process-row-actions {
+    min-width: 140px;
+  }
+  .work-shell .process-workspace .process-list[data-view="templates"] td:nth-child(6) {
+    min-width: 140px;
+  }
+}
+/* Language control and the visible «Модулі» (back to modules) action in the Tasks header. */
+.work-header .tk-language {
+  display: inline-flex;
+  align-items: center;
+}
+.work-shell .work-header .work-back {
+  flex: none;
+  margin-right: 2px;
+}
+@media (max-width: 900px) {
+  .work-shell .work-header .work-back {
+    width: 32px;
+    padding-inline: 0;
+  }
+  .work-shell .work-header .work-back .tk-back-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+/* Tablet (601–900px): a vertical icon rail instead of the phone bottom bar, so the content keeps its
+   full height and navigation stays where desktop users expect it. Phones keep the bottom bar. */
+@media (min-width: 601px) and (max-width: 900px) {
+  .work-shell {
+    --tk-sidebar-width: 84px;
+    grid-template-columns: var(--tk-sidebar-width) minmax(0, 1fr);
+    grid-template-areas:
+      "header header"
+      "sidebar main";
+  }
+  .work-shell .work-sidebar {
+    position: sticky;
+    inset: auto;
+    top: var(--tk-header-height);
+    height: calc(100svh - var(--tk-header-height));
+    flex-direction: column;
+    padding: 12px 8px;
+    border-top: 0;
+  }
+  .work-shell .work-nav {
+    flex: none;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 4px;
+  }
+  .work-shell .work-nav button {
+    flex: none;
+    flex-direction: column;
+    gap: 4px;
+    min-height: 60px;
+    padding: 8px 4px;
+    font-size: 11px;
+    text-align: center;
+  }
+  .work-shell .work-nav button[aria-pressed="true"] {
+    box-shadow: inset 3px 0 0 var(--tk-primary);
+  }
+  .work-shell .work-main {
+    padding: 18px 20px 32px;
+  }
+}
+/* Tablet rail labels: never break inside a word. */
+@media (min-width: 601px) and (max-width: 900px) {
+  .work-shell .work-nav button span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    word-break: normal;
+    hyphens: none;
+  }
+  .work-shell {
+    --tk-sidebar-width: 92px;
+  }
+}
+@media (min-width: 601px) and (max-width: 900px) {
+  .work-shell .work-sidebar {
+    padding-inline: 6px;
+  }
+  .work-shell .work-nav button {
+    padding-inline: 2px;
+    font-size: 10.5px;
+  }
+}

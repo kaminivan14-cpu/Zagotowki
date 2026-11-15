@@ -1,0 +1,134 @@
+.work-bell {
+  position: relative;
+}
+.work-bell-count {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--tk-danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 17px;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--tk-surface);
+}
+.work-shell .work-notifications-panel {
+  width: min(420px, calc(100vw - 24px));
+  padding: 14px 14px 10px;
+}
+.work-notifications-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.work-shell .work-notifications-head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.work-notifications-list {
+  margin-top: 10px;
+  max-height: min(60vh, 520px);
+  overflow: auto;
+}
+.work-notifications-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.work-notifications-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  border-top: 1px solid var(--tk-border);
+}
+.work-notifications-list li:first-child {
+  border-top: 0;
+}
+.work-notifications-list li.is-unread {
+  background: var(--tk-bg);
+}
+.work-shell .work-notification {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 6px;
+  border: 0;
+  background: transparent;
+  color: var(--tk-text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 8px;
+}
+.work-shell .work-notification:hover:not(:disabled) {
+  background: var(--tk-bg);
+}
+.work-shell .work-notification:disabled {
+  cursor: default;
+  color: var(--tk-text-3);
+}
+.work-notification-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+  line-height: 1.4;
+}
+.work-notification-task {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.work-notification-body small {
+  color: var(--tk-text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.work-notification-body time {
+  color: var(--tk-text-3);
+  font-size: 12px;
+}
+.work-notification-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--tk-primary);
+  flex: none;
+}
+.work-notifications-list li > .tk-btn {
+  margin-top: 8px;
+}
+@media (max-width: 640px) {
+  .work-shell .work-notifications-panel {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    top: 64px;
+    width: auto;
+  }
+}
+/* Unread counter could not be refreshed (D-52): a small warning mark instead of a misleading zero. */
+.work-bell-stale {
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--tk-warning);
+  box-shadow: 0 0 0 2px var(--tk-surface);
+}
